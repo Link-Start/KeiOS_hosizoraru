@@ -125,54 +125,93 @@ fun AppLiquidCheckbox(
                     .size(AppLiquidCheckboxBoxSize)
                     .then(
                         if (activeBackdrop != null) {
-                            Modifier.drawBackdrop(
-                                backdrop = liquidFlat ?: activeBackdrop,
-                                shape = { ContinuousCapsule },
-                                effects = {
-                                    if (liquidFlat != null) return@drawBackdrop
-                                    vibrancy()
-                                    blur(4.dp.toPx())
-                                    safeLiquidLens(
-                                        16.dp.toPx(),
-                                        24.dp.toPx(),
-                                        chromaticAberration = true,
-                                        depthEffect = true,
-                                    )
-                                },
-                                highlight = {
-                                    Highlight.Default.copy(alpha = if (isDark) 0.42f else 0.74f)
-                                },
-                                shadow = {
-                                    // Not `Shadow.Default`: its 24dp blur is a card's shadow, spreading
-                                    // 48dp around a 30dp box with no corner rounding left to see.
-                                    liquidGlassShadow(Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
-                                },
-                                innerShadow = {
-                                    val pressProgress = pressProgressProvider()
-                                    InnerShadow(radius = 4.dp * pressProgress, alpha = pressProgress)
-                                },
-                                onDrawSurface = {
-                                    val checkProgress = checkProgressProvider()
-                                    val pressProgress = pressProgressProvider()
-                                    val surfaceColor = lerpColor(uncheckedSurface, checkedSurface, checkProgress)
-                                    drawRect(surfaceColor)
-                                    if (pressProgress > 0f) {
-                                        drawRect(
-                                            appControlPressedOverlayColor(
-                                                isDark = isDark,
-                                                variant = GlassVariant.Content,
-                                                accentColor = accent,
-                                            ).copy(
-                                                alpha =
-                                                    appControlPressedOverlayAlpha(
-                                                        true,
-                                                        isDark,
-                                                    ) * pressProgress,
-                                            ),
+                            if (liquidFlat != null) {
+                                Modifier.drawFlatLiquidBackdrop(
+                                    field = liquidFlat,
+                                    shape = { ContinuousCapsule },
+                                    highlight = {
+                                        Highlight.Default.copy(alpha = if (isDark) 0.42f else 0.74f)
+                                    },
+                                    shadow = {
+                                        // Not `Shadow.Default`: its 24dp blur is a card's shadow, spreading
+                                        // 48dp around a 30dp box with no corner rounding left to see.
+                                        liquidGlassShadow(Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
+                                    },
+                                    innerShadow = {
+                                        val pressProgress = pressProgressProvider()
+                                        InnerShadow(radius = 4.dp * pressProgress, alpha = pressProgress)
+                                    },
+                                    onDrawSurface = {
+                                        val checkProgress = checkProgressProvider()
+                                        val pressProgress = pressProgressProvider()
+                                        val surfaceColor = lerpColor(uncheckedSurface, checkedSurface, checkProgress)
+                                        drawRect(surfaceColor)
+                                        if (pressProgress > 0f) {
+                                            drawRect(
+                                                appControlPressedOverlayColor(
+                                                    isDark = isDark,
+                                                    variant = GlassVariant.Content,
+                                                    accentColor = accent,
+                                                ).copy(
+                                                    alpha =
+                                                        appControlPressedOverlayAlpha(
+                                                            true,
+                                                            isDark,
+                                                        ) * pressProgress,
+                                                ),
+                                            )
+                                        }
+                                    },
+                                )
+                            } else {
+                                Modifier.drawBackdrop(
+                                    backdrop = liquidFlat ?: activeBackdrop,
+                                    shape = { ContinuousCapsule },
+                                    effects = {
+                                        vibrancy()
+                                        blur(4.dp.toPx())
+                                        safeLiquidLens(
+                                            16.dp.toPx(),
+                                            24.dp.toPx(),
+                                            chromaticAberration = true,
+                                            depthEffect = true,
                                         )
-                                    }
-                                },
-                            )
+                                    },
+                                    highlight = {
+                                        Highlight.Default.copy(alpha = if (isDark) 0.42f else 0.74f)
+                                    },
+                                    shadow = {
+                                        // Not `Shadow.Default`: its 24dp blur is a card's shadow, spreading
+                                        // 48dp around a 30dp box with no corner rounding left to see.
+                                        liquidGlassShadow(Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
+                                    },
+                                    innerShadow = {
+                                        val pressProgress = pressProgressProvider()
+                                        InnerShadow(radius = 4.dp * pressProgress, alpha = pressProgress)
+                                    },
+                                    onDrawSurface = {
+                                        val checkProgress = checkProgressProvider()
+                                        val pressProgress = pressProgressProvider()
+                                        val surfaceColor = lerpColor(uncheckedSurface, checkedSurface, checkProgress)
+                                        drawRect(surfaceColor)
+                                        if (pressProgress > 0f) {
+                                            drawRect(
+                                                appControlPressedOverlayColor(
+                                                    isDark = isDark,
+                                                    variant = GlassVariant.Content,
+                                                    accentColor = accent,
+                                                ).copy(
+                                                    alpha =
+                                                        appControlPressedOverlayAlpha(
+                                                            true,
+                                                            isDark,
+                                                        ) * pressProgress,
+                                                ),
+                                            )
+                                        }
+                                    },
+                                )
+                            }
                         } else {
                             Modifier.drawAppSquircleBackground(999.dp) {
                                 lerpColor(uncheckedSurface, checkedSurface, checkProgressProvider())

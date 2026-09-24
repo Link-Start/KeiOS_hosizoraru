@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -308,8 +309,41 @@ fun LiquidSurface(
     // (see [liquidFlatField]). Not with a hue tint: that blends against the layer's contents, and without
     // a `RenderEffect` the layer is drawn inline, so the blend would reach whatever is underneath.
     val flatField = if (tint.isSpecified) null else liquidFlatField(activeBackdrop)
+    val highlightBlock: () -> Highlight? = {
+        Highlight.Default.copy(
+            alpha =
+                liquidSurfaceHighlightAlpha(
+                    isDark = isDark,
+                    interactive = isInteractive,
+                    enabled = enabled,
+                    pressProgress = interactiveHighlight.pressProgress,
+                    overrideAlpha = highlightAlpha,
+                ),
+        )
+    }
+    val surfaceBlock: DrawScope.() -> Unit = {
+        if (tint.isSpecified) {
+            drawRect(tint, blendMode = BlendMode.Hue)
+            drawRect(tint.copy(alpha = tint.alpha * 0.70f))
+        }
+        if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
+            drawRect(surfaceColor)
+        }
+    }
     val surfaceModifier =
-        if (activeBackdrop != null) {
+        if (activeBackdrop != null && flatField != null && exportedBackdrop == null) {
+            // Over a flat field the library's drawing is reproduced with the clip moved
+            // inside the surface's layer (see [drawFlatLiquidBackdrop]).
+            Modifier.drawFlatLiquidBackdrop(
+                field = flatField,
+                shape = { shape },
+                highlight = highlightBlock,
+                shadow = outerShadow,
+                innerShadow = innerShadow,
+                layerBlock = interactiveLayerBlock,
+                onDrawSurface = surfaceBlock,
+            )
+        } else if (activeBackdrop != null) {
             Modifier.drawBackdrop(
                 backdrop = flatField ?: activeBackdrop,
                 shape = { shape },
@@ -333,31 +367,12 @@ fun LiquidSurface(
                         )
                     }
                 },
-                highlight = {
-                    Highlight.Default.copy(
-                        alpha =
-                            liquidSurfaceHighlightAlpha(
-                                isDark = isDark,
-                                interactive = isInteractive,
-                                enabled = enabled,
-                                pressProgress = interactiveHighlight.pressProgress,
-                                overrideAlpha = highlightAlpha,
-                            ),
-                    )
-                },
+                highlight = highlightBlock,
                 shadow = outerShadow,
                 innerShadow = innerShadow,
                 layerBlock = interactiveLayerBlock,
                 exportedBackdrop = exportedBackdrop,
-                onDrawSurface = {
-                    if (tint.isSpecified) {
-                        drawRect(tint, blendMode = BlendMode.Hue)
-                        drawRect(tint.copy(alpha = tint.alpha * 0.70f))
-                    }
-                    if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
-                        drawRect(surfaceColor)
-                    }
-                },
+                onDrawSurface = surfaceBlock,
             )
         } else {
             // No backdrop to hand the transform to, so the pile needs its own layer here. Only the
@@ -869,3 +884,4 @@ fun LiquidRoundedCard(
         }
     }
 }
+

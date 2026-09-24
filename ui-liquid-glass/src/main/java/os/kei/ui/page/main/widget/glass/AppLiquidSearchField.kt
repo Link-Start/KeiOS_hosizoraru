@@ -170,67 +170,116 @@ fun AppLiquidInputField(
                 .appSquircleClip(cornerRadius)
                 .then(
                     if (activeBackdrop != null) {
-                        Modifier.drawBackdrop(
-                            backdrop = liquidFlat ?: activeBackdrop,
-                            shape = { fieldShape },
-                            layerBlock = {
-                                val focusProgress = focusProgressProvider()
-                                val focusScale =
-                                    1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * focusProgress
-                                scaleX = focusScale
-                                scaleY = focusScale
-                            },
-                            effects = {
-                                if (liquidFlat != null) return@drawBackdrop
-                                val focusProgress = focusProgressProvider()
-                                vibrancy()
-                                blur((if (usesSearchMaterial) glass.blur + 1.dp * focusProgress else glass.blur).toPx())
-                                safeLiquidLens(
-                                    glass.lensStart.toPx() +
-                                        if (usesSearchMaterial) 2.dp.toPx() * focusProgress else 4.dp.toPx() * focusProgress,
-                                    glass.lensEnd.toPx() +
-                                        if (usesSearchMaterial) 4.dp.toPx() * focusProgress else 6.dp.toPx() * focusProgress,
-                                    chromaticAberration = false,
-                                    depthEffect = false,
-                                )
-                            },
-                            highlight = {
-                                val focusProgress = focusProgressProvider()
-                                Highlight.Default.copy(
-                                    alpha =
-                                        appLiquidSearchHighlightAlpha(
-                                            baseAlpha = glass.highlightAlpha,
-                                            materialProgress = focusProgress,
-                                            isDark = isDark,
-                                        ),
-                                )
-                            },
-                            shadow = {
-                                val focusProgress = focusProgressProvider()
-                                liquidGlassShadow(
-                                    color = Color.Black.copy(alpha = glass.shadowAlpha + 0.04f * focusProgress),
-                                )
-                            },
-                            innerShadow = {
-                                val focusProgress = focusProgressProvider()
-                                InnerShadow(
-                                    radius = 6.dp * focusProgress,
-                                    alpha = 0.22f * focusProgress,
-                                )
-                            },
-                            onDrawSurface = {
-                                val focusProgress = focusProgressProvider()
-                                if (variant == GlassVariant.Bar || usesSearchMaterial) {
-                                    drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
-                                } else {
-                                    drawRect(glass.baseColor)
-                                    if (glass.overlayColor != Color.Transparent) drawRect(glass.overlayColor)
-                                    if (focusProgress > 0f) {
-                                        drawRect(sheetInputAccent.copy(alpha = 0.04f * focusProgress))
+                        if (liquidFlat != null) {
+                            Modifier.drawFlatLiquidBackdrop(
+                                field = liquidFlat,
+                                shape = { fieldShape },
+                                highlight = {
+                                    val focusProgress = focusProgressProvider()
+                                    Highlight.Default.copy(
+                                        alpha =
+                                            appLiquidSearchHighlightAlpha(
+                                                baseAlpha = glass.highlightAlpha,
+                                                materialProgress = focusProgress,
+                                                isDark = isDark,
+                                            ),
+                                    )
+                                },
+                                shadow = {
+                                    val focusProgress = focusProgressProvider()
+                                    liquidGlassShadow(
+                                        color = Color.Black.copy(alpha = glass.shadowAlpha + 0.04f * focusProgress),
+                                    )
+                                },
+                                innerShadow = {
+                                    val focusProgress = focusProgressProvider()
+                                    InnerShadow(
+                                        radius = 6.dp * focusProgress,
+                                        alpha = 0.22f * focusProgress,
+                                    )
+                                },
+                                layerBlock = {
+                                    val focusProgress = focusProgressProvider()
+                                    val focusScale =
+                                        1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * focusProgress
+                                    scaleX = focusScale
+                                    scaleY = focusScale
+                                },
+                                onDrawSurface = {
+                                    val focusProgress = focusProgressProvider()
+                                    if (variant == GlassVariant.Bar || usesSearchMaterial) {
+                                        drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                    } else {
+                                        drawRect(glass.baseColor)
+                                        if (glass.overlayColor != Color.Transparent) drawRect(glass.overlayColor)
+                                        if (focusProgress > 0f) {
+                                            drawRect(sheetInputAccent.copy(alpha = 0.04f * focusProgress))
+                                        }
                                     }
-                                }
-                            },
-                        )
+                                },
+                            )
+                        } else {
+                            Modifier.drawBackdrop(
+                                backdrop = liquidFlat ?: activeBackdrop,
+                                shape = { fieldShape },
+                                layerBlock = {
+                                    val focusProgress = focusProgressProvider()
+                                    val focusScale =
+                                        1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * focusProgress
+                                    scaleX = focusScale
+                                    scaleY = focusScale
+                                },
+                                effects = {
+                                    val focusProgress = focusProgressProvider()
+                                    vibrancy()
+                                    blur((if (usesSearchMaterial) glass.blur + 1.dp * focusProgress else glass.blur).toPx())
+                                    safeLiquidLens(
+                                        glass.lensStart.toPx() +
+                                            if (usesSearchMaterial) 2.dp.toPx() * focusProgress else 4.dp.toPx() * focusProgress,
+                                        glass.lensEnd.toPx() +
+                                            if (usesSearchMaterial) 4.dp.toPx() * focusProgress else 6.dp.toPx() * focusProgress,
+                                        chromaticAberration = false,
+                                        depthEffect = false,
+                                    )
+                                },
+                                highlight = {
+                                    val focusProgress = focusProgressProvider()
+                                    Highlight.Default.copy(
+                                        alpha =
+                                            appLiquidSearchHighlightAlpha(
+                                                baseAlpha = glass.highlightAlpha,
+                                                materialProgress = focusProgress,
+                                                isDark = isDark,
+                                            ),
+                                    )
+                                },
+                                shadow = {
+                                    val focusProgress = focusProgressProvider()
+                                    liquidGlassShadow(
+                                        color = Color.Black.copy(alpha = glass.shadowAlpha + 0.04f * focusProgress),
+                                    )
+                                },
+                                innerShadow = {
+                                    val focusProgress = focusProgressProvider()
+                                    InnerShadow(
+                                        radius = 6.dp * focusProgress,
+                                        alpha = 0.22f * focusProgress,
+                                    )
+                                },
+                                onDrawSurface = {
+                                    val focusProgress = focusProgressProvider()
+                                    if (variant == GlassVariant.Bar || usesSearchMaterial) {
+                                        drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                    } else {
+                                        drawRect(glass.baseColor)
+                                        if (glass.overlayColor != Color.Transparent) drawRect(glass.overlayColor)
+                                        if (focusProgress > 0f) {
+                                            drawRect(sheetInputAccent.copy(alpha = 0.04f * focusProgress))
+                                        }
+                                    }
+                                },
+                            )
+                        }
                     } else {
                         Modifier
                             .appSquircleBackground(
@@ -415,54 +464,92 @@ fun AppLiquidSearchSurface(
                     scaleY = lerp(1f, 0.992f, pressProgress)
                 }.then(
                     if (activeBackdrop != null) {
-                        Modifier.drawBackdrop(
-                            backdrop = liquidFlat ?: activeBackdrop,
-                            shape = { shape },
-                            effects = {
-                                if (liquidFlat != null) return@drawBackdrop
-                                val materialProgress = materialProgressProvider()
-                                vibrancy()
-                                blur((glass.blur + 1.dp * materialProgress).toPx())
-                                safeLiquidLens(
-                                    glass.lensStart.toPx() + 2.dp.toPx() * materialProgress,
-                                    glass.lensEnd.toPx() + 5.dp.toPx() * materialProgress,
-                                    chromaticAberration = false,
-                                    depthEffect = false,
-                                )
-                            },
-                            highlight = {
-                                val materialProgress = materialProgressProvider()
-                                Highlight.Default.copy(
-                                    alpha =
-                                        appLiquidSearchHighlightAlpha(
-                                            baseAlpha = glass.highlightAlpha,
-                                            materialProgress = materialProgress,
-                                            isDark = isDark,
-                                            darkMaxAlpha = if (compactMaterial) 0.22f else 0.34f,
-                                        ),
-                                )
-                            },
-                            shadow = {
-                                val focusProgress = focusProgressProvider()
-                                val pressProgress = pressProgressProvider()
-                                liquidGlassShadow(
-                                    color =
-                                        Color.Black.copy(
-                                            alpha = (glass.shadowAlpha + 0.04f * focusProgress) * (1f - 0.25f * pressProgress),
-                                        ),
-                                )
-                            },
-                            innerShadow = {
-                                val materialProgress = materialProgressProvider()
-                                InnerShadow(
-                                    radius = 6.dp * materialProgress,
-                                    alpha = 0.18f * materialProgress,
-                                )
-                            },
-                            onDrawSurface = {
-                                drawRect(fallbackSurface.copy(alpha = fallbackAlpha))
-                            },
-                        )
+                        if (liquidFlat != null) {
+                            Modifier.drawFlatLiquidBackdrop(
+                                field = liquidFlat,
+                                shape = { shape },
+                                highlight = {
+                                    val materialProgress = materialProgressProvider()
+                                    Highlight.Default.copy(
+                                        alpha =
+                                            appLiquidSearchHighlightAlpha(
+                                                baseAlpha = glass.highlightAlpha,
+                                                materialProgress = materialProgress,
+                                                isDark = isDark,
+                                                darkMaxAlpha = if (compactMaterial) 0.22f else 0.34f,
+                                            ),
+                                    )
+                                },
+                                shadow = {
+                                    val focusProgress = focusProgressProvider()
+                                    val pressProgress = pressProgressProvider()
+                                    liquidGlassShadow(
+                                        color =
+                                            Color.Black.copy(
+                                                alpha = (glass.shadowAlpha + 0.04f * focusProgress) * (1f - 0.25f * pressProgress),
+                                            ),
+                                    )
+                                },
+                                innerShadow = {
+                                    val materialProgress = materialProgressProvider()
+                                    InnerShadow(
+                                        radius = 6.dp * materialProgress,
+                                        alpha = 0.18f * materialProgress,
+                                    )
+                                },
+                                onDrawSurface = {
+                                    drawRect(fallbackSurface.copy(alpha = fallbackAlpha))
+                                },
+                            )
+                        } else {
+                            Modifier.drawBackdrop(
+                                backdrop = liquidFlat ?: activeBackdrop,
+                                shape = { shape },
+                                effects = {
+                                    val materialProgress = materialProgressProvider()
+                                    vibrancy()
+                                    blur((glass.blur + 1.dp * materialProgress).toPx())
+                                    safeLiquidLens(
+                                        glass.lensStart.toPx() + 2.dp.toPx() * materialProgress,
+                                        glass.lensEnd.toPx() + 5.dp.toPx() * materialProgress,
+                                        chromaticAberration = false,
+                                        depthEffect = false,
+                                    )
+                                },
+                                highlight = {
+                                    val materialProgress = materialProgressProvider()
+                                    Highlight.Default.copy(
+                                        alpha =
+                                            appLiquidSearchHighlightAlpha(
+                                                baseAlpha = glass.highlightAlpha,
+                                                materialProgress = materialProgress,
+                                                isDark = isDark,
+                                                darkMaxAlpha = if (compactMaterial) 0.22f else 0.34f,
+                                            ),
+                                    )
+                                },
+                                shadow = {
+                                    val focusProgress = focusProgressProvider()
+                                    val pressProgress = pressProgressProvider()
+                                    liquidGlassShadow(
+                                        color =
+                                            Color.Black.copy(
+                                                alpha = (glass.shadowAlpha + 0.04f * focusProgress) * (1f - 0.25f * pressProgress),
+                                            ),
+                                    )
+                                },
+                                innerShadow = {
+                                    val materialProgress = materialProgressProvider()
+                                    InnerShadow(
+                                        radius = 6.dp * materialProgress,
+                                        alpha = 0.18f * materialProgress,
+                                    )
+                                },
+                                onDrawSurface = {
+                                    drawRect(fallbackSurface.copy(alpha = fallbackAlpha))
+                                },
+                            )
+                        }
                     } else {
                         Modifier.appSquircleBackground(fallbackSurface.copy(alpha = fallbackAlpha), 999.dp)
                     },

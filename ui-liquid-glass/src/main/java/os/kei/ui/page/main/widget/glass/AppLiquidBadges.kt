@@ -17,10 +17,12 @@ import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.highlight.HighlightStyle
 import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.ui.graphics.colorspace.ColorModel
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
@@ -123,13 +125,40 @@ internal fun AppLiquidIconBadge(
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val liquidFlat = liquidFlatField(activeBackdrop)
     val shape = remember { ContinuousCapsule }
+    val badgeHighlight: () -> Highlight? = {
+        Highlight(
+            width = 0.8.dp,
+            blurRadius = 1.4.dp,
+            alpha = if (isDark) 0.46f else 0.72f,
+            style = HighlightStyle.Ambient(if (isDark) 0.74f else 0.60f),
+        )
+    }
+    // Not `Shadow.Default`: its 24dp blur spreads 48dp around an 18dp badge, which leaves
+    // no corner rounding visible at all and puts a right angle under a capsule.
+    val badgeShadow: () -> Shadow? = {
+        liquidGlassShadow(Color.Black.copy(alpha = if (isDark) 0.22f else 0.16f))
+    }
+    val badgeInnerShadow: () -> InnerShadow? = {
+        InnerShadow(radius = 2.dp, alpha = if (isDark) 0.20f else 0.14f)
+    }
+    val badgeSurface: DrawScope.() -> Unit = {
+        drawRect(colors.containerColor.copy(alpha = AppLiquidIconBadgeFillAlpha))
+    }
     val surfaceModifier =
-        if (activeBackdrop != null) {
+        if (activeBackdrop != null && liquidFlat != null) {
+            Modifier.drawFlatLiquidBackdrop(
+                field = liquidFlat,
+                shape = { shape },
+                highlight = badgeHighlight,
+                shadow = badgeShadow,
+                innerShadow = badgeInnerShadow,
+                onDrawSurface = badgeSurface,
+            )
+        } else if (activeBackdrop != null) {
             Modifier.drawBackdrop(
-                backdrop = liquidFlat ?: activeBackdrop,
+                backdrop = activeBackdrop,
                 shape = { shape },
                 effects = {
-                    if (liquidFlat != null) return@drawBackdrop
                     vibrancy()
                     blur(AppLiquidIconBadgeBlur.toPx())
                     safeLiquidLens(
@@ -137,25 +166,10 @@ internal fun AppLiquidIconBadge(
                         AppLiquidIconBadgeLensAmount.toPx(),
                     )
                 },
-                highlight = {
-                    Highlight(
-                        width = 0.8.dp,
-                        blurRadius = 1.4.dp,
-                        alpha = if (isDark) 0.46f else 0.72f,
-                        style = HighlightStyle.Ambient(if (isDark) 0.74f else 0.60f),
-                    )
-                },
-                // Not `Shadow.Default`: its 24dp blur spreads 48dp around an 18dp badge, which leaves
-                // no corner rounding visible at all and puts a right angle under a capsule.
-                shadow = {
-                    liquidGlassShadow(Color.Black.copy(alpha = if (isDark) 0.22f else 0.16f))
-                },
-                innerShadow = {
-                    InnerShadow(radius = 2.dp, alpha = if (isDark) 0.20f else 0.14f)
-                },
-                onDrawSurface = {
-                    drawRect(colors.containerColor.copy(alpha = AppLiquidIconBadgeFillAlpha))
-                },
+                highlight = badgeHighlight,
+                shadow = badgeShadow,
+                innerShadow = badgeInnerShadow,
+                onDrawSurface = badgeSurface,
             )
         } else {
             Modifier.appSquircleBackground(

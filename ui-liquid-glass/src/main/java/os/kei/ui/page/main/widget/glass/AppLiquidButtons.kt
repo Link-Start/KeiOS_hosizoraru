@@ -396,59 +396,105 @@ private fun AppLiquidIconButtonContainer(
                     clip = false
                 }.then(
                     if (activeBackdrop != null) {
-                        Modifier.drawBackdrop(
-                            backdrop = liquidFlat ?: activeBackdrop,
-                            shape = { shape },
-                            layerBlock =
-                                if (enabled) {
-                                    { applyLiquidButtonLayer(interactiveHighlight) }
-                                } else {
-                                    null
+                        if (liquidFlat != null) {
+                            Modifier.drawFlatLiquidBackdrop(
+                                field = liquidFlat,
+                                shape = { shape },
+                                highlight = {
+                                    Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                                 },
-                            effects = {
-                                if (liquidFlat != null) return@drawBackdrop
-                                applyLiquidButtonEffects(
-                                    glass = glass,
-                                    variant = variant,
-                                    pressProgress = if (enabled) interactiveHighlight.pressProgress else 0f,
-                                )
-                            },
-                            highlight = {
-                                Highlight.Default.copy(alpha = surfaceHighlightAlpha)
-                            },
-                            shadow = {
-                                // Not `Shadow.Default`, whose 24dp blur loses every trace of the corner
-                                // rounding on a button this size.
-                                liquidGlassShadow(
-                                    color =
-                                        Color.Black.copy(
-                                            alpha =
-                                                appLiquidButtonShadowAlpha(
-                                                    baseAlpha = glass.shadowAlpha,
-                                                    variant = variant,
-                                                    isPressed = isPressed,
-                                                ),
-                                        ),
-                                )
-                            },
-                            innerShadow = {
-                                val progress = if (enabled) interactiveHighlight.pressProgress else 0f
-                                InnerShadow(radius = 6.dp * progress, alpha = progress)
-                            },
-                            onDrawSurface = {
-                                if (containerAlphaOverride == null || containerOverlay == null) {
-                                    if (variant == GlassVariant.Bar) {
-                                        drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                shadow = {
+                                    // Not `Shadow.Default`, whose 24dp blur loses every trace of the corner
+                                    // rounding on a button this size.
+                                    liquidGlassShadow(
+                                        color =
+                                            Color.Black.copy(
+                                                alpha =
+                                                    appLiquidButtonShadowAlpha(
+                                                        baseAlpha = glass.shadowAlpha,
+                                                        variant = variant,
+                                                        isPressed = isPressed,
+                                                    ),
+                                            ),
+                                    )
+                                },
+                                innerShadow = {
+                                    val progress = if (enabled) interactiveHighlight.pressProgress else 0f
+                                    InnerShadow(radius = 6.dp * progress, alpha = progress)
+                                },
+                                layerBlock = if (enabled) {
+                                        { applyLiquidButtonLayer(interactiveHighlight) }
                                     } else {
-                                        drawRect(glass.baseColor)
-                                        if (surfaceOverlayColor != Color.Transparent) {
-                                            drawRect(surfaceOverlayColor)
+                                        null
+                                    },
+                                onDrawSurface = {
+                                    if (containerAlphaOverride == null || containerOverlay == null) {
+                                        if (variant == GlassVariant.Bar) {
+                                            drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                        } else {
+                                            drawRect(glass.baseColor)
+                                            if (surfaceOverlayColor != Color.Transparent) {
+                                                drawRect(surfaceOverlayColor)
+                                            }
                                         }
                                     }
-                                }
-                                containerOverlay?.let { drawRect(it) }
-                            },
-                        )
+                                    containerOverlay?.let { drawRect(it) }
+                                },
+                            )
+                        } else {
+                            Modifier.drawBackdrop(
+                                backdrop = liquidFlat ?: activeBackdrop,
+                                shape = { shape },
+                                layerBlock =
+                                    if (enabled) {
+                                        { applyLiquidButtonLayer(interactiveHighlight) }
+                                    } else {
+                                        null
+                                    },
+                                effects = {
+                                    applyLiquidButtonEffects(
+                                        glass = glass,
+                                        variant = variant,
+                                        pressProgress = if (enabled) interactiveHighlight.pressProgress else 0f,
+                                    )
+                                },
+                                highlight = {
+                                    Highlight.Default.copy(alpha = surfaceHighlightAlpha)
+                                },
+                                shadow = {
+                                    // Not `Shadow.Default`, whose 24dp blur loses every trace of the corner
+                                    // rounding on a button this size.
+                                    liquidGlassShadow(
+                                        color =
+                                            Color.Black.copy(
+                                                alpha =
+                                                    appLiquidButtonShadowAlpha(
+                                                        baseAlpha = glass.shadowAlpha,
+                                                        variant = variant,
+                                                        isPressed = isPressed,
+                                                    ),
+                                            ),
+                                    )
+                                },
+                                innerShadow = {
+                                    val progress = if (enabled) interactiveHighlight.pressProgress else 0f
+                                    InnerShadow(radius = 6.dp * progress, alpha = progress)
+                                },
+                                onDrawSurface = {
+                                    if (containerAlphaOverride == null || containerOverlay == null) {
+                                        if (variant == GlassVariant.Bar) {
+                                            drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                        } else {
+                                            drawRect(glass.baseColor)
+                                            if (surfaceOverlayColor != Color.Transparent) {
+                                                drawRect(surfaceOverlayColor)
+                                            }
+                                        }
+                                    }
+                                    containerOverlay?.let { drawRect(it) }
+                                },
+                            )
+                        }
                     } else {
                         val fallbackColor =
                             when {
@@ -687,65 +733,112 @@ fun AppLiquidTextButton(
                     clip = false
                 }.then(
                     if (activeBackdrop != null) {
-                        Modifier.drawBackdrop(
-                            backdrop = liquidFlat ?: activeBackdrop,
-                            shape = { ContinuousCapsule },
-                            layerBlock =
-                                if (liquidInteractionEnabled) {
-                                    { applyLiquidButtonLayer(interactiveHighlight) }
-                                } else {
-                                    null
+                        if (liquidFlat != null) {
+                            Modifier.drawFlatLiquidBackdrop(
+                                field = liquidFlat,
+                                shape = { ContinuousCapsule },
+                                highlight = {
+                                    Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                                 },
-                            effects = {
-                                if (liquidFlat != null) return@drawBackdrop
-                                applyLiquidButtonEffects(
-                                    glass = glass,
-                                    variant = variant,
-                                    pressProgress =
-                                        if (liquidInteractionEnabled) {
-                                            interactiveHighlight.pressProgress
-                                        } else {
-                                            0f
-                                        },
-                                )
-                            },
-                            highlight = {
-                                Highlight.Default.copy(alpha = surfaceHighlightAlpha)
-                            },
-                            shadow = {
-                                // Not `Shadow.Default`, whose 24dp blur loses every trace of the corner
-                                // rounding on a button this size.
-                                liquidGlassShadow(
-                                    color =
-                                        Color.Black.copy(
-                                            alpha =
-                                                appLiquidButtonShadowAlpha(
-                                                    baseAlpha = glass.shadowAlpha,
-                                                    variant = variant,
-                                                    isPressed = isPressed,
-                                                ),
-                                        ),
-                                )
-                            },
-                            innerShadow = {
-                                val progress =
-                                    if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
-                                InnerShadow(radius = 6.dp * progress, alpha = progress)
-                            },
-                            onDrawSurface = {
-                                if (containerAlphaOverride == null || containerOverlay == null) {
-                                    if (variant == GlassVariant.Bar) {
-                                        drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                shadow = {
+                                    // Not `Shadow.Default`, whose 24dp blur loses every trace of the corner
+                                    // rounding on a button this size.
+                                    liquidGlassShadow(
+                                        color =
+                                            Color.Black.copy(
+                                                alpha =
+                                                    appLiquidButtonShadowAlpha(
+                                                        baseAlpha = glass.shadowAlpha,
+                                                        variant = variant,
+                                                        isPressed = isPressed,
+                                                    ),
+                                            ),
+                                    )
+                                },
+                                innerShadow = {
+                                    val progress =
+                                        if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
+                                    InnerShadow(radius = 6.dp * progress, alpha = progress)
+                                },
+                                layerBlock = if (liquidInteractionEnabled) {
+                                        { applyLiquidButtonLayer(interactiveHighlight) }
                                     } else {
-                                        drawRect(glass.baseColor)
-                                        if (surfaceOverlayColor != Color.Transparent) {
-                                            drawRect(surfaceOverlayColor)
+                                        null
+                                    },
+                                onDrawSurface = {
+                                    if (containerAlphaOverride == null || containerOverlay == null) {
+                                        if (variant == GlassVariant.Bar) {
+                                            drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                        } else {
+                                            drawRect(glass.baseColor)
+                                            if (surfaceOverlayColor != Color.Transparent) {
+                                                drawRect(surfaceOverlayColor)
+                                            }
                                         }
                                     }
-                                }
-                                containerOverlay?.let { drawRect(it) }
-                            },
-                        )
+                                    containerOverlay?.let { drawRect(it) }
+                                },
+                            )
+                        } else {
+                            Modifier.drawBackdrop(
+                                backdrop = liquidFlat ?: activeBackdrop,
+                                shape = { ContinuousCapsule },
+                                layerBlock =
+                                    if (liquidInteractionEnabled) {
+                                        { applyLiquidButtonLayer(interactiveHighlight) }
+                                    } else {
+                                        null
+                                    },
+                                effects = {
+                                    applyLiquidButtonEffects(
+                                        glass = glass,
+                                        variant = variant,
+                                        pressProgress =
+                                            if (liquidInteractionEnabled) {
+                                                interactiveHighlight.pressProgress
+                                            } else {
+                                                0f
+                                            },
+                                    )
+                                },
+                                highlight = {
+                                    Highlight.Default.copy(alpha = surfaceHighlightAlpha)
+                                },
+                                shadow = {
+                                    // Not `Shadow.Default`, whose 24dp blur loses every trace of the corner
+                                    // rounding on a button this size.
+                                    liquidGlassShadow(
+                                        color =
+                                            Color.Black.copy(
+                                                alpha =
+                                                    appLiquidButtonShadowAlpha(
+                                                        baseAlpha = glass.shadowAlpha,
+                                                        variant = variant,
+                                                        isPressed = isPressed,
+                                                    ),
+                                            ),
+                                    )
+                                },
+                                innerShadow = {
+                                    val progress =
+                                        if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
+                                    InnerShadow(radius = 6.dp * progress, alpha = progress)
+                                },
+                                onDrawSurface = {
+                                    if (containerAlphaOverride == null || containerOverlay == null) {
+                                        if (variant == GlassVariant.Bar) {
+                                            drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                        } else {
+                                            drawRect(glass.baseColor)
+                                            if (surfaceOverlayColor != Color.Transparent) {
+                                                drawRect(surfaceOverlayColor)
+                                            }
+                                        }
+                                    }
+                                    containerOverlay?.let { drawRect(it) }
+                                },
+                            )
+                        }
                     } else {
                         val fallbackColor =
                             when {

@@ -33,8 +33,8 @@ dependencies {
     testImplementation(libs.ktor.client.mock)
 
     // WebDAV client (used by DAVx⁵, production-grade).
-    // The Ktor API currently lives on upstream main; pin its verified revision so API changes
-    // are introduced through an explicit dependency upgrade and matching client migration.
+    // A tagged release (JitPack builds the tag). 4.x is the Ktor API with suspend/Flow multi-status
+    // handling; an upgrade across a major version needs a matching WebDavSyncClient migration.
     // Exclude xpp3 — Android has built-in XmlPullParser.
     implementation(libs.dav4jvm) {
         exclude(group = "org.ogce", module = "xpp3")

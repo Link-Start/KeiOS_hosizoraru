@@ -23,6 +23,7 @@ import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.page.main.widget.glass.keepComposedUnplaced
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import os.kei.ui.testing.KeiOsTestTags
@@ -93,31 +94,32 @@ internal fun AnimatedCompactBottomBar(
         }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        if (transition.currentState || transition.targetState) {
-            expandedContent(
-                Modifier.graphicsLayer {
-                    val progress = expandedProgress.value
-                    alpha = progress
-                    transformOrigin = TransformOrigin(0f, 0.5f)
-                    translationX = snapChromeTranslationPx(-slideOffsetPx * (1f - progress))
-                    scaleX = 0.86f + 0.14f * progress
-                    scaleY = 0.94f + 0.06f * progress
-                },
-                expanded,
-            )
-        }
-        if (!transition.currentState || !transition.targetState) {
-            compactContent(
-                Modifier.graphicsLayer {
-                    val progress = compactProgress.value
-                    alpha = progress
-                    transformOrigin = TransformOrigin(0f, 0.5f)
-                    translationX = snapChromeTranslationPx(slideOffsetPx * (1f - progress))
-                    scaleX = 0.88f + 0.12f * progress
-                    scaleY = 0.88f + 0.12f * progress
-                },
-                !expanded,
-            )
-        }
+        // Both stay composed; the one not showing is left unplaced (see keepComposedUnplaced). Composing the
+        // full glass bar again every time it came back, and its compact button every time it left, was the
+        // long frame at the start of a scroll.
+        val showExpanded = transition.currentState || transition.targetState
+        val showCompact = !transition.currentState || !transition.targetState
+        expandedContent(
+            Modifier.keepComposedUnplaced(showExpanded).graphicsLayer {
+                val progress = expandedProgress.value
+                alpha = progress
+                transformOrigin = TransformOrigin(0f, 0.5f)
+                translationX = snapChromeTranslationPx(-slideOffsetPx * (1f - progress))
+                scaleX = 0.86f + 0.14f * progress
+                scaleY = 0.94f + 0.06f * progress
+            },
+            expanded,
+        )
+        compactContent(
+            Modifier.keepComposedUnplaced(showCompact).graphicsLayer {
+                val progress = compactProgress.value
+                alpha = progress
+                transformOrigin = TransformOrigin(0f, 0.5f)
+                translationX = snapChromeTranslationPx(slideOffsetPx * (1f - progress))
+                scaleX = 0.88f + 0.12f * progress
+                scaleY = 0.88f + 0.12f * progress
+            },
+            !expanded,
+        )
     }
 }

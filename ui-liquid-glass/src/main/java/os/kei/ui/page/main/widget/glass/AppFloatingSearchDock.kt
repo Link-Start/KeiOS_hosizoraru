@@ -472,30 +472,28 @@ fun AppFloatingVerticalSearchActionDock(
                 fieldContent()
             }
         }
-        if (motion.showFullDockContent) {
-            Box(
-                modifier =
-                    motion.fullDockModifier
-                        .align(Alignment.BottomStart)
-                        .offset { IntOffset(x = motion.fullDockX().roundToPx(), y = 0) },
-            ) {
-                dockContent()
-            }
+        Box(
+            modifier =
+                motion.fullDockModifier
+                    .keepComposedUnplaced(motion.showFullDockContent)
+                    .align(Alignment.BottomStart)
+                    .offset { IntOffset(x = motion.fullDockX().roundToPx(), y = 0) },
+        ) {
+            dockContent()
         }
-        if (motion.showCompactButtonContent) {
-            Box(
-                modifier =
-                    motion.compactButtonModifier
-                        .align(
-                            if (dockSide == AppFloatingDockSide.Start) {
-                                Alignment.BottomStart
-                            } else {
-                                Alignment.BottomEnd
-                            },
-                        ),
-            ) {
-                compactContent()
-            }
+        Box(
+            modifier =
+                motion.compactButtonModifier
+                    .keepComposedUnplaced(motion.showCompactButtonContent)
+                    .align(
+                        if (dockSide == AppFloatingDockSide.Start) {
+                            Alignment.BottomStart
+                        } else {
+                            Alignment.BottomEnd
+                        },
+                    ),
+        ) {
+            compactContent()
         }
         if (motion.showCompactSearchButtonContent) {
             Box(
@@ -544,58 +542,56 @@ fun AppFloatingVerticalActionDock(
                 .width(size)
                 .appFloatingDockAnimatedHeight(compactMotion.height),
     ) {
-        if (compactMotion.showExpandedContent) {
-            AppFloatingLiquidVerticalDockSurface(
-                backdrop = backdrop,
-                modifier =
-                    compactMotion.expandedModifier
-                        .align(Alignment.BottomCenter)
-                        .width(size)
-                        .height(dockHeight),
+        AppFloatingLiquidVerticalDockSurface(
+            backdrop = backdrop,
+            modifier =
+                compactMotion.expandedModifier
+                    .keepComposedUnplaced(compactMotion.showExpandedContent)
+                    .align(Alignment.BottomCenter)
+                    .width(size)
+                    .height(dockHeight),
+        ) {
+            Column(
+                modifier = Modifier.matchParentSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                Column(
-                    modifier = Modifier.matchParentSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    actions.forEach { action ->
-                        AppFloatingVerticalDockAction(
-                            icon = action.icon,
-                            contentDescription = action.contentDescription,
-                            onClick = action.onClick,
-                            size = size,
-                            iconSize = iconSize,
-                            iconTint = action.iconTint,
-                            enabled = action.enabled,
-                            rotating = action.rotating,
-                            testTag = action.testTag,
-                            badgeLabel = action.badgeLabel,
-                            badgeColor = action.badgeColor,
-                            badgeContentColor = action.badgeContentColor,
-                            tooltipText = action.tooltipText,
-                        )
-                    }
+                actions.forEach { action ->
+                    AppFloatingVerticalDockAction(
+                        icon = action.icon,
+                        contentDescription = action.contentDescription,
+                        onClick = action.onClick,
+                        size = size,
+                        iconSize = iconSize,
+                        iconTint = action.iconTint,
+                        enabled = action.enabled,
+                        rotating = action.rotating,
+                        testTag = action.testTag,
+                        badgeLabel = action.badgeLabel,
+                        badgeColor = action.badgeColor,
+                        badgeContentColor = action.badgeContentColor,
+                        tooltipText = action.tooltipText,
+                    )
                 }
             }
         }
-        if (compactMotion.showCompactContent) {
-            AppFloatingLiquidActionButton(
-                backdrop = backdrop,
-                icon = compactIcon ?: firstAction.icon,
-                contentDescription = compactContentDescription ?: firstAction.contentDescription,
-                onClick = onCompactClick ?: firstAction.onClick,
-                size = size,
-                iconSize = iconSize,
-                iconTint = firstAction.iconTint,
-                tooltipText = compactTooltipText ?: firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
-                badgeLabel = collapsedBadgeLabel,
-                badgeColor = compactBadgeColor ?: firstAction.badgeColor,
-                badgeContentColor = compactBadgeContentColor ?: firstAction.badgeContentColor,
-                modifier =
-                    compactMotion.compactModifier
-                        .align(Alignment.BottomCenter),
-            )
-        }
+        AppFloatingLiquidActionButton(
+            backdrop = backdrop,
+            icon = compactIcon ?: firstAction.icon,
+            contentDescription = compactContentDescription ?: firstAction.contentDescription,
+            onClick = onCompactClick ?: firstAction.onClick,
+            size = size,
+            iconSize = iconSize,
+            iconTint = firstAction.iconTint,
+            tooltipText = compactTooltipText ?: firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
+            badgeLabel = collapsedBadgeLabel,
+            badgeColor = compactBadgeColor ?: firstAction.badgeColor,
+            badgeContentColor = compactBadgeContentColor ?: firstAction.badgeContentColor,
+            modifier =
+                compactMotion.compactModifier
+                    .keepComposedUnplaced(compactMotion.showCompactContent)
+                    .align(Alignment.BottomCenter),
+        )
     }
 }
 

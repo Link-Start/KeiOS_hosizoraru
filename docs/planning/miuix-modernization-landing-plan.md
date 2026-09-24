@@ -559,3 +559,44 @@ Diffing `:app:debugRuntimeClasspath` before and after, the resolved versions cha
   leaves a route; no fatal exception in the session's log.
 - Not covered on the device: the gallery's audio slider. Its only link to this change is the TapToHalt path,
   which is byte-identical.
+
+### Follow-up the same day: Cross-Axis on the student guide pager, adopted
+
+The owner asked for Cross-Axis to be evaluated and taken if it held up. Both objections recorded under
+`39c40f99` came from the old interceptor, and the rewrite in this snapshot removes them:
+
+- **It claimed every horizontal drag in `PointerEventPass.Initial`.** The normal drag is now a Foundation
+  `DragGestureNode` (`startDragImmediately = false`). Its angle arbitration runs children first, so a child
+  aligned with the drag, like the gallery's `LiquidMusicProgressSlider`, keeps it. Only the takeover node still
+  acts on the Initial pass, and only while a child is flinging or overscrolling: the same window TapToHalt
+  used.
+- **It opened a `PagerState.scroll` mutation on every touch-down**, so `isScrollInProgress` went true for taps
+  and vertical scrolls. The mutation now starts in `onDragStarted`, past touch slop, or when a takeover
+  commits to a horizontal drag. So `isScrollInProgress` is true only while the pager moves, which is what the
+  guide's tab selection and pager performance report read it for.
+
+The pager is configured as upstream documents: `userScrollEnabled = false`, `pageNestedScrollConnection =
+PagerGestureNestedScrollConnection`, and the same `flingBehavior` passed to the pager and to
+`pagerGestureOverride` (the modifier restores wheel and trackpad input with it). The guide's other horizontal
+gestures were listed first. The fullscreen image viewer is an `AppWindowDialogHost` window, and the sidebar's
+dismiss drag sits outside the pages, so neither is inside the pager.
+
+Phone `5eea1f50`, `os.kei.diag`, student guide:
+
+| gesture | TapToHalt (earlier the same day) | Cross-Axis |
+| --- | --- | --- |
+| horizontal swipe 150 ms after a list fling on Voice Lines | 6 of 6 stopped the list | 6 of 6 paged |
+| the same swipe with the list at rest | 4 of 4 paged | 4 of 4 paged |
+| diagonal vertical scroll (dx 150, dy 1100 px) | — | 4 of 4 stayed on the page |
+| slow drag to about 37% and release | — | springs back |
+| six tab taps across Profile, Voice Lines and Gallery | — | 6 of 6 landed on the tab |
+| audio slider drags (600 ms and 100-120 ms, both directions) | — | 4 of 4 seeked to the dragged position, none paged |
+
+The seeks landed where the finger stopped: on the 2:02 Memorial Lobby BGM, 950 px read 01:42 and 300 px read
+00:26. Playback was paused afterwards.
+
+What changes for a reader is the first row: while a list coasts, one horizontal swipe now pages instead of
+first stopping the list. That is the mode's purpose. One cost: with `userScrollEnabled = false` the pager
+drops its own accessibility scroll actions. TalkBack still moves between pages with the guide's tab bar, as
+before. The baseline profile's `swipeGuidePagerWhileCoasting` swipes until Voice is selected, so it works
+under either mode; its KDoc now describes Cross-Axis, and the journey was not re-captured for this change.

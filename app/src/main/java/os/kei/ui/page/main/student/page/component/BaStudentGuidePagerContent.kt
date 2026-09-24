@@ -19,6 +19,7 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.state.BaStudentGuideContentPresentationState
+import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
 import top.yukonga.miuix.kmp.utils.PagerInterceptionMode
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
@@ -66,13 +67,12 @@ internal fun BaStudentGuidePagerContent(
     onSelectedVoiceLanguageChange: (String) -> Unit,
 ) {
     // The swipe settles on the same spring the tab bar animates with (see animateTabSwitch), so a
-    // page lands the same way whichever of the two moved it. While a page's list is still coasting,
-    // the first horizontal swipe only stops it, as on iOS, and the next one pages. TapToHalt rather than
-    // Miuix's cross-axis interceptor: that one claims every horizontal drag before page content sees
-    // it, and the gallery's audio progress slider is one of those drags. TapToHalt engages only during
-    // a fling.
-    // Miuix takes the pager's fling behaviour too; only its Cross-Axis mode uses it (to drive wheel and
-    // trackpad input), so TapToHalt behaves the same, but the two must be the same instance.
+    // page lands the same way whichever of the two moved it. Miuix's Cross-Axis mode owns the touch
+    // drag (hence userScrollEnabled = false): a horizontal swipe pages even while a page's list is still
+    // coasting or bouncing, and the pager's own mutation starts only past touch slop, so taps and
+    // vertical scrolls never set isScrollInProgress. Children win their own aligned drags through
+    // Foundation's arbitration, so the gallery's audio progress slider keeps its horizontal drag.
+    // The fling behaviour is shared with the modifier, which drives wheel and trackpad input with it.
     val flingBehavior =
         PagerDefaults.flingBehavior(
             state = pagerState,
@@ -83,6 +83,8 @@ internal fun BaStudentGuidePagerContent(
         key = { index -> bottomTabs.getOrNull(index)?.name ?: "stale-$index" },
         overscrollEffect = null,
         flingBehavior = flingBehavior,
+        userScrollEnabled = false,
+        pageNestedScrollConnection = PagerGestureNestedScrollConnection,
         beyondViewportPageCount = guidePagerBeyondViewportPageCount,
         modifier =
             Modifier
@@ -93,7 +95,7 @@ internal fun BaStudentGuidePagerContent(
                 .pagerGestureOverride(
                     pagerState = pagerState,
                     flingBehavior = flingBehavior,
-                    mode = PagerInterceptionMode.TapToHalt,
+                    mode = PagerInterceptionMode.CrossAxis,
                 ),
     ) { pageIndex ->
         BaStudentGuidePagerPage(

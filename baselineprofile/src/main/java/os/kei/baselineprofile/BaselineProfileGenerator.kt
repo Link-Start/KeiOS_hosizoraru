@@ -515,13 +515,15 @@ private fun MacrobenchmarkScope.swipeMainPagerTo(
  * The guide's own pager, moved by a finger, until it has actually moved from Profile to Voice.
  *
  * Its tabs are otherwise only ever tapped in this profile. Called straight after a fling, so the first
- * swipe can land while the page's list is still coasting, and the guide pager's Miuix `pagerGestureOverride`
- * in `TapToHalt` mode then spends it stopping the list, as on iOS -- or the list has already stopped and it
- * pages. Which one is timing, so the step swipes until the Voice tab reports selected rather than a fixed
+ * swipe can land while the page's list is still coasting; the guide pager's Miuix `pagerGestureOverride` in
+ * `CrossAxis` mode takes that swipe over from the list (its Initial-pass takeover) and pages, and a swipe
+ * after the list has stopped goes through its Foundation drag node instead. Both are pages moved by a finger,
+ * but a swipe can still miss, so the step swipes until the Voice tab reports selected rather than a fixed
  * number of times.
  *
- * Measured on the A17 AVD (2026-09-23). The override's pointer loop and the snap fling compile without any
- * swipe: the override sees every pointer event on the pager, vertical flings and tab taps included. What
+ * Measured on the A17 AVD (2026-09-23), when the guide used `TapToHalt`. The override's pointer loop and the
+ * snap fling compile without any swipe: the override sees every pointer event on the pager, vertical flings
+ * and tab taps included. What
  * arriving on Voice adds is the pager moving to a neighbour (`PagerCacheWindowScope`'s prefetch) and Gallery
  * composing beside it -- 218 Gallery rules in the journey's own file against 71 in a capture where the
  * swipes happened not to page. Optional, like the guide itself, because the page's content decides whether

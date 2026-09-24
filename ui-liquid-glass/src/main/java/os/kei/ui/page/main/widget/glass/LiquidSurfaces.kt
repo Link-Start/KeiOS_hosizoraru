@@ -304,12 +304,17 @@ fun LiquidSurface(
         } else {
             Modifier
         }
+    // Over one flat colour the chain below computes one colour, so sample that colour and run no effects
+    // (see [liquidFlatField]). Not with a hue tint: that blends against the layer's contents, and without
+    // a `RenderEffect` the layer is drawn inline, so the blend would reach whatever is underneath.
+    val flatField = if (tint.isSpecified) null else liquidFlatField(activeBackdrop)
     val surfaceModifier =
         if (activeBackdrop != null) {
             Modifier.drawBackdrop(
-                backdrop = activeBackdrop,
+                backdrop = flatField ?: activeBackdrop,
                 shape = { shape },
                 effects = {
+                    if (flatField != null) return@drawBackdrop
                     vibrancy()
                     blur(effectiveBlurRadius.toPx())
                     safeLiquidLens(
@@ -824,12 +829,14 @@ fun LiquidRoundedCard(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val activeBackdrop = activeGlassBackdrop(backdrop)
-    val exportedContentBackdrop =
-        if (exportBackdropToContent && activeBackdrop != null) {
-            rememberLayerBackdrop()
-        } else {
-            null
-        }
+    val contentExport =
+        rememberLiquidContentExport(
+            exportToContent = exportBackdropToContent,
+            activeBackdrop = activeBackdrop,
+            tint = tint,
+            surfaceColor = surfaceColor,
+        )
+    val exportedContentBackdrop = contentExport.backdrop
     LiquidSurface(
         backdrop = activeBackdrop,
         modifier = modifier,
@@ -842,7 +849,7 @@ fun LiquidRoundedCard(
         chromaticAberration = chromaticAberration,
         depthEffect = depthEffect,
         shadow = shadow,
-        exportedBackdrop = exportedContentBackdrop,
+        exportedBackdrop = contentExport.layer,
     ) {
         if (exportedContentBackdrop != null) {
             CompositionLocalProvider(

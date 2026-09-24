@@ -82,6 +82,7 @@ fun AppLiquidInputField(
 ) {
     val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val liquidFlat = liquidFlatField(activeBackdrop)
     var focused by remember { mutableStateOf(false) }
     val usesSearchMaterial = variant == GlassVariant.SearchField
     val focusProgressState =
@@ -170,7 +171,7 @@ fun AppLiquidInputField(
                 .then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
-                            backdrop = activeBackdrop,
+                            backdrop = liquidFlat ?: activeBackdrop,
                             shape = { fieldShape },
                             layerBlock = {
                                 val focusProgress = focusProgressProvider()
@@ -180,6 +181,7 @@ fun AppLiquidInputField(
                                 scaleY = focusScale
                             },
                             effects = {
+                                if (liquidFlat != null) return@drawBackdrop
                                 val focusProgress = focusProgressProvider()
                                 vibrancy()
                                 blur((if (usesSearchMaterial) glass.blur + 1.dp * focusProgress else glass.blur).toPx())
@@ -374,6 +376,7 @@ fun AppLiquidSearchSurface(
 ) {
     val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val liquidFlat = liquidFlatField(activeBackdrop)
     val density = LocalDensity.current
     val focusProgressState =
         appMotionFloatState(
@@ -413,9 +416,10 @@ fun AppLiquidSearchSurface(
                 }.then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
-                            backdrop = activeBackdrop,
+                            backdrop = liquidFlat ?: activeBackdrop,
                             shape = { shape },
                             effects = {
+                                if (liquidFlat != null) return@drawBackdrop
                                 val materialProgress = materialProgressProvider()
                                 vibrancy()
                                 blur((glass.blur + 1.dp * materialProgress).toPx())

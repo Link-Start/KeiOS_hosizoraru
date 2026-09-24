@@ -281,6 +281,7 @@ private fun AppLiquidIconButtonContainer(
     content: @Composable () -> Unit,
 ) {
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val liquidFlat = liquidFlatField(activeBackdrop)
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val glass =
         glassStyle(
@@ -396,7 +397,7 @@ private fun AppLiquidIconButtonContainer(
                 }.then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
-                            backdrop = activeBackdrop,
+                            backdrop = liquidFlat ?: activeBackdrop,
                             shape = { shape },
                             layerBlock =
                                 if (enabled) {
@@ -405,6 +406,7 @@ private fun AppLiquidIconButtonContainer(
                                     null
                                 },
                             effects = {
+                                if (liquidFlat != null) return@drawBackdrop
                                 applyLiquidButtonEffects(
                                     glass = glass,
                                     variant = variant,
@@ -530,6 +532,7 @@ fun AppLiquidTextButton(
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val liquidFlat = liquidFlatField(activeBackdrop)
     val isDark = isAppInDarkTheme()
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val longClick = onLongClick
@@ -685,7 +688,7 @@ fun AppLiquidTextButton(
                 }.then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
-                            backdrop = activeBackdrop,
+                            backdrop = liquidFlat ?: activeBackdrop,
                             shape = { ContinuousCapsule },
                             layerBlock =
                                 if (liquidInteractionEnabled) {
@@ -694,6 +697,7 @@ fun AppLiquidTextButton(
                                     null
                                 },
                             effects = {
+                                if (liquidFlat != null) return@drawBackdrop
                                 applyLiquidButtonEffects(
                                     glass = glass,
                                     variant = variant,

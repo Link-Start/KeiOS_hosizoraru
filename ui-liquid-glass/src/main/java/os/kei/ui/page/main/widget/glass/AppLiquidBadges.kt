@@ -121,13 +121,15 @@ internal fun AppLiquidIconBadge(
             surfaceColor = MiuixTheme.colorScheme.surfaceContainer,
         )
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val liquidFlat = liquidFlatField(activeBackdrop)
     val shape = remember { ContinuousCapsule }
     val surfaceModifier =
         if (activeBackdrop != null) {
             Modifier.drawBackdrop(
-                backdrop = activeBackdrop,
+                backdrop = liquidFlat ?: activeBackdrop,
                 shape = { shape },
                 effects = {
+                    if (liquidFlat != null) return@drawBackdrop
                     vibrancy()
                     blur(AppLiquidIconBadgeBlur.toPx())
                     safeLiquidLens(

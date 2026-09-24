@@ -14,12 +14,12 @@ import androidx.compose.ui.Modifier
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
 import os.kei.ui.page.main.widget.chrome.appManagedPageCardMaterialColor
 import os.kei.ui.page.main.widget.chrome.appPageBackdropBaseColor
+import os.kei.ui.page.main.widget.glass.rememberUniformColorBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -159,7 +159,7 @@ fun rememberMainPageBackdropSet(
         )
     val contentMaterial =
         key("$keyPrefix-content-material$instanceKeySuffix") {
-            rememberCanvasBackdrop { drawRect(cardMaterialColor) }
+            rememberUniformColorBackdrop(cardMaterialColor)
         }
     return MainPageBackdropSet(
         topBar = rememberSceneComposedBackdrop(scene, topBarProducer),

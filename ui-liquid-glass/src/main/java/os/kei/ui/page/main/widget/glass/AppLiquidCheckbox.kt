@@ -52,6 +52,7 @@ fun AppLiquidCheckbox(
 ) {
     val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val liquidFlat = liquidFlatField(activeBackdrop)
     val accent = if (isDark) Color(0xFF7AB8FF) else Color(0xFF3B82F6)
     val uncheckedSurface =
         if (isDark) {
@@ -125,9 +126,10 @@ fun AppLiquidCheckbox(
                     .then(
                         if (activeBackdrop != null) {
                             Modifier.drawBackdrop(
-                                backdrop = activeBackdrop,
+                                backdrop = liquidFlat ?: activeBackdrop,
                                 shape = { ContinuousCapsule },
                                 effects = {
+                                    if (liquidFlat != null) return@drawBackdrop
                                     vibrancy()
                                     blur(4.dp.toPx())
                                     safeLiquidLens(

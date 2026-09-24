@@ -17,7 +17,6 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppEdgeStackSlot
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
@@ -27,6 +26,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
+import os.kei.ui.page.main.widget.glass.rememberLiquidContentExport
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -74,12 +74,14 @@ fun AppSurfaceBox(
     val clickable = onClick != null || onLongClick != null
     val inheritedBackdrop = backdrop ?: LocalLiquidParentBackdrop.current
     val activeBackdrop = activeGlassBackdrop(inheritedBackdrop)
-    val exportedContentBackdrop =
-        if (exportBackdropToContent && activeBackdrop != null) {
-            rememberLayerBackdrop()
-        } else {
-            null
-        }
+    val contentExport =
+        rememberLiquidContentExport(
+            exportToContent = exportBackdropToContent,
+            activeBackdrop = activeBackdrop,
+            tint = tint,
+            surfaceColor = surfaceColor,
+        )
+    val exportedContentBackdrop = contentExport.backdrop
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
             if (isInteractive && enabled && clickable) {
@@ -123,7 +125,7 @@ fun AppSurfaceBox(
             interactionSource = interactionSource,
             clipContent = clipContent,
             contentAlignment = contentAlignment,
-            exportedBackdrop = exportedContentBackdrop,
+            exportedBackdrop = contentExport.layer,
             role = role,
             selected = selected,
             toggleableState = toggleableState,

@@ -24,7 +24,6 @@ class AppSurfaceCardTransformContractTest {
 
         assertFalse(".graphicsLayer" in surfaceBoxSource)
         assertTrue("activeGlassBackdrop(inheritedBackdrop)" in surfaceBoxSource)
-        assertTrue("exportBackdropToContent && activeBackdrop != null" in surfaceBoxSource)
         assertTrue("interactionSource = interactionSource" in surfaceBoxSource)
         assertEquals(1, surfaceBoxSource.occurrencesOf("LiquidSurface("))
 

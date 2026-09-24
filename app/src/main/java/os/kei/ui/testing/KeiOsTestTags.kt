@@ -200,6 +200,16 @@ object KeiOsTestTags {
     /** The first student-BGM row, whose whole card is a play button. Tapping it is what loads media3. */
     const val BaGuideCatalogStudentBgmFirst = "ba_guide_catalog_student_bgm_first"
 
+    /**
+     * On the catalog's mini player only while a track is actually playing.
+     *
+     * Tapping a row is not enough to load media3: on a fresh install the row first resolves its audio over
+     * the network, and a journey that moved on straight after the tap could leave before playback began —
+     * of two captures from a fresh install, one came back with 9 media3 rules and the other with 4,992.
+     * Waiting for this is waiting for the player to exist.
+     */
+    const val BaGuideCatalogBgmPlaying = "ba_guide_catalog_bgm_playing"
+
     /** Whatever collapsed bottom dock is currently on screen. Tapping it puts the tabs back. */
     const val CompactBottomBarDock = "compact_bottom_bar_dock"
 

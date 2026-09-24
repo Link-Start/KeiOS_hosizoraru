@@ -47,6 +47,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -108,7 +109,10 @@ internal fun BaGuideBgmChromeMiniPlayer(
         }
 
     Row(
-        modifier = modifier.padding(contentPadding),
+        modifier =
+            modifier
+                .then(if (isPlaying) Modifier.testTag(KeiOsTestTags.BaGuideCatalogBgmPlaying) else Modifier)
+                .padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(itemGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {

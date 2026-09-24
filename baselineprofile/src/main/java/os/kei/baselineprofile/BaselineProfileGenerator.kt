@@ -271,6 +271,7 @@ class BaselineProfileGenerator {
                         flingVisibleScrollable(times = 1)
                         clickBottomBarTab(BA_STUDENT_GUIDE_TAB_PROFILE)
                         flingVisibleScrollable(times = 1)
+                        swipeGuidePagerWhileCoasting()
                         clickBottomBarTab(BA_STUDENT_GUIDE_TAB_SKILLS)
                         device.pressBack()
                         waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 15_000)
@@ -279,15 +280,17 @@ class BaselineProfileGenerator {
 
                 clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
                 flingVisibleScrollable(times = 1)
+                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+                flingVisibleScrollable(times = 1)
+                // Playback last, then straight out. A playing track turns the collapsed chrome into the mini
+                // player, and bringing the tab bar back past it is what failed one full capture after this
+                // step began waiting for playback to start.
                 clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
                 if (waitForOptionalTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST, timeoutMs = 8_000)) {
                     scrollTestTagIntoReach(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
-                    clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                    playFirstStudentBgm()
                     flingVisibleScrollable(times = 1)
                 }
-                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
-                flingVisibleScrollable(times = 1)
-                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT)
 
                 device.pressBack()
                 waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
@@ -387,12 +390,14 @@ class BaselineProfileGenerator {
                     exerciseWideLanes()
                     clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
                     exerciseWideLanes()
+                    clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+                    exerciseWideLanes()
+                    // Playback last, as in baOfficeAndCatalogCore.
                     clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
                     if (waitForOptionalTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST, timeoutMs = 8_000)) {
                         scrollTestTagIntoReach(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
-                        clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                        playFirstStudentBgm()
                     }
-                    clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
                     exerciseWideLanes()
                     device.pressBack()
                     waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
@@ -504,6 +509,55 @@ private fun MacrobenchmarkScope.swipeMainPagerTo(
     )
     waitForTestTag(pageTag, timeoutMs = 15_000)
     waitForTestTag(settledTag, timeoutMs = 15_000)
+}
+
+/**
+ * The guide's own pager, moved by a finger, until it has actually moved from Profile to Voice.
+ *
+ * Its tabs are otherwise only ever tapped in this profile. Called straight after a fling, so the first
+ * swipe can land while the page's list is still coasting, and the guide pager's Miuix `pagerGestureOverride`
+ * in `TapToHalt` mode then spends it stopping the list, as on iOS -- or the list has already stopped and it
+ * pages. Which one is timing, so the step swipes until the Voice tab reports selected rather than a fixed
+ * number of times.
+ *
+ * Measured on the A17 AVD (2026-09-23). The override's pointer loop and the snap fling compile without any
+ * swipe: the override sees every pointer event on the pager, vertical flings and tab taps included. What
+ * arriving on Voice adds is the pager moving to a neighbour (`PagerCacheWindowScope`'s prefetch) and Gallery
+ * composing beside it -- 218 Gallery rules in the journey's own file against 71 in a capture where the
+ * swipes happened not to page. Optional, like the guide itself, because the page's content decides whether
+ * there is a Voice tab to reach.
+ */
+private fun MacrobenchmarkScope.swipeGuidePagerWhileCoasting() {
+    val nearX = (device.displayWidth * PAGER_SWIPE_NEAR_X).toInt()
+    val farX = (device.displayWidth * PAGER_SWIPE_FAR_X).toInt()
+    val centerY = (device.displayHeight * PAGER_SWIPE_Y).toInt()
+    repeat(GUIDE_PAGER_SWIPE_ATTEMPTS) {
+        swipeWithInjectionRetry(
+            startX = farX,
+            startY = centerY,
+            endX = nearX,
+            endY = centerY,
+            steps = FLING_STEPS,
+            failureMessage = "Unable to swipe the guide pager",
+        )
+        if (device.wait(Until.hasObject(testTagSelector(BA_STUDENT_GUIDE_TAB_VOICE).selected(true)), 3_000)) {
+            device.waitForIdle()
+            return
+        }
+    }
+}
+
+/**
+ * Plays the first student BGM and waits until it is actually playing, which is what loads media3.
+ *
+ * The tap alone does not: on a fresh install the row resolves its audio over the network first, and moving
+ * on straight after the tap left before the player existed -- a capture from a fresh install came back with
+ * 9 media3 rules where another gave 4,992. Still optional, as the plan says Media3 is, because a device with
+ * no network cannot play; the wait is what makes a device that can actually do it.
+ */
+private fun MacrobenchmarkScope.playFirstStudentBgm() {
+    clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+    waitForOptionalTestTag(BA_GUIDE_CATALOG_BGM_PLAYING, timeoutMs = BGM_PLAYBACK_TIMEOUT_MS)
 }
 
 private fun MacrobenchmarkScope.clickSidebarPage(
@@ -918,6 +972,8 @@ private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
 
 
 private const val OPEN_WINDOW_ATTEMPTS = 3
+private const val GUIDE_PAGER_SWIPE_ATTEMPTS = 3
+private const val BGM_PLAYBACK_TIMEOUT_MS = 25_000L
 private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8
 private const val BOTTOM_BAR_EXPAND_TIMEOUT_MS = 3_000L
 private const val GESTURE_INJECTION_ATTEMPTS = 2

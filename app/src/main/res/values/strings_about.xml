@@ -21,8 +21,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.15.0</string>
-    <string name="about_card_release_subtitle">大屏双栏、发行版与 F-Droid 版本历史、启动与网络效率优化</string>
+    <string name="about_card_release_title">Release v1.16.0</string>
+    <string name="about_card_release_subtitle">版本追踪判断、刷新速度与网络诊断、Liquid Glass 渲染开销优化</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -339,21 +339,23 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.15.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_releases">发行版与回滚</string>
-    <string name="about_release_value_releases">追踪的仓库获得独立的发行版页面：折叠时集中显示版本、时间和最新状态，展开后提供发行说明与经过筛选的安装包，既能阅读变化，也能直接安装旧版本。支持按页码或标签跳转、隐藏仅有标签的条目；平板上打开某个版本会移到第二栏，最新版与最新预发布默认固定在那里，历史列表保持完整高度</string>
-    <string name="about_release_row_fdroid">F-Droid 版本历史</string>
-    <string name="about_release_value_fdroid">F-Droid 源的追踪项获得独立的版本历史页。数据从仓库约 37 KB 的包页面读取，完整索引约 58 MB；每个版本都带日期、大小、ABI、minSdk 和可用下载。缺少包页面的第三方源会在体积允许时读取索引，先显示列表再补文件详情，等待阶段始终有内容。反特性单独成卡并说明该构建为何被标记；刷新使用相同的数据来源，第三方源也能提供哈希与签名，让信任校验完整生效</string>
-    <string name="about_release_row_large_screens">大屏双栏</string>
-    <string name="about_release_value_large_screens">上一版给出了限宽与双栏门槛，这一版把双栏落到各个主要页面，主页面操作也收进悬浮工具栏：设置、关于、MCP、OS 活动卡、BA 办公室、图鉴、日历与卡池、GitHub 追踪列表与历史都会在平板和展开的折叠屏上分成两栏；OS Shell 拆成命令与输出两栏，Play 拆成专辑与队列。每栏独立滚动，追踪卡可钉在右栏，返回按钮跟随内容列，窄于窗口的 Sheet 也会正确虚化整窗</string>
-    <string name="about_release_row_catalog">图鉴与侧栏</string>
-    <string name="about_release_value_catalog">学生图鉴底栏按可用宽度决定尺寸与是否显示文字；平板上可切换为侧栏，并独立记住自己的形态</string>
-    <string name="about_release_row_mcp_security">MCP 与安全</string>
-    <string name="about_release_value_mcp_security">MCP 工具目录从 54 个整合为 51 个，重命名映射会随连接下发；SSE 连接加入心跳，会话通知在 HyperOS 上保持单次绘制；小米焦点通知与分享导入的广播接收器限定为应用内使用</string>
-    <string name="about_release_row_performance">性能与启动</string>
-    <string name="about_release_value_performance">滚出视野的玻璃卡片会停止绘制，长 Sheet 使用懒加载，拖拽状态读取下移到布局阶段，二级页面覆盖时首页暂停空闲重绘；Baseline Profile 覆盖历史分页、组件实验室、图鉴与媒体播放、发行版与 F-Droid 页面，完整六段采集的回放上限从 96 次降到 16 次，已验证运行约 9–17 分钟，显著低于此前的 81 分钟。F-Droid 刷新优先读取能够满足请求的最小数据源，同一仓库索引只下载一次</string>
+    <string name="about_release_value_version">v1.16.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_tracking">版本追踪判断</string>
+    <string name="about_release_value_tracking">重新编号的项目不再被旧的大版本号永久压住，仅在列表显示出这种迹象时才读取一次 releases/latest；已被正式版取代的预发布、正式版之后 14 天无人更新的预览线，以及没有任何可下载文件的发行版都不再算作更新。无法确定的比较会如实显示，出乎意料的选择会在卡片上说明原因</string>
+    <string name="about_release_row_network">刷新与网络诊断</string>
+    <string name="about_release_value_network">请求不再占用线程，Atom 模式的两个请求并行发出：40 个仓库在 120 ms 延迟的测试服务器上从 1973 ms 降到 522 ms，API 模式批次从 803 ms 降到 402 ms。刷新历史会为慢项目标出耗时所在的网络阶段，附带请求数、流量与连接复用，并出现在导出与 MCP 中</string>
+    <string name="about_release_row_histories">旧版本与分享</string>
+    <string name="about_release_value_histories">发行版历史与 F-Droid 版本历史中的旧版本可查看 APK 信息并在应用内安装；所有分享与下载统一遵循“分享到安装器”和下载方式设置，F-Droid 索引文件名与旧地址数据包也已修正</string>
+    <string name="about_release_row_glass">Liquid Glass 渲染</string>
+    <string name="about_release_value_glass">纯色背景上的玻璃直接按效果链的输出颜色绘制，连续圆角裁剪移到玻璃自身图层内部：BA 办公室帧时间 p50 从 24.3 ms 降到 11.6 ms，设置页从 11.6 ms 降到 8.8 ms，OS 与 MCP 页 RenderThread p50 分别降低 16% 与 18%。底栏与 dock 保持两种形态组合，滑动开始时最慢的 UI 帧减半；卡片堆叠的内容、裁剪与按压位置问题一并修复，材质与动效不变</string>
+    <string name="about_release_row_gestures">手势与导航</string>
+    <string name="about_release_value_gestures">主页面切换与松手吸附使用 Miuix 页面导航弹簧；学生图鉴改用 Cross-Axis 翻页，列表惯性滚动中横滑直接翻页，音频进度条保留自己的拖动。MCP 页展开的卡片在进程回收后恢复</string>
+    <string name="about_release_row_security">媒体安全</string>
+    <string name="about_release_value_security">媒体会话按控制方是否受信任分配权限：其他应用只能读取 BGM 播放状态，不能再控制播放；应用自身、媒体通知、Android Auto 与 Wear 不受影响</string>
+    <string name="about_release_row_performance">性能与构建</string>
+    <string name="about_release_value_performance">Baseline Profile 在本版本代码上重新采集，六段旅程全部通过，包含 62,312 条 baseline 规则与 24,262 条 startup 规则。构建升级到 Gradle 9.8.0、AGP 9.4.1、Compose 1.12.1、Ktor 3.6.0 与 Miuix 2afdbb39，dav4jvm 换到正式版 4.1.0</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有 v1.14.x 用户升级；平板与折叠屏用户、以及使用 GitHub 版本追踪或 F-Droid 源的用户提升最明显。MCP 工具重命名后，已保存的外部调用请对照新目录更新</string>
+    <string name="about_release_value_next">建议所有 v1.15.x 用户升级；使用 GitHub 版本追踪的用户，尤其是追踪过更名项目、滚动预览标签或 CI 预发布的用户，提升最明显</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

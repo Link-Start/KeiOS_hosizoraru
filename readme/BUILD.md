@@ -8,9 +8,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The public stable channel resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
-- `master` is prepared as the v1.15.0 source baseline for release and F-Droid version history,
-  adaptive two-lane pages, Liquid Sheet efficiency, complete locale coverage, and the refreshed
-  six-journey Baseline Profile.
+- `master` is prepared as the v1.16.0 source baseline for more reliable version-tracking decisions,
+  faster refreshes with per-phase network diagnostics, lower Liquid Glass rendering cost, and a
+  Baseline Profile re-captured on the release code.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 
@@ -25,8 +25,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`. API 37 ships minor
   revisions, and this app pins `compileSdkMinor = 0` — it compiles against **37.0** (SDK extension
   22), not whichever 37.x the local SDK happens to have installed.
-- Gradle Wrapper: `9.7.1`; Kotlin plugin: `2.4.20-RC2`; Android Gradle Plugin: `9.4.0-rc02`;
-  Compose runtime: `1.12.0`; Ktor: `3.5.2`.
+- Gradle Wrapper: `9.8.0`; Kotlin plugin: `2.4.20`; Android Gradle Plugin: `9.4.1`;
+  Compose runtime: `1.12.1`; Ktor: `3.6.0`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
   the release profile path.
@@ -39,9 +39,9 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Local builds can override `keios.version.name`, `keios.nextVersion.name`,
   `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
 - Release builds use the newer value between the latest merged semver tag and the current release
-  target, for example `1.15.0`.
+  target, for example `1.16.0`.
 - Debug and benchmark builds use the next patch version plus commit count and short SHA, for example
-  `1.15.1+12.gabcdef0`.
+  `1.16.1+12.gabcdef0`.
 - Local builds resolve git metadata directly when CI metadata is absent, using the latest merged tag
   as the commit-count anchor and the current release target as the release base when it is newer.
 - Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
@@ -158,7 +158,7 @@ release declares no `applicationIdSuffix`, so it is `os.kei` — unlike `debug` 
 `releaseDiagnostic` (`.diag`). On a validation AVD that is the intent; on a phone you carry it is
 not, so a non-emulator target is refused unless `--allow-physical` is passed.
 
-### v1.15.0 Release Gate
+### v1.16.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -173,20 +173,21 @@ git diff --check
 
 Recommended focused checks for this release:
 
-- GitHub release history opens notes and filtered assets, supports page/tag navigation, and can install
-  an older compatible APK; F-Droid history progressively exposes version metadata, anti-features,
-  checksums, and signers.
-- Phones use focused single-column routes; large screens use independent two-lane layouts across the
-  updated pages. The calendar and pool share one route and appear side by side where width allows.
-- Long Liquid Sheets scroll smoothly with lazy content and culled offscreen glass while material,
-  motion, full-window blur, and interaction effects remain visually consistent.
-- All four resource sets pass locale key/type/placeholder parity, and the release Card states the same
-  user outcomes in Simplified Chinese, English, and Japanese.
-- The six Baseline Profile journeys stay within a 16-run replay ceiling. The merged profile contains
-  61,226 baseline rules and 24,123 startup rules and is packaged under `assets/dexopt/`.
-- Release APK signing, `1.15.0` / `11500999` metadata, R8/minify output, Baseline Profile packaging,
+- GitHub tracking: a project that restarted its numbering shows its current release, a pre-release
+  of a shipped stable is not offered, a release with no files is not an update, and the card explains
+  a surprising choice. Refresh history names the slow network phase for a slow item.
+- Release and F-Droid histories open APK info for an older build and install it in-app; share and
+  download follow the installer and download settings on every surface.
+- Main pages, sheets, and small glass controls look the same as the previous release over flat fields
+  and background images, including shadows, highlights, and pile rims; the bottom bar and docks swap
+  forms without a composition hitch at scroll start.
+- The Student Guide pages with Cross-Axis: a swipe during a coasting list pages, the audio slider seeks
+  without paging, and tab taps land.
+- `scripts/qa/baseline_profile_freshness.sh` reports fresh for both sources and dependency versions.
+  The merged profile contains 62,312 baseline rules and 24,262 startup rules and is packaged under `assets/dexopt/`.
+- Release APK signing, `1.16.0` / `11600999` metadata, R8/minify output, Baseline Profile packaging,
   and the signer certificate are verified.
-- GitHub Release upload notes are copied from [Release Notes v1.15.0](RELEASE_V1.15.0.md).
+- GitHub Release upload notes are copied from [Release Notes v1.16.0](RELEASE_V1.16.0.md).
 
 ### Screenshot Baseline
 

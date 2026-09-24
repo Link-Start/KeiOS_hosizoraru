@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack | Jetpack Compose, Miuix, liquid-glass chrome |
 | Runtime stack | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
 | Languages | Simplified Chinese, English, Japanese |
-| Source release | `v1.15.0` |
+| Source release | `v1.16.0` |
 
 ## Quick Links
 
@@ -73,7 +73,8 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 - GitHub Actions update notifications with tracked-app icons, deep links into the Actions sheet,
   recommended run targeting, and debug notification testing.
 - History Hub for Actions, refresh diagnostics, tracking changes, and tracked-app install/update
-  events, with unread badges, search, export, and MCP query support.
+  events, with per-phase network timing for slow refreshes, unread badges, search, export, and MCP
+  query support.
 - JSON import and WebDAV sync for multi-schema KeiOS data migration, including GitHub/F-Droid
   tracking, OS card transfer data, BA multi-account data, previews, and routed result screens.
 - BA office helpers for AP, cafe visit, arena refresh reminders, six-slot Craft Chamber timers,
@@ -88,22 +89,22 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.15.0 Highlights
+## v1.16.0 Highlights
 
-- Tracked GitHub projects gain a dedicated release-history page with compact summaries, full notes,
-  filtered APK assets, tag/page navigation, and direct rollback installation. F-Droid sources gain a
-  matching version-history page with staged metadata, anti-feature details, checksums, and signers.
-- Large screens gain independent two-lane layouts across Settings, About, MCP, OS, BA Office, Student
-  Guide, the merged calendar-and-pool page, GitHub tracking, and history. Main-page actions move into a
-  floating toolbar, while phones retain focused single-column flows.
-- Liquid sheets compose long content lazily, offscreen glass stops drawing, drag reads move to layout,
-  and full-window blur remains correct for narrow sheets. The visual material, motion, and interaction
-  effects remain intact.
-- The six-journey Baseline Profile replay ceiling drops from 96 runs to 16; verified captures complete
-  in about 9–17 minutes and ship 61,226 baseline rules plus 24,123 startup rules.
-- The MCP catalog is consolidated to 51 tools with rename guidance and SSE heartbeats. Simplified
-  Chinese, English, and Japanese resources now share complete coverage for the release-facing UI,
-  including release history, F-Droid, WebDAV, Liquid menus, and the v1.15 release card.
+- GitHub tracking decides more reliably: projects that restarted their numbering, pre-releases
+  superseded by a shipped stable or left unfed for 14 days, and releases with no downloadable file
+  are read correctly, uncertain comparisons say so, and a surprising choice explains itself.
+- Refresh requests no longer hold threads and Atom mode sends its two requests at once: 40
+  repositories went from 1973 ms to 522 ms against a 120 ms test server. Slow items name the network
+  phase that cost them, in history, exports, and MCP.
+- Liquid Glass over a flat field draws its effect chain's colour directly, and continuous-corner clips
+  happen inside the glass layer: BA Office frame p50 24.3 ms to 11.6 ms, RenderThread p50 down 16% on
+  OS and 18% on MCP, with materials and motion unchanged.
+- Older builds in the release and F-Droid histories open APK info and install in-app; every share and
+  download follows the installer and download settings. The Student Guide pages with Miuix Cross-Axis,
+  and the media session gives untrusted controllers read-only access.
+- Built with Gradle 9.8.0, AGP 9.4.1, Compose 1.12.1, Ktor 3.6.0, Miuix 2afdbb39, and dav4jvm 4.1.0,
+  with a Baseline Profile re-captured on this release's code.
 
 Read the full feature tour:
 
@@ -114,16 +115,16 @@ Read the full feature tour:
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The public stable channel always resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
-- This source snapshot and its local release tag target `v1.15.0`.
+- This source snapshot and its local release tag target `v1.16.0`.
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
-- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.20`,
-  Compose `1.12.0`, Android Gradle Plugin `9.4.0`, Ktor `3.5.2`.
+- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.8.0`, Kotlin `2.4.20`,
+  Compose `1.12.1`, Android Gradle Plugin `9.4.1`, Ktor `3.6.0`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.15.0](readme/RELEASE_V1.15.0.md)
+- [Release Notes v1.16.0](readme/RELEASE_V1.16.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

@@ -55,28 +55,33 @@ fun AboutReleaseCardSection(
                 icon = appLucideVersionIcon(),
             )
             AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_releases),
-                value = stringResource(R.string.about_release_value_releases),
+                title = stringResource(R.string.about_release_row_tracking),
+                value = stringResource(R.string.about_release_value_tracking),
                 icon = appLucideBranchIcon(),
             )
             AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_fdroid),
-                value = stringResource(R.string.about_release_value_fdroid),
+                title = stringResource(R.string.about_release_row_network),
+                value = stringResource(R.string.about_release_value_network),
                 icon = appLucideGridIcon(),
             )
             AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_large_screens),
-                value = stringResource(R.string.about_release_value_large_screens),
-                icon = appLucideAppWindowIcon(),
-            )
-            AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_catalog),
-                value = stringResource(R.string.about_release_value_catalog),
+                title = stringResource(R.string.about_release_row_histories),
+                value = stringResource(R.string.about_release_value_histories),
                 icon = appLucidePackageIcon(),
             )
             AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_mcp_security),
-                value = stringResource(R.string.about_release_value_mcp_security),
+                title = stringResource(R.string.about_release_row_glass),
+                value = stringResource(R.string.about_release_value_glass),
+                icon = appLucideLayersIcon(),
+            )
+            AboutReleaseHighlightBlock(
+                title = stringResource(R.string.about_release_row_gestures),
+                value = stringResource(R.string.about_release_value_gestures),
+                icon = appLucideAppWindowIcon(),
+            )
+            AboutReleaseHighlightBlock(
+                title = stringResource(R.string.about_release_row_security),
+                value = stringResource(R.string.about_release_value_security),
                 icon = appLucideConfirmIcon(),
             )
             AboutReleaseHighlightBlock(

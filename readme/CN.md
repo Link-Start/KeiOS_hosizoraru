@@ -39,7 +39,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 | UI 技术栈 | Jetpack Compose、Miuix、液态玻璃风格 chrome |
 | 运行技术栈 | Kotlin、Java 21、Shizuku/Root、Media3、MMKV、Ktor、OkHttp |
 | 语言资源 | 简体中文、English、日本語 |
-| 源码发布版本 | `v1.15.0` |
+| 源码发布版本 | `v1.16.0` |
 
 ## 常用入口
 
@@ -65,20 +65,20 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
   链接，提供分类发现、质量筛选、多选导入、APK 验证和退出确认。
 - GitHub 托管安装与分享导入联动支持 Shizuku APK 交付，提供通知 / 超级岛进度、Manifest 检查、versionCode 展示和安装确认界面。
 - GitHub Actions 更新通知支持追踪应用图标、跳转到对应 Actions sheet、推荐 run 定位和调试通知测试。
-- 历史中心支持 Actions、刷新诊断、追踪变更和已追踪 App 安装/更新记录，并提供未读角标、搜索、导出和 MCP 查询。
+- 历史中心支持 Actions、刷新诊断、追踪变更和已追踪 App 安装/更新记录，慢刷新会按网络阶段给出耗时，并提供未读角标、搜索、导出和 MCP 查询。
 - JSON 导入与 WebDAV 同步支持多种 KeiOS 数据结构迁移，包括 GitHub/F-Droid 追踪、OS 卡片、BA 多账号、预览摘要与导入结果跳转。
 - BA 办公室支持 AP、咖啡厅来访、竞技场刷新提醒、六槽制造室计时、可配置一键日常、分账号快速设置磁贴与启动器快捷方式、分服务器活动/卡池数据、超级岛通知和学生图鉴入口。
 - 学生图鉴支持全页搜索、排序、实装学生详情长期缓存、媒体缓存、记忆大厅卡片与 PiP 视频播放、带删除撤销的 BGM 收藏、默认原生媒体通知、鉴赏媒体、媒体导出、液态底栏和收藏导入导出。
 - 设置页提供主题、动效、v2 液态玻璃组件、底栏特效策略、搜索默认聚焦、握姿感知浮动
   dock、背景图、应用语言、权限、缓存诊断、结构化日志、本地 GitHub Issue 反馈、无遥测诊断与通知兼容配置。
 
-## v1.15.0 重点变化
+## v1.16.0 重点变化
 
-- GitHub 追踪项目新增独立发行版历史页，提供紧凑摘要、完整发行说明、筛选后的 APK、页码 / 标签跳转和旧版本直接安装；F-Droid 源获得对应的版本历史、分阶段元数据、反特性说明、校验值与签名信息。
-- 设置、关于、MCP、OS、BA 办公室、学生图鉴、合并后的活动日历与卡池页、GitHub 追踪和历史在大屏上使用可独立滚动的双栏；主页面操作集中到悬浮工具栏，手机保持聚焦的单栏流程。
-- Liquid Sheet 对长内容使用懒加载，离屏玻璃停止绘制，拖拽状态读取下移到布局阶段，窄 Sheet 仍覆盖整窗虚化；现有材质、动画和交互效果保持完整。
-- 六段 Baseline Profile 的回放上限从 96 次降到 16 次，已验证完整采集约 9–17 分钟，并随 APK 打包 61,226 条 baseline 规则与 24,123 条 startup 规则。
-- MCP 工具目录整合为 51 个并提供重命名提示与 SSE 心跳；简体中文、English、日本語补齐发行版历史、F-Droid、WebDAV、Liquid 菜单和 v1.15 发行日志 Card 等发布界面。
+- GitHub 追踪的判断更可靠：重新编号的项目、已被正式版取代或 14 天无人更新的预发布、没有可下载文件的发行版都能正确处理；无法确定的比较会如实显示，出乎意料的选择会说明原因。
+- 刷新请求不再占用线程，Atom 模式的两个请求并行发出：40 个仓库在 120 ms 延迟的测试服务器上从 1973 ms 降到 522 ms。慢项目会在历史、导出和 MCP 中标出耗时所在的网络阶段。
+- 纯色背景上的 Liquid Glass 直接按效果链的输出颜色绘制，连续圆角裁剪移到玻璃图层内部：BA 办公室帧时间 p50 从 24.3 ms 降到 11.6 ms，OS 与 MCP 页 RenderThread p50 分别降低 16% 与 18%，材质与动效不变。
+- 发行版与 F-Droid 历史中的旧版本可查看 APK 信息并在应用内安装，所有分享与下载遵循安装器与下载设置；学生图鉴改用 Miuix Cross-Axis 翻页，媒体会话对不受信任的控制方只开放只读权限。
+- 构建升级到 Gradle 9.8.0、AGP 9.4.1、Compose 1.12.1、Ktor 3.6.0、Miuix 2afdbb39 与 dav4jvm 4.1.0，并在本版本代码上重新采集 Baseline Profile。
 
 完整功能介绍：
 
@@ -89,16 +89,16 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
 - 公开稳定版始终通过 [最新稳定版](https://github.com/hosizoraru/KeiOS/releases/latest) 获取。
-- 当前源码快照与本地发布标签目标为 `v1.15.0`。
+- 当前源码快照与本地发布标签目标为 `v1.16.0`。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
-- 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.7.1`、Kotlin `2.4.20`、
-  Compose `1.12.0`、Android Gradle Plugin `9.4.0`、Ktor `3.5.2`。
+- 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.8.0`、Kotlin `2.4.20`、
+  Compose `1.12.1`、Android Gradle Plugin `9.4.1`、Ktor `3.6.0`。
 - 当前应用语言资源覆盖简体中文、English、日本語。
 
 ## 文档
 
 - [文档索引](INDEX.md)
-- [Release Notes v1.15.0](RELEASE_V1.15.0.md)
+- [Release Notes v1.16.0](RELEASE_V1.16.0.md)
 - [Build Guide (EN)](BUILD.md)
 - [构建指南 (CN)](BUILD_CN.md)
 - [Todo List (EN)](TODO.md)

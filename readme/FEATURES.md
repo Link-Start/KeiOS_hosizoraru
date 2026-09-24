@@ -66,6 +66,14 @@ The GitHub page tracks APK updates from GitHub projects and subscription project
   assets, page/tag navigation, tag-only filtering, and direct installation of an older version.
 - Dedicated F-Droid version-history pages that load compact package metadata first, add file details
   progressively, explain anti-features, and expose checksums and signer data for trust checks.
+- Older builds in both histories open APK info and install through the app-managed installer, and every
+  asset share or download follows the share-to-installer and download settings.
+- Release selection that reads projects which restarted their numbering (confirming with
+  `releases/latest` only when the list looks like it), retires pre-releases superseded by a shipped
+  stable or left unfed for 14 days, ignores releases with no downloadable file, reports uncertain
+  comparisons, and explains a surprising choice on the card.
+- Refresh diagnostics that name the network phase of a slow item (queued, DNS, connecting, server
+  wait, download) with request count, bytes, and connection reuse, in history, exports, and MCP.
 - GitHub Actions browser for branches, workflows, runs, and artifacts, with nightly.link public lookup and token-backed GitHub API lookup.
 - Actions recommended-run update checks, app-icon notifications, debug notification testing, and
   notification deep links into the tracked project's Actions sheet.

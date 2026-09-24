@@ -29,6 +29,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -45,6 +46,8 @@ import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.appPageSideGutterEnd
 import os.kei.ui.page.main.widget.chrome.appPageSideGutterStart
+import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
+import os.kei.ui.page.main.widget.chrome.appPageBackdropBaseColor
 import os.kei.ui.page.main.widget.chrome.rememberAppPageBackdrop
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -52,6 +55,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.rememberUniformColorBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -133,7 +137,17 @@ internal fun BaStudentGuidePagerPage(
                 delegate = topBarNestedScrollConnection,
             )
         }
-    val pageBackdrop = rememberAppPageBackdrop("page-$activationCount-$sourceUrl-$pageIndex")
+    val recordedPageBackdrop = rememberAppPageBackdrop("page-$activationCount-$sourceUrl-$pageIndex")
+    // The producer box below is empty, so without a managed background this page's backdrop is the base
+    // colour and nothing else. Hand that out as a flat field and the guide's cards draw without offscreen
+    // layers; with a background painting, the recorded composite is still what they sample.
+    val flatPageBackdrop =
+        if (LocalAppManagedSceneBackdrop.current == null) {
+            rememberUniformColorBackdrop(appPageBackdropBaseColor())
+        } else {
+            null
+        }
+    val pageBackdrop: Backdrop = flatPageBackdrop ?: recordedPageBackdrop
     val isActivePage = pageIndex == pagerState.currentPage
     val consumedScrollToTopSignal = remember { mutableIntStateOf(0) }
     LaunchedEffect(scrollToTopSignal) {
@@ -177,7 +191,13 @@ internal fun BaStudentGuidePagerPage(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .layerBackdrop(pageBackdrop.producer),
+                    .then(
+                        if (flatPageBackdrop == null) {
+                            Modifier.layerBackdrop(recordedPageBackdrop.producer)
+                        } else {
+                            Modifier
+                        },
+                    ),
         )
         val activeBottomTabLabel = stringResource(tabRenderState.activeBottomTab.labelRes)
         val headerState =

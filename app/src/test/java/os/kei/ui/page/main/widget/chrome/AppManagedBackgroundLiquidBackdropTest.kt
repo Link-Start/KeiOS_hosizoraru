@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Rule
 import org.junit.Test
@@ -22,11 +23,13 @@ import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
+import os.kei.ui.page.main.widget.glass.UniformColorBackdrop
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
@@ -64,6 +67,54 @@ class AppManagedBackgroundLiquidBackdropTest {
         composeRule.runOnIdle {
             assertNotNull(pageBackdrop)
             assertFalse(overridesFallback)
+        }
+    }
+
+    @Test
+    fun withNoBackgroundPaintingThePageMaterialIsTheBaseColourAsAFlatField() {
+        // The recording would hold `drawRect(baseColor)` over an empty box: one colour. As a flat field,
+        // every card on the route draws without an offscreen layer (docs/planning/liquid-flat-field.md).
+        var pageBackdrop: Backdrop? = null
+        var baseColor = Color.Unspecified
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val base = MiuixTheme.colorScheme.background
+                testManagedBackgroundHost(exportBackdropToContent = true) {
+                    val observed = LocalLiquidParentBackdrop.current
+                    SideEffect {
+                        pageBackdrop = observed
+                        baseColor = base
+                    }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            val flat = assertIs<UniformColorBackdrop>(pageBackdrop)
+            assertEquals(baseColor, flat.color)
+        }
+    }
+
+    @Test
+    fun withABackgroundPaintingThePageMaterialIsTheRecordedComposite() {
+        var pageBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                testManagedBackgroundHost(
+                    exportBackdropToContent = true,
+                    enabled = true,
+                    imageUri = "content://test/background.png",
+                ) {
+                    val observed = LocalLiquidParentBackdrop.current
+                    SideEffect { pageBackdrop = observed }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertIs<LayerBackdrop>(pageBackdrop, "an image varies across the page, so it has to be sampled")
         }
     }
 

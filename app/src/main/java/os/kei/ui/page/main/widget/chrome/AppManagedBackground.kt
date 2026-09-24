@@ -38,6 +38,7 @@ import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.rememberUniformColorBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
@@ -338,8 +339,13 @@ fun AppManagedBackgroundHost(
         }
     // Recorded whenever a background is painting, not only when a route asks for it: the page's glass
     // needs to sample this composite even on routes that never exported a backdrop of their own.
+    // With no background painting, that recording is `drawRect(baseColor)` over an empty box: one colour
+    // across the whole screen. Glass sampling one colour computes one colour, so the page is handed that
+    // colour as a [UniformColorBackdrop] instead, which lets every card on it draw without an offscreen
+    // layer and saves recording the screen-sized layer itself. See docs/planning/liquid-flat-field.md.
+    val flatScene = !active && exportBackdropToContent
     val sceneBackdrop =
-        if (active || exportBackdropToContent) {
+        if (active || (exportBackdropToContent && !flatScene)) {
             rememberLayerBackdrop {
                 drawRect(baseColor)
                 drawContent()
@@ -347,6 +353,7 @@ fun AppManagedBackgroundHost(
         } else {
             null
         }
+    val flatSceneBackdrop = if (flatScene) rememberUniformColorBackdrop(baseColor) else null
 
     Box(
         modifier =
@@ -386,9 +393,10 @@ fun AppManagedBackgroundHost(
         ) {
             // Still gated on the caller opting in: handing every route's presentations a parent
             // backdrop they never asked for is a wider change than letting their glass sample the page.
-            if (exportBackdropToContent && sceneBackdrop != null) {
+            val exportedScene = flatSceneBackdrop ?: sceneBackdrop
+            if (exportBackdropToContent && exportedScene != null) {
                 CompositionLocalProvider(
-                    LocalLiquidParentBackdrop provides sceneBackdrop,
+                    LocalLiquidParentBackdrop provides exportedScene,
                     content = content,
                 )
             } else {

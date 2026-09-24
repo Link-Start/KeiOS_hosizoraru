@@ -94,7 +94,41 @@ class BaselineProfileTestTagContractTest {
         }
     }
 
-    /** The same silence, one step earlier: a tag constant no journey ever waits for. */
+    /** The shared helpers, the same way: declared once for both callers, so one of them must call each. */
+    @Test
+    fun everySharedJourneyHelperIsCalled() {
+        val callers = PROFILE_CALLER_SOURCES.joinToString("\n") { sourceWithoutComments(it) }
+        val helpers =
+            SHARED_HELPER.findAll(sourceWithoutComments(JOURNEY_SUPPORT_SOURCE))
+                .map { match -> match.groupValues[1] }
+                .toList()
+
+        assertTrue(helpers.isNotEmpty(), "Unable to parse helpers out of $JOURNEY_SUPPORT_SOURCE")
+        helpers.forEach { helper ->
+            // More than one: the declaration itself is in these sources and matches too.
+            assertTrue(
+                Regex("""\b$helper\s*\(""").findAll(callers).count() > 1,
+                "$helper is shared and nothing calls it",
+            )
+        }
+    }
+
+    /** The same silence, one step earlier: a tag no journey or benchmark ever waits for. */
+    @Test
+    fun everySharedTagIsUsed() {
+        val callers = PROFILE_CALLER_SOURCES.joinToString("\n") { sourceWithoutComments(it) }
+        val tags =
+            CONST_DECLARATION.findAll(sourceFile(PROFILE_TAGS_SOURCE)).map { match -> match.groupValues[1] }.toList()
+
+        assertTrue(tags.isNotEmpty(), "Unable to parse tags out of $PROFILE_TAGS_SOURCE")
+        tags.forEach { tag ->
+            assertTrue(
+                Regex("""\b$tag\b""").containsMatchIn(callers),
+                "$tag is declared and never used, so the path it names is uncovered",
+            )
+        }
+    }
+
     @Test
     fun theGeneratorUsesEveryConstantItDeclares() {
         val source = generatorSourceWithoutComments()
@@ -249,12 +283,10 @@ private const val SCENE_BACKDROP_HOST =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SceneBackdropScope.kt"
 
 /**
- * The generator's tag constants only.
+ * The tag constants in the profile sources.
  *
- * It also holds a couple of *platform identifiers* — the class names the tile long-press journey starts —
- * which are strings but not tags, and would fail the declared-tag check on sight. Tag values are
- * snake_case identifiers and a class name is not, so the shape is the filter. Nothing checks the skipped
- * class names; a renamed Activity shows up as that journey failing on device.
+ * Filtered to tag-shaped values (snake_case identifiers), so a string constant that is not a tag -- a
+ * platform class name, a shell argument -- is not mistaken for one and failed against the app's tags.
  */
 private fun profileTagConstants(): List<Pair<String, String>> =
     PROFILE_SOURCE_FILES.flatMap { relativePath ->
@@ -264,8 +296,9 @@ private fun profileTagConstants(): List<Pair<String, String>> =
             .filter { (_, value) -> TAG_SHAPED.matches(value) }
     }
 
+/** Every constant the generator declares for itself: gesture fractions, step counts and timeouts. */
 private fun generatorConstants(): List<Pair<String, String>> =
-    CONST_DECLARATION
+    Regex("""const val (\w+)\s*=\s*([^\n]+)""")
         .findAll(sourceFile(GENERATOR_SOURCE))
         .map { match -> match.groupValues[1] to match.groupValues[2] }
         .toList()
@@ -280,10 +313,14 @@ private val SCOPED_HELPER = Regex("""private fun MacrobenchmarkScope\.(\w+)\s*\(
  * A KDoc mention reads as a use to any plain text search, which is how an uncalled helper stayed
  * plausible through two captures.
  */
-private fun generatorSourceWithoutComments(): String =
-    sourceFile(GENERATOR_SOURCE)
+private fun generatorSourceWithoutComments(): String = sourceWithoutComments(GENERATOR_SOURCE)
+
+private fun sourceWithoutComments(relativePath: String): String =
+    sourceFile(relativePath)
         .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
         .replace(Regex("""//[^\n]*"""), "")
+
+private val SHARED_HELPER = Regex("""internal fun (?:MacrobenchmarkScope\.)?(\w+)\s*\(""")
 
 private const val GENERATOR_SOURCE =
     "baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileGenerator.kt"
@@ -291,11 +328,26 @@ private const val GENERATOR_SOURCE =
 private const val MAIN_NAVIGATION_BENCHMARK_SOURCE =
     "baselineprofile/src/main/java/os/kei/baselineprofile/MainNavigationFrameBenchmarks.kt"
 
-private val PROFILE_SOURCE_FILES =
+private const val STARTUP_BENCHMARK_SOURCE =
+    "baselineprofile/src/main/java/os/kei/baselineprofile/StartupBenchmarks.kt"
+
+/** Every tag either caller waits for, spelled once for both. */
+private const val PROFILE_TAGS_SOURCE =
+    "baselineprofile/src/main/java/os/kei/baselineprofile/ProfileTags.kt"
+
+private const val JOURNEY_SUPPORT_SOURCE =
+    "baselineprofile/src/main/java/os/kei/baselineprofile/ProfileJourneySupport.kt"
+
+/** The files that drive the app; the shared tags and helpers must each be used by one of them. */
+private val PROFILE_CALLER_SOURCES =
     listOf(
         GENERATOR_SOURCE,
         MAIN_NAVIGATION_BENCHMARK_SOURCE,
+        STARTUP_BENCHMARK_SOURCE,
+        JOURNEY_SUPPORT_SOURCE,
     )
+
+private val PROFILE_SOURCE_FILES = PROFILE_CALLER_SOURCES + PROFILE_TAGS_SOURCE
 
 private val CONST_DECLARATION = Regex("""const val (\w+)\s*(?:=\s*)?\n?\s*"([^"]+)"""")
 private val FORBIDDEN_PROFILE_FIXTURES =

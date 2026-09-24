@@ -10,8 +10,6 @@ import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
@@ -24,11 +22,7 @@ class MainNavigationFrameBenchmarks {
     val rule = MacrobenchmarkRule()
 
     private val targetAppId: String
-        get() =
-            InstrumentationRegistry
-                .getArguments()
-                .getString("targetAppId")
-                ?: error("targetAppId not passed as instrumentation runner arg")
+        get() = targetAppId()
 
     @Test
     fun homeRestingDynamicBackground() {
@@ -447,12 +441,12 @@ class MainNavigationFrameBenchmarks {
             measureBlock = {
                 traceSection("benchmark:ba_calendar_pool_route_push") {
                     clickTag(BA_DOCK_OPEN_CALENDAR_POOL)
-                    check(device.wait(Until.hasObject(By.res(BA_CALENDAR_POOL_PAGE_ROOT)), PAGE_TIMEOUT_MS)) {
+                    check(device.wait(Until.hasObject(testTagSelector(BA_CALENDAR_POOL_PAGE_ROOT)), PAGE_TIMEOUT_MS)) {
                         "Timed out waiting for the merged Calendar/Pool page"
                     }
                     settleRouteTransition()
                 }
-                if (device.findObject(By.res(BA_CALENDAR_POOL_TAB_POOL)) != null) {
+                if (device.findObject(testTagSelector(BA_CALENDAR_POOL_TAB_POOL)) != null) {
                     traceSection("benchmark:ba_calendar_pool_tab_switch") {
                         clickTag(BA_CALENDAR_POOL_TAB_POOL)
                         settleRouteTransition()
@@ -535,7 +529,7 @@ class MainNavigationFrameBenchmarks {
         pageTag: String,
         settledTag: String,
     ) {
-        val tab = device.findObject(By.res(tabTag))
+        val tab = device.findObject(testTagSelector(tabTag))
             ?: error("Unable to find tab testTag=$tabTag")
         tab.click()
         waitForTag(pageTag)
@@ -552,7 +546,7 @@ class MainNavigationFrameBenchmarks {
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.clickTag(tag: String) {
-        val node = device.findObject(By.res(tag))
+        val node = device.findObject(testTagSelector(tag))
             ?: error("Unable to find testTag=$tag")
         node.click()
     }
@@ -569,10 +563,7 @@ class MainNavigationFrameBenchmarks {
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.waitForTag(tag: String) {
-        check(device.wait(Until.hasObject(By.res(tag)), PAGE_TIMEOUT_MS)) {
-            "Timed out waiting for testTag=$tag in $targetAppId"
-        }
-        device.waitForIdle()
+        waitForTestTag(tag, timeoutMs = PAGE_TIMEOUT_MS)
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.swipeMcpPage(up: Boolean) {
@@ -599,7 +590,7 @@ class MainNavigationFrameBenchmarks {
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.dragLiquidSheetRegion(up: Boolean) {
-        val bounds = device.findObject(By.res(LIQUID_SHEET_DRAG_REGION))?.visibleBounds
+        val bounds = device.findObject(testTagSelector(LIQUID_SHEET_DRAG_REGION))?.visibleBounds
             ?: error("Unable to find Liquid Sheet drag region")
         val distance = (device.displayHeight * LIQUID_SHEET_DRAG_DISTANCE_FRACTION).toInt()
         val startY = bounds.centerY()
@@ -621,7 +612,7 @@ class MainNavigationFrameBenchmarks {
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.swipeLiquidSheetContent(up: Boolean) {
-        val bounds = device.findObject(By.res(LIQUID_SHEET_PANEL))?.visibleBounds
+        val bounds = device.findObject(testTagSelector(LIQUID_SHEET_PANEL))?.visibleBounds
             ?: error("Unable to find Liquid Sheet panel")
         val upperY = bounds.top + (bounds.height() * LIQUID_SHEET_CONTENT_UPPER_FRACTION).toInt()
         val lowerY = bounds.top + (bounds.height() * LIQUID_SHEET_CONTENT_LOWER_FRACTION).toInt()
@@ -672,26 +663,6 @@ private inline fun <T> traceSection(
     }
 }
 
-private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
-private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
-private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
-private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
-private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
-private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
-private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
-private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
-private const val HOME_PAGE_ROOT = "home_page_root"
-private const val MCP_PAGE_ROOT = "mcp_page_root"
-private const val GITHUB_PAGE_ROOT = "github_page_root"
-private const val GITHUB_STRATEGY_SHEET_BUTTON = "github_strategy_sheet_button"
-private const val BA_PAGE_ROOT = "ba_page_root"
-private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
-private const val BA_CALENDAR_POOL_PAGE_ROOT = "ba_calendar_pool_page_root"
-private const val BA_CALENDAR_POOL_TAB_POOL = "ba_calendar_pool_tab_1"
-private const val HOME_SETTINGS_BUTTON = "home_settings_button"
-private const val SETTINGS_PAGE_ROOT = "settings_page_root"
-private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
-private const val LIQUID_SHEET_DRAG_REGION = "liquid_sheet_drag_region"
 
 /**
  * RenderThread/UI slice names for the plan's P0 breakdown. "%" is a TraceProcessor wildcard, used

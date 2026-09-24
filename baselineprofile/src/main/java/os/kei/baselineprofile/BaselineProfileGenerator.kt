@@ -4,9 +4,6 @@ import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
@@ -471,9 +468,9 @@ private fun MacrobenchmarkScope.navigateToMainPage(
  * Changes page the way a finger does, and proves the page actually changed.
  *
  * Every other switch in this journey is a tab tap, and a tap and a swipe do not share their code: a
- * tap runs `animateLoadedPagerPosition` on a timed curve, while a finger runs `draggable`'s drag
- * detection, `startUserScroll` and `dragBy` once per frame, then `settleAfterDrag`'s velocity
- * spring -- `animateLoadedPagerSettlePosition`, whose one call site no tap reaches.
+ * tap runs `animateLoadedPagerPosition` on Miuix's page-navigation spring from rest, while a finger runs
+ * `draggable`'s drag detection, `startUserScroll` and `dragBy` once per frame, then `settleAfterDrag`'s
+ * velocity spring -- `animateLoadedPagerSettlePosition`, whose one call site no tap reaches.
  *
  * Measured rather than assumed, by capturing this journey twice on the same AVD: without this step
  * its own baseline-prof.txt carries none of `startUserScroll`, `dragBy`, `settleAfterDrag` or
@@ -785,8 +782,8 @@ private fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
         } else {
             nudgeVisibleScrollable(forward = false)
             // A reverse scroll asks the shared chrome controller to expand the bar. Compose can be
-            // idle before the 240ms visual transition publishes fresh tab semantics, so wait for
-            // this exact destination before the next lookup.
+            // idle before the expand transition publishes fresh tab semantics, so wait for this
+            // exact destination before the next lookup.
             device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)
         }
     }
@@ -918,41 +915,7 @@ private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
         ?: error("Unable to resolve launcher activity for ${targetAppId()}: $output")
 }
 
-internal fun MacrobenchmarkScope.grantRuntimePermissions(packageName: String = targetAppId()) {
-    listOf(
-        "android.permission.POST_NOTIFICATIONS",
-        "android.permission.POST_PROMOTED_NOTIFICATIONS",
-        "android.permission.ACCESS_LOCAL_NETWORK",
-        "android.permission.USE_LOOPBACK_INTERFACE",
-    ).forEach { permission ->
-        device.executeShellCommand("pm grant $packageName $permission >/dev/null 2>&1 || true")
-    }
-}
 
-private fun MacrobenchmarkScope.waitForTestTag(
-    tag: String,
-    timeoutMs: Long = 5_000,
-) {
-    check(device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs)) {
-        "Timed out waiting for testTag=$tag in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-private fun MacrobenchmarkScope.waitForOptionalTestTag(
-    tag: String,
-    timeoutMs: Long,
-): Boolean {
-    val found = device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs)
-    if (found) device.waitForIdle()
-    return found
-}
-
-private fun MacrobenchmarkScope.testTagSelector(tag: String): BySelector = By.res(tag)
-
-private fun targetAppId(): String =
-    InstrumentationRegistry.getArguments().getString("targetAppId")
-        ?: error("targetAppId not passed as instrumentation runner arg")
 
 private const val OPEN_WINDOW_ATTEMPTS = 3
 private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8
@@ -978,65 +941,3 @@ private const val LIQUID_SHEET_DRAG_DISTANCE_FRACTION = 0.14f
 private const val LIQUID_SHEET_CONTENT_UPPER_FRACTION = 0.34f
 private const val LIQUID_SHEET_CONTENT_LOWER_FRACTION = 0.82f
 
-private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
-private const val MAIN_BOTTOM_TAB_OS = "main_bottom_tab_os"
-private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
-private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
-private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
-private const val MAIN_SIDEBAR_TOGGLE = "main_sidebar_toggle"
-private const val MAIN_SIDEBAR_ROW_MCP = "main_sidebar_row_mcp"
-private const val MAIN_SIDEBAR_ROW_GITHUB = "main_sidebar_row_github"
-private const val MAIN_SIDEBAR_ROW_BA = "main_sidebar_row_ba"
-private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
-private const val MAIN_PAGER_SETTLED_OS = "main_pager_settled_os"
-private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
-private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
-private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
-private const val HOME_PAGE_ROOT = "home_page_root"
-private const val HOME_SETTINGS_BUTTON = "home_settings_button"
-private const val HOME_ABOUT_BUTTON = "home_about_button"
-private const val HOME_WEBDAV_CARD = "home_webdav_card"
-private const val SETTINGS_PAGE_ROOT = "settings_page_root"
-private const val ABOUT_PAGE_ROOT = "about_page_root"
-private const val WEBDAV_SYNC_PAGE_ROOT = "webdav_sync_page_root"
-private const val OS_PAGE_ROOT = "os_page_root"
-private const val OS_SHELL_RUNNER_BUTTON = "os_shell_runner_button"
-private const val OS_SHELL_RUNNER_PAGE_ROOT = "os_shell_runner_page_root"
-private const val MCP_PAGE_ROOT = "mcp_page_root"
-private const val MCP_SKILL_BUTTON = "mcp_skill_button"
-private const val MCP_SKILL_PAGE_ROOT = "mcp_skill_page_root"
-private const val GITHUB_PAGE_ROOT = "github_page_root"
-private const val GITHUB_TRACKED_ITEM_CARD_FIRST = "github_tracked_item_card_first"
-private const val GITHUB_TRACKED_ITEM_MORE_BUTTON = "github_tracked_item_more_button"
-private const val GITHUB_ACTIONS_MENU_ITEM = "github_actions_menu_item"
-private const val GITHUB_ADD_TRACKED_BUTTON = "github_add_tracked_button"
-private const val GITHUB_STRATEGY_SHEET_BUTTON = "github_strategy_sheet_button"
-private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
-private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
-private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
-private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
-private const val GITHUB_HISTORY_TAB_ACTIONS = "github_history_tab_1"
-private const val GITHUB_HISTORY_TAB_TRACKING = "github_history_tab_2"
-private const val BA_PAGE_ROOT = "ba_page_root"
-private const val BA_COOLDOWN_CARD_FIRST = "ba_cooldown_card_first"
-private const val BA_COOLDOWN_ADJUST_BUTTON = "ba_cooldown_adjust_button"
-private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
-private const val BA_CALENDAR_POOL_PAGE_ROOT = "ba_calendar_pool_page_root"
-private const val BA_CALENDAR_POOL_TAB_POOL = "ba_calendar_pool_tab_1"
-private const val BA_DOCK_OPEN_GUIDE_CATALOG = "ba_dock_open_guide_catalog"
-private const val BA_DOCK_DAILY_DONE = "ba_dock_daily_done"
-private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
-private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
-private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
-private const val BA_STUDENT_GUIDE_TAB_SKILLS = "ba_student_guide_tab_skills"
-private const val BA_STUDENT_GUIDE_SIDEBAR_TOGGLE = "ba_student_guide_sidebar_toggle"
-private const val BA_STUDENT_GUIDE_SIDEBAR_ROW_SKILLS = "ba_student_guide_tab_skills_sidebar_row"
-private const val BA_STUDENT_GUIDE_TAB_PROFILE = "ba_student_guide_tab_profile"
-private const val BA_GUIDE_CATALOG_DOCK_STUDENT = "ba_guide_catalog_dock_student"
-private const val BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY = "ba_guide_catalog_dock_memory_lobby"
-private const val BA_GUIDE_CATALOG_DOCK_STUDENT_BGM = "ba_guide_catalog_dock_student_bgm"
-private const val BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM = "ba_guide_catalog_dock_favorite_bgm"
-private const val BA_GUIDE_CATALOG_STUDENT_BGM_FIRST = "ba_guide_catalog_student_bgm_first"
-private const val COMPACT_BOTTOM_BAR_DOCK = "compact_bottom_bar_dock"
-private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
-private const val LIQUID_SHEET_DRAG_REGION = "liquid_sheet_drag_region"

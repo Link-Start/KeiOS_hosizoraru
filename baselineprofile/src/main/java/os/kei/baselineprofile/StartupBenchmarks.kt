@@ -7,9 +7,6 @@ import androidx.benchmark.macro.StartupTimingMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.By
-import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,11 +18,7 @@ class StartupBenchmarks {
     val rule = MacrobenchmarkRule()
 
     private val targetAppId: String
-        get() =
-            InstrumentationRegistry
-                .getArguments()
-                .getString("targetAppId")
-                ?: error("targetAppId not passed as instrumentation runner arg")
+        get() = targetAppId()
 
     @Test
     fun startupCompilationNone() = benchmark(CompilationMode.None())
@@ -48,11 +41,8 @@ class StartupBenchmarks {
             },
             measureBlock = {
                 startActivityAndWait()
-                device.wait(Until.hasObject(By.res(HOME_PAGE_ROOT)), 5_000)
-                device.waitForIdle()
+                waitForOptionalTestTag(HOME_PAGE_ROOT, timeoutMs = 5_000)
             },
         )
     }
 }
-
-private const val HOME_PAGE_ROOT = "home_page_root"

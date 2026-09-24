@@ -1,5 +1,9 @@
 # Why scrolling a Liquid sheet is not smooth
 
+> 2026-09-24: an untouched sheet now draws no frames at all; its cost is while it is dragged or animates.
+> Reducing the sheet's glass resolution measured worse there and was not shipped — see
+> `liquid-glass-clip-and-resolution.md`.
+
 ## Current verdict — 2026-09-02
 
 The checked-in release measurements and current source identify two layers of cost:

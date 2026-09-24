@@ -7,6 +7,10 @@ and the largest RenderThread change these documents record. **Confirmed on the p
 BA office total frame time halves and frames over 33ms fall from 150 to 24; Settings loses every frame over
 33ms.
 
+Follow-up, 2026-09-24: a flat-field `LiquidSurface`, and the glass controls over a flat field, no longer go
+through the library's `drawBackdrop` at all — its outline clip moved inside the surface's layer, which removed a
+per-frame CPU mask on every moving card. See `liquid-glass-clip-and-resolution.md`.
+
 ## On the phone — 2026-09-24
 
 `5eea1f50` (Android 17, 1220x2656, 120Hz, 8.29ms vsync), `os.kei.diag` with the harness applied, four

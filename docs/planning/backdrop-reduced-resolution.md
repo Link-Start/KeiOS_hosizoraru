@@ -1,5 +1,10 @@
 # Reduced-resolution Liquid Glass: feasibility
 
+> **2026-09-24: built on the consumer side and rejected** — see `liquid-glass-clip-and-resolution.md`. The
+> blocker below is real for reducing the *producer*; wrapping a consumer's draw of the backdrop in `scale(1/f)`
+> needs no scale term. The `lens()` risk raised here measured small (11/765 at a quarter), and the frame time
+> did not move on the phone: the cost follows pass count, not fill.
+
 Whether the full-screen backdrop can be captured and sampled at a fraction of screen resolution to
 cut GPU fill, given `io.github.kyant0:backdrop-android:2.0.0`. Analysis only — nothing implemented.
 

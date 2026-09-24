@@ -200,11 +200,20 @@ spend itself re-discovering them.
   feel: across four passes per tab, the worst frame neither moved to the tap nor shrank, `os` came
   out marginally worse, and every delta was inside the noise floor. Reverted. The reason it cannot
   work is in §1b: it moves composition, and the cost is rasterisation.
-- **Reduced-resolution backdrop capture.** Recording at 0.5x is possible today
-  (`recordLayer` takes an explicit size), but `LayerBackdrop.drawBackdrop` has no scale term
-  and computes its translation in full-resolution layout coordinates, so the result is broken
-  rather than soft. Needs library support. Full analysis:
-  `docs/planning/backdrop-reduced-resolution.md`.
+- **Reduced-resolution backdrop capture — of the producer.** `LayerBackdrop.drawBackdrop` has no
+  scale term, so a producer recorded at 0.5x is broken rather than soft
+  (`docs/planning/backdrop-reduced-resolution.md`). Reducing the *consumer* was built and is
+  pixel-equivalent, and measured neutral on the chrome and worse on small controls and on anything
+  that moves with a live source (2026-09-24, `docs/planning/liquid-glass-clip-and-resolution.md`).
+  Fill is not the cost here; pass count and CPU masks are.
+- **Reading scroll-driven chrome state through providers so pages do not recompose** (2026-09-24).
+  Correct, and measured no change. The UI-thread spike at the start of a scroll came from
+  composing *glass* chrome — the bottom bar and docks swapping to and from their compact forms —
+  and was halved by keeping both forms composed (`keepComposedUnplaced`,
+  `docs/planning/liquid-glass-clip-and-resolution.md` §4). Composition of plain content stays cheap.
+- **Handing the library a reused `Shape` object.** Its `ShapeProvider` compares the shape object to
+  decide whether to rebuild the outline, so a stable wrapper froze the Home batch's outline; and its
+  `lens()` reads corner radii from the shape's type, so any wrapper drops the refraction.
 
 ## 4b. Expanding a card: the layer is rasterised at its full height
 
@@ -300,7 +309,14 @@ Aggregate percentiles over a ~40-frame window are close to "the worst frame", an
 accordingly — the first pass after an install is reliably the worst in *both* builds, so discard
 it or pool at least four. When the claim is about *where* the cost falls rather than how big it
 is, read the per-frame totals instead: the index of the worst frame in the window says whether
-work moved, and `frames > 33ms` says whether the user would notice. `frame_stages.py`'s `load()`
+work moved, and `frames > 33ms` says whether the user would notice — for a switch. For a scroll it
+does not: framestats `total` is intended vsync to GPU done, so a frame queued behind a busy one counts
+as long while the display misses nothing. Count visible hitches as consecutive `DisplayPresentTime`
+more than 33ms apart (16.6ms is not a miss: the LTPO panel drops to 60Hz by itself). And gfxinfo keeps
+~120 frames, so a multi-swipe journey is measured on its last second only. At scroll start, frames
+over 33ms by `total` went 37 -> 20 while present gaps stayed 1-3 per pass, and pinning the bar
+removed every one of the former and none of the latter (2026-09-24,
+`docs/planning/liquid-glass-clip-and-resolution.md` §4). `frame_stages.py`'s `load()`
 is importable for exactly this.
 
 ## 9. When framestats is not enough: atrace

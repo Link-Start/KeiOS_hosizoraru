@@ -680,6 +680,11 @@ That is now three tested hypotheses for the BGM list — aberration (~12%, appea
 
 ---
 
+> **2026-09-23:** the uniform-field idea below shipped in a form that needs no pixel matching, because it
+> draws the effect chain's own output rather than an approximation of it: see `liquid-flat-field.md`.
+> Pixel-identical. On the phone, BA office total frame time p50 24.3 -> 11.6ms (frames over 33ms 150 -> 24)
+> and Settings 11.6 -> 8.8ms (23 -> 0).
+
 # StatusPill is 29% of the BA page, and the "small controls are free" finding was wrong
 
 Measured with the `os.kei` / `os.kei.diag` pair, cloned data, BA office page scroll:

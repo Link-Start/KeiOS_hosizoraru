@@ -262,6 +262,14 @@ RenderThread/GPU territory rather than Compose:
   would be appearance-neutral; removing surfaces would not be, and is out of bounds (§6).
 - **Sampling a cheaper backdrop**, which needs the library change in §4.
 
+**Taken, 2026-09-23 — glass over a flat field.** Much of the app's glass samples a single colour (the
+main pages' card material, the scene of every route without a background image), and every effect chain
+returns one colour from one colour, so those surfaces and their exports now draw it without an offscreen
+layer. Pixel-identical. On the phone, interleaved: BA office total p50 24.3 -> 11.6ms, frames over 33ms
+150 -> 24; Settings 11.6 -> 8.8ms, frames over 33ms 23 -> 0. Read `docs/planning/liquid-flat-field.md` before extending it: a new backdrop object does not
+make `DrawBackdropNode` redraw, and a surface that places its draws by the effect padding cannot drop its
+effects.
+
 ## 6. The standing constraint
 
 From the user, repeatedly, and it is not negotiable:

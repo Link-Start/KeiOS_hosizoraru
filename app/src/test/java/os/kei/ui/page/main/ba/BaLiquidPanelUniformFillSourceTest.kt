@@ -17,7 +17,8 @@ import org.junit.Test
  * interaction regression rather than a failure:
  *
  * 1. **Gated on having no gesture.** The press deformation lives inside the glass layer, so a pressable
- *    panel has to keep it. The AP and Cafe panels both carry `onLongClick`.
+ *    panel has to keep it. The AP and Cafe panels both carry `onLongClick`. Guarded by
+ *    `BaLiquidSurfacesBackdropTest.flatteningIsGatedOnHavingNoGesture`, which renders it.
  * 2. **Composited over the page's card material**, not over the card's own fill. An exporting card's
  *    layer carries the page material rather than the card's surface on top of it. In light the two are
  *    within a level; in dark, compositing over the wrong one left every flattened panel visibly lighter
@@ -26,16 +27,6 @@ import org.junit.Test
  *    real accent wash, where a blur is not a no-op, so they keep their glass.
  */
 class BaLiquidPanelUniformFillSourceTest {
-    @Test
-    fun flatteningStaysGatedOnHavingNoGesture() {
-        val source = sourceFile(SURFACES)
-
-        assertTrue(
-            "flattenOverUniformParent && !hasInteraction" in source,
-            "A pressable panel must keep its glass layer, or the press deformation goes with it",
-        )
-    }
-
     /**
      * Keyed on the fill helper, not on the shader mask.
      *

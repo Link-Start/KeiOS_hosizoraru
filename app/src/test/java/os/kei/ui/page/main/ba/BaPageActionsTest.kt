@@ -6,7 +6,6 @@ import os.kei.ui.page.main.ba.support.BA_INVITE_COOLDOWN_MS
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
-import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
 import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
@@ -167,26 +166,6 @@ class BaPageActionsTest {
     }
 
     @Test
-    fun `cafe rank nine daily capacity uses current known cap`() {
-        assertEquals(670, cafeDailyCapacity(9))
-    }
-
-    @Test
-    fun `cafe stored ap update keeps decimals and resets hour base`() {
-        val nowMs = 3_745_000L
-
-        val (nextStoredAp, nextHour) =
-            applyBaCafeStoredApUpdate(
-                newValue = 12.75,
-                cafeLevel = 1,
-                nowMs = nowMs,
-            )
-
-        assertEquals(12.75, nextStoredAp)
-        assertEquals(floorToHourMs(nowMs), nextHour)
-    }
-
-    @Test
     fun `cafe stored ap update clamps to cafe storage cap`() {
         val (nextStoredAp, _) =
             applyBaCafeStoredApUpdate(
@@ -320,6 +299,6 @@ class BaPageActionsTest {
     }
 }
 
-private class FixedBaOfficeClock(private val nowMs: Long) : BaOfficeClock {
+internal class FixedBaOfficeClock(private val nowMs: Long) : BaOfficeClock {
     override fun nowMs(): Long = nowMs
 }

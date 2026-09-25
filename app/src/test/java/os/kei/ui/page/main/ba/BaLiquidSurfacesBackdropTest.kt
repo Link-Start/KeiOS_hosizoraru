@@ -99,6 +99,40 @@ class BaLiquidSurfacesBackdropTest {
     }
 
     @Test
+    fun flatteningIsGatedOnHavingNoGesture() {
+        // The press deformation lives inside the glass layer, so a pressable panel must keep that layer
+        // even when it opted into flattening; only a gesture-free panel may drop to the flat fill.
+        var cardBackdrop: Backdrop? = null
+        var pressableBackdrop: Backdrop? = null
+        var staticBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                BaLiquidCard(backdrop = backdrop) {
+                    val observedCardBackdrop = LocalLiquidParentBackdrop.current
+                    SideEffect { cardBackdrop = observedCardBackdrop }
+                    BaLiquidPanel(backdrop = backdrop, flattenOverUniformParent = true, onLongClick = {}) {
+                        val observed = LocalLiquidParentBackdrop.current
+                        SideEffect { pressableBackdrop = observed }
+                    }
+                    BaLiquidPanel(backdrop = backdrop, flattenOverUniformParent = true) {
+                        val observed = LocalLiquidParentBackdrop.current
+                        SideEffect { staticBackdrop = observed }
+                    }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertNotNull(cardBackdrop)
+            assertNotNull(pressableBackdrop)
+            assertNotSame(cardBackdrop, pressableBackdrop, "a pressable panel must keep its own glass layer")
+            assertSame(cardBackdrop, staticBackdrop, "a gesture-free flattened panel must not export a layer")
+        }
+    }
+
+    @Test
     fun standaloneAndDisabledCardsKeepDescendantsOnTheirOwnFallbacks() {
         var standaloneBackdrop: Backdrop? = null
         var standaloneOverride = true

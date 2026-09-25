@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.ba
 
-import androidx.compose.runtime.mutableLongStateOf
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.test.assertFalse
@@ -15,23 +14,8 @@ class BaCraftCardExpansionStateTest {
     private fun contentState(runtimeUiState: BaOfficeRuntimeUiState): BaPageContentState =
         buildBaPageContentState(
             officeState = BaOfficeController(BaPageSnapshot()).state(),
-            routeState =
-                buildBaPageRouteState(
-                    calendarUiState = BaCalendarUiState(),
-                    poolUiState = BaPoolUiState(),
-                    chromeUiState = BaOfficeChromeUiState(),
-                    syncUiState = BaOfficeSyncUiState(),
-                    accountUiState = BaOfficeAccountUiState(),
-                    serverUiState = BaOfficeServerUiState(),
-                    runtimeUiState = runtimeUiState,
-                    settingsDraftUiState = BaOfficeSettingsDraftUiState(),
-                    notificationDraftUiState = BaOfficeNotificationDraftUiState(),
-                ),
-            clockState =
-                BaPageClockState(
-                    uiNowMs = mutableLongStateOf(0L),
-                    uiMinuteMs = mutableLongStateOf(0L),
-                ),
+            routeState = testBaPageRouteState(runtimeUiState = runtimeUiState),
+            clockState = testBaPageClockState(),
             serverOptions = listOf("CN", "Global", "JP"),
             cafeLevelOptions = listOf(1, 2, 3),
         )

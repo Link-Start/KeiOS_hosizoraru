@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.ui.page.main.ba.support.BaCraftFunction
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
-import java.io.File
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
@@ -124,17 +123,6 @@ class BaPageBackdropTest {
         }
     }
 
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 class BaPageBackdropTestApp : Application()

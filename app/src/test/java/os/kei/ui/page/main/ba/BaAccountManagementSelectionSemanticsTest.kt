@@ -41,7 +41,6 @@ import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -191,17 +190,6 @@ private fun TestAccountRow(
 
 private fun androidx.compose.ui.test.SemanticsNodeInteraction.bounds(): Rect =
     fetchSemanticsNode().boundsInRoot
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 class BaAccountManagementSelectionSemanticsTestApp : Application()
 

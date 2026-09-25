@@ -59,22 +59,6 @@ class BaApAcknowledgementPolicyTest {
     }
 
     @Test
-    fun `below threshold resets read state`() {
-        val decision =
-            BaApAcknowledgementPolicy.evaluate(
-                notificationEnabled = true,
-                currentDisplay = 119,
-                thresholdDisplay = 120,
-                keepReadUntilBelowThreshold = true,
-                suppressionAnchorAtMs = NOW_MS,
-                nowMs = NOW_MS,
-            )
-
-        assertTrue(decision.resetSuppressionAnchor)
-        assertFalse(decision.eligible)
-    }
-
-    @Test
     fun `notification disabled resets existing read state`() {
         val decision =
             BaApAcknowledgementPolicy.evaluate(

@@ -4,10 +4,9 @@ import kotlin.test.assertEquals
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
-import os.kei.ui.page.main.ba.support.BaAccountProfile
-import os.kei.ui.page.main.ba.support.BaAccountRecord
-import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
+import os.kei.ui.page.main.ba.support.testBaAccountRecord
+import os.kei.ui.page.main.ba.support.testBaAccountState
 
 class BaAccountNotificationContextTest {
     @Test
@@ -46,23 +45,8 @@ class BaAccountNotificationContextTest {
     fun `store snapshot resolves active account notification context`() {
         val accountId = BaAccountId("jp-main")
         val state =
-            BaAccountStoreSnapshot(
-                accounts =
-                    listOf(
-                        BaAccountRecord(
-                            profile =
-                                BaAccountProfile(
-                                    id = accountId,
-                                    serverIndex = 1,
-                                    displayName = "日服主号",
-                                    nickname = "Sensei",
-                                    friendCode = "ABCDEFGH",
-                                ),
-                        ),
-                    ),
-                activeAccountId = accountId,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
+            testBaAccountState(
+                listOf(testBaAccountRecord(id = accountId.value, serverIndex = 1, displayName = "日服主号")),
             )
 
         val context = state.activeNotificationContext()

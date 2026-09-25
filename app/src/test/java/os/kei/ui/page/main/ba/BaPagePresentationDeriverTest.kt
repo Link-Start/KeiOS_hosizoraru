@@ -1,10 +1,8 @@
 package os.kei.ui.page.main.ba
 
-import androidx.compose.runtime.mutableLongStateOf
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BaPagePresentationDeriverTest {
@@ -20,13 +18,7 @@ class BaPagePresentationDeriverTest {
                 ),
             ).state()
         val routeState =
-            buildBaPageRouteState(
-                calendarUiState = BaCalendarUiState(),
-                poolUiState = BaPoolUiState(),
-                chromeUiState = BaOfficeChromeUiState(),
-                syncUiState = BaOfficeSyncUiState(),
-                accountUiState = BaOfficeAccountUiState(),
-                serverUiState = BaOfficeServerUiState(),
+            testBaPageRouteState(
                 runtimeUiState =
                     BaOfficeRuntimeUiState(
                         mediaAdaptiveRotationEnabled = false,
@@ -36,8 +28,6 @@ class BaPagePresentationDeriverTest {
                         showEndedPools = true,
                         showCalendarPoolImages = false,
                     ),
-                settingsDraftUiState = BaOfficeSettingsDraftUiState(),
-                notificationDraftUiState = BaOfficeNotificationDraftUiState(),
             )
 
         val draft =
@@ -52,35 +42,24 @@ class BaPagePresentationDeriverTest {
     }
 
     @Test
-    fun `notification presentation exposes persistent AP read suppression from the draft`() {
-        val snapshot = BaPageSnapshot(keepApRemindersReadUntilBelowThreshold = true)
+    fun `notification presentation carries AP read suppression mode into current and saved sheets`() {
+        // true = persistent read until below threshold, false = hourly read.
+        for (keepRead in listOf(true, false)) {
+            val snapshot = BaPageSnapshot(keepApRemindersReadUntilBelowThreshold = keepRead)
 
-        val presentation = buildNotificationPresentation(snapshot)
+            val presentation = buildNotificationPresentation(snapshot)
 
-        assertTrue(
-            presentation.notificationSettingsSheetState
-                .keepApRemindersReadUntilBelowThreshold,
-        )
-        assertTrue(
-            presentation.savedNotificationSettingsSheetState
-                .keepApRemindersReadUntilBelowThreshold,
-        )
-    }
-
-    @Test
-    fun `notification presentation retains hourly AP read suppression in current and saved sheets`() {
-        val snapshot = BaPageSnapshot(keepApRemindersReadUntilBelowThreshold = false)
-
-        val presentation = buildNotificationPresentation(snapshot)
-
-        assertFalse(
-            presentation.notificationSettingsSheetState
-                .keepApRemindersReadUntilBelowThreshold,
-        )
-        assertFalse(
-            presentation.savedNotificationSettingsSheetState
-                .keepApRemindersReadUntilBelowThreshold,
-        )
+            assertEquals(
+                keepRead,
+                presentation.notificationSettingsSheetState.keepApRemindersReadUntilBelowThreshold,
+                "current sheet, keepRead=$keepRead",
+            )
+            assertEquals(
+                keepRead,
+                presentation.savedNotificationSettingsSheetState.keepApRemindersReadUntilBelowThreshold,
+                "saved sheet, keepRead=$keepRead",
+            )
+        }
     }
 
     private fun buildNotificationPresentation(snapshot: BaPageSnapshot): BaPagePresentationState =
@@ -96,11 +75,7 @@ class BaPagePresentationDeriverTest {
                             savedDraft = snapshot.toNotificationDraftState(),
                         ),
                 ),
-            clockState =
-                BaPageClockState(
-                    uiNowMs = mutableLongStateOf(0L),
-                    uiMinuteMs = mutableLongStateOf(0L),
-                ),
+            clockState = testBaPageClockState(),
             serverOptions = emptyList(),
             cafeLevelOptions = emptyList(),
         )

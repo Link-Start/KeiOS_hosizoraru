@@ -21,15 +21,11 @@ private const val MINUTE = 60L * 1000L
 private const val HOUR = 60L * MINUTE
 private const val NOW = 1_700_000_000_000L
 
-private class FixedOfficeClock(private val nowMs: Long) : BaOfficeClock {
-    override fun nowMs(): Long = nowMs
-}
-
 class BaOfficeCraftMutationTest {
     private fun controller(craft: BaCraftState = BaCraftState()): BaOfficeController =
         BaOfficeController(
             snapshot = BaPageSnapshot(craft = craft),
-            clock = FixedOfficeClock(NOW),
+            clock = FixedBaOfficeClock(NOW),
         )
 
     @Test

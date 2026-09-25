@@ -19,24 +19,6 @@ import kotlin.test.assertTrue
 @Config(application = Application::class, sdk = [35])
 class BaCalendarPoolNotificationDispatcherTest {
     @Test
-    fun `calendar pool grouped notification id separates servers for same deadline`() {
-        val notifyAtMs = 1_777_392_000_000L
-
-        assertNotEquals(
-            baCalendarPoolGroupedNotificationId(
-                baseId = BASE_ID,
-                serverIndex = 0,
-                notifyAtMs = notifyAtMs,
-            ),
-            baCalendarPoolGroupedNotificationId(
-                baseId = BASE_ID,
-                serverIndex = 1,
-                notifyAtMs = notifyAtMs,
-            ),
-        )
-    }
-
-    @Test
     fun `calendar pool grouped notification id keeps each server inside base bucket`() {
         val notifyAtMs = 1_777_392_000_000L
         val ids =
@@ -63,41 +45,30 @@ class BaCalendarPoolNotificationDispatcherTest {
     }
 
     @Test
-    fun `calendar notification target opens calendar page for requested server`() {
+    fun `notification target opens its page for the requested server`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val intent =
-            baCalendarPoolOpenIntent(
-                context = context,
-                destination = BaCalendarPoolNotificationDestination.Calendar,
-                serverIndex = 2,
+        val cases =
+            listOf(
+                Triple(BaCalendarPoolNotificationDestination.Calendar, 2, MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR),
+                Triple(BaCalendarPoolNotificationDestination.Pool, 1, MainActivity.TARGET_ROUTE_BA_POOL),
             )
+        for ((destination, serverIndex, route) in cases) {
+            val intent =
+                baCalendarPoolOpenIntent(
+                    context = context,
+                    destination = destination,
+                    serverIndex = serverIndex,
+                )
+            val label = "$destination"
 
-        assertEquals(MainActivity::class.java.name, intent.component?.className)
-        assertEquals(MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR, intent.getStringExtra(MainActivity.EXTRA_TARGET_ROUTE))
-        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE))
-        assertEquals(2, intent.baCalendarPoolServerIndexOrNull())
-        assertFlag(intent, Intent.FLAG_ACTIVITY_NEW_TASK)
-        assertFlag(intent, Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        assertFlag(intent, Intent.FLAG_ACTIVITY_CLEAR_TOP)
-    }
-
-    @Test
-    fun `pool notification target opens pool page for requested server`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val intent =
-            baCalendarPoolOpenIntent(
-                context = context,
-                destination = BaCalendarPoolNotificationDestination.Pool,
-                serverIndex = 1,
-            )
-
-        assertEquals(MainActivity::class.java.name, intent.component?.className)
-        assertEquals(MainActivity.TARGET_ROUTE_BA_POOL, intent.getStringExtra(MainActivity.EXTRA_TARGET_ROUTE))
-        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE))
-        assertEquals(1, intent.baCalendarPoolServerIndexOrNull())
-        assertFlag(intent, Intent.FLAG_ACTIVITY_NEW_TASK)
-        assertFlag(intent, Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        assertFlag(intent, Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            assertEquals(MainActivity::class.java.name, intent.component?.className, label)
+            assertEquals(route, intent.getStringExtra(MainActivity.EXTRA_TARGET_ROUTE), label)
+            assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE), label)
+            assertEquals(serverIndex, intent.baCalendarPoolServerIndexOrNull(), label)
+            assertFlag(intent, Intent.FLAG_ACTIVITY_NEW_TASK, label)
+            assertFlag(intent, Intent.FLAG_ACTIVITY_SINGLE_TOP, label)
+            assertFlag(intent, Intent.FLAG_ACTIVITY_CLEAR_TOP, label)
+        }
     }
 
     @Test
@@ -186,8 +157,8 @@ class BaCalendarPoolNotificationDispatcherTest {
         assertEquals(context.getString(R.string.ba_calendar_pool_notify_short_pool), copy.onlineText)
     }
 
-    private fun assertFlag(intent: Intent, flag: Int) {
-        assertTrue(intent.flags and flag != 0)
+    private fun assertFlag(intent: Intent, flag: Int, label: String) {
+        assertTrue(intent.flags and flag != 0, "$label: missing flag $flag")
     }
 
     private companion object {

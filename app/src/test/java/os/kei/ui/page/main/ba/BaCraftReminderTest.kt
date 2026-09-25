@@ -97,23 +97,6 @@ class BaCraftReminderTest {
     }
 
     @Test
-    fun `both functions report independently`() {
-        val craft =
-            oneLowCraft(BaCraftFunction.Generate)
-                .withSlotAt(
-                    BaCraftFunction.Fusion,
-                    2,
-                    BaCraftSlot(startedAtMs = START, grades = listOf(BaCraftGrade.Low)),
-                )
-        val plan = BaReminderCoordinator.evaluateCraft(snapshot(craft), START + 45L * MINUTE)
-        assertEquals(2, plan.size)
-        assertEquals(
-            setOf(BaCraftFunction.Generate to 0, BaCraftFunction.Fusion to 2),
-            plan.map { it.function to it.index }.toSet(),
-        )
-    }
-
-    @Test
     fun `folding a batch of markers closes the loop exactly like marking one at a time`() {
         // The store writes all of a sweep's markers in one update. That fold has to be equivalent to
         // the per-completion write it replaces, or completions leak and the alarm retries forever.

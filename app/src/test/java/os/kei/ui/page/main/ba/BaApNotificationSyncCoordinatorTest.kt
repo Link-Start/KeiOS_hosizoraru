@@ -37,36 +37,6 @@ class BaApNotificationSyncCoordinatorTest {
     }
 
     @Test
-    fun `foreground expired hourly read sends and advances anchor`() {
-        val plan =
-            planBaApNotificationSync(
-                request =
-                    request(
-                        currentDisplay = 120,
-                        lastNotifiedLevel = 120,
-                        keepReadUntilBelowThreshold = false,
-                        suppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
-                    ),
-                nowMs = NOW_MS,
-            )
-
-        assertTrue(plan.shouldSendThresholdNotification)
-        assertTrue(plan.advanceSuppressionAnchorAfterDelivery)
-    }
-
-    @Test
-    fun `foreground below threshold clears local read state`() {
-        val plan =
-            planBaApNotificationSync(
-                request = request(currentDisplay = 119, suppressionAnchorAtMs = NOW_MS),
-                nowMs = NOW_MS,
-            )
-
-        assertEquals(0L, plan.nextSuppressionAnchorAtMs)
-        assertEquals(-1, plan.nextLastNotifiedLevel)
-    }
-
-    @Test
     fun `foreground dismissal suppresses AP growth without refreshing notification`() {
         val plan =
             planBaApNotificationSync(

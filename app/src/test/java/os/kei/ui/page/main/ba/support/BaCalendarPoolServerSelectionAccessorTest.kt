@@ -26,36 +26,16 @@ class BaCalendarPoolServerSelectionAccessorTest {
     @Test
     fun `enabled account servers are distinct and preserve account order`() {
         val snapshot =
-            BaAccountStoreSnapshot(
+            testBaAccountState(
                 accounts =
                     listOf(
-                        testAccount(id = "cn-main", serverIndex = 0),
-                        testAccount(id = "cn-alt", serverIndex = 0),
-                        testAccount(id = "jp-main", serverIndex = 2),
-                        testAccount(id = "global-disabled", serverIndex = 1, enabled = false),
+                        testBaAccountRecord(id = "cn-main", serverIndex = 0),
+                        testBaAccountRecord(id = "cn-alt", serverIndex = 0),
+                        testBaAccountRecord(id = "jp-main", serverIndex = 2),
+                        testBaAccountRecord(id = "global-disabled", serverIndex = 1, enabled = false),
                     ),
-                activeAccountId = BaAccountId("cn-main"),
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
             )
 
         assertEquals(listOf(0, 2), snapshot.enabledServerIndices())
     }
-
-    private fun testAccount(
-        id: String,
-        serverIndex: Int,
-        enabled: Boolean = true,
-    ): BaAccountRecord =
-        BaAccountRecord(
-            profile =
-                BaAccountProfile(
-                    id = BaAccountId(id),
-                    serverIndex = serverIndex,
-                    displayName = id,
-                    nickname = id,
-                    friendCode = "ABCDEFGH",
-                    enabled = enabled,
-                ),
-        )
 }

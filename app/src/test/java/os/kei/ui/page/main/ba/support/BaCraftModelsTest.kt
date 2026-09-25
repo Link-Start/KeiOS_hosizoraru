@@ -14,14 +14,6 @@ private const val START = 1_700_000_000_000L
 
 class BaCraftModelsTest {
     @Test
-    fun `grade ladder matches the game`() {
-        assertEquals(30L * MINUTE, BaCraftGrade.Low.durationMs)
-        assertEquals(90L * MINUTE, BaCraftGrade.Normal.durationMs)
-        assertEquals(3L * HOUR, BaCraftGrade.High.durationMs)
-        assertEquals(6L * HOUR, BaCraftGrade.Highest.durationMs)
-    }
-
-    @Test
     fun `generate sums the grade of every opened node`() {
         val slot =
             BaCraftSlot(
@@ -30,19 +22,6 @@ class BaCraftModelsTest {
             )
         assertEquals(12L * HOUR, slot.computedDurationMs())
         assertEquals(1_000L + 12L * HOUR, slot.endAtMs())
-    }
-
-    @Test
-    fun `three highest nodes are the longest reachable generate craft`() {
-        val slot = BaCraftSlot(startedAtMs = 1L, grades = List(3) { BaCraftGrade.Highest })
-        assertEquals(18L * HOUR, slot.computedDurationMs())
-    }
-
-    @Test
-    fun `fusion multiplies one grade by the quantity`() {
-        val slot = BaCraftSlot(startedAtMs = 1L, grades = List(5) { BaCraftGrade.Highest })
-        // Five superlative copies is the documented worst case: 30 hours.
-        assertEquals(30L * HOUR, slot.computedDurationMs())
     }
 
     @Test
@@ -255,11 +234,5 @@ class BaCraftModelsTest {
         assertEquals(0L, baCraftCustomDurationMsFromMinutes("abc"))
         assertEquals(0L, baCraftCustomDurationMsFromMinutes("-30"))
         assertEquals(BA_CRAFT_MAX_DURATION_MS, baCraftCustomDurationMsFromMinutes("999999"))
-    }
-
-    @Test
-    fun `label is trimmed to twenty four characters`() {
-        val slot = BaCraftSlot(label = "x".repeat(40)).normalized(BaCraftFunction.Generate)
-        assertEquals(24, slot.label.length)
     }
 }

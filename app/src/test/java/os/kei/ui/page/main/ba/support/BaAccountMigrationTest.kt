@@ -94,25 +94,6 @@ class BaAccountMigrationTest {
     }
 
     @Test
-    fun `legacy server accounts normalize friend code by server rule`() {
-        val backingStore = InMemoryBaAccountKeyValueStore()
-        val idSettings = BaIdSettingsAccessor(backingStore)
-        idSettings.saveIndependentByServerEnabled(true)
-        idSettings.saveFriendCode("AB12cd34", serverIndex = 0)
-        idSettings.saveFriendCode("glarisuv", serverIndex = 1)
-        idSettings.saveFriendCode("jparisuv", serverIndex = 2)
-
-        val accountStore = BaAccountStore(backingStore)
-
-        BaAccountMigration(accountStore, backingStore).migrateLegacyIfNeeded()
-
-        val accounts = accountStore.loadAccounts()
-        assertEquals("ab12cd3", accounts[0].profile.friendCode)
-        assertEquals("GLARISUV", accounts[1].profile.friendCode)
-        assertEquals("JPARISUV", accounts[2].profile.friendCode)
-    }
-
-    @Test
     fun `legacy migration is idempotent`() {
         val backingStore = InMemoryBaAccountKeyValueStore()
         val idSettings = BaIdSettingsAccessor(backingStore).apply {

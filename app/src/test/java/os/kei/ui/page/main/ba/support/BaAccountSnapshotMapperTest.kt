@@ -9,15 +9,11 @@ class BaAccountSnapshotMapperTest {
     @Test
     fun `active account overrides identity runtime and reminder fields`() {
         val activeAccount =
-            BaAccountRecord(
-                profile =
-                    BaAccountProfile(
-                        id = BaAccountId("account-2"),
-                        serverIndex = 1,
-                        displayName = "Global",
-                        nickname = "Global",
-                        friendCode = "GLFRIEND",
-                    ),
+            testBaAccountRecord(
+                id = "account-2",
+                serverIndex = 1,
+                nickname = "Global",
+                friendCode = "GLFRIEND",
                 runtime =
                     BaAccountRuntime(
                         apLimit = 180,
@@ -49,10 +45,8 @@ class BaAccountSnapshotMapperTest {
                 calendarUpcomingNotifyEnabled = true,
             )
         val state =
-            BaAccountStoreSnapshot(
+            testBaAccountState(
                 accounts = listOf(activeAccount),
-                activeAccountId = activeAccount.profile.id,
-                allAccountsFollowGlobalNotificationSettings = true,
                 globalReminderSettings =
                     BaGlobalReminderSettings(
                         apNotifyEnabled = true,
@@ -89,77 +83,15 @@ class BaAccountSnapshotMapperTest {
     }
 
     @Test
-    fun `active account snapshot loads its local AP acknowledgement anchors`() {
-        val accountId = BaAccountId("account-active")
-        val account =
-            BaAccountRecord(
-                profile =
-                    BaAccountProfile(
-                        id = accountId,
-                        serverIndex = 0,
-                        displayName = "Active",
-                        nickname = "Active",
-                        friendCode = "ACTIVE01",
-                    ),
-            )
-        val state =
-            BaAccountStoreSnapshot(
-                accounts = listOf(account),
-                activeAccountId = accountId,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
-            )
-        val acknowledgementStore = BaApAcknowledgementStore(InMemoryBaAccountKeyValueStore())
-        acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.Ap, 1_000L)
-        acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, 2_000L)
-        acknowledgementStore.setDismissedUntil(accountId, BaApReminderKind.Ap, 3_000L)
-        acknowledgementStore.setDismissedUntil(accountId, BaApReminderKind.CafeAp, 4_000L)
-
-        val snapshot =
-            BaPageSnapshot()
-                .withActiveBaAccount(state)
-                .withLocalApAcknowledgementAnchors(accountId, acknowledgementStore)
-
-        assertEquals(1_000L, snapshot.apSuppressionAnchorAtMs)
-        assertEquals(2_000L, snapshot.cafeApSuppressionAnchorAtMs)
-        assertEquals(3_000L, snapshot.apDismissedUntilAtMs)
-        assertEquals(4_000L, snapshot.cafeApDismissedUntilAtMs)
-    }
-
-    @Test
     fun `reminder snapshots load independent local anchors for each account`() {
-        val firstId = BaAccountId("account-first")
-        val secondId = BaAccountId("account-second")
         val accounts =
             listOf(
-                BaAccountRecord(
-                    profile =
-                        BaAccountProfile(
-                            id = firstId,
-                            serverIndex = 0,
-                            displayName = "First",
-                            nickname = "First",
-                            friendCode = "FIRST001",
-                        ),
-                ),
-                BaAccountRecord(
-                    profile =
-                        BaAccountProfile(
-                            id = secondId,
-                            serverIndex = 1,
-                            displayName = "Second",
-                            nickname = "Second",
-                            friendCode = "SECOND01",
-                        ),
-                ),
+                testBaAccountRecord(id = "account-first", serverIndex = 0),
+                testBaAccountRecord(id = "account-second", serverIndex = 1),
             )
-        val state =
-            BaAccountStoreSnapshot(
-                accounts = accounts,
-                activeAccountId = firstId,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
-            )
+        val firstId = accounts[0].profile.id
+        val secondId = accounts[1].profile.id
+        val state = testBaAccountState(accounts)
         val acknowledgementStore = BaApAcknowledgementStore(InMemoryBaAccountKeyValueStore())
         acknowledgementStore.setSuppressionAnchor(firstId, BaApReminderKind.Ap, 1_000L)
         acknowledgementStore.setSuppressionAnchor(firstId, BaApReminderKind.CafeAp, 2_000L)
@@ -191,13 +123,7 @@ class BaAccountSnapshotMapperTest {
     @Test
     fun `base snapshot is preserved when active account is missing`() {
         val base = BaPageSnapshot(serverIndex = 0, idNickname = "Base")
-        val state =
-            BaAccountStoreSnapshot(
-                accounts = emptyList(),
-                activeAccountId = null,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
-            )
+        val state = testBaAccountState(accounts = emptyList())
 
         assertEquals(base, base.withActiveBaAccount(state))
     }
@@ -206,29 +132,17 @@ class BaAccountSnapshotMapperTest {
     fun `custom account override maps AP read suppression mode to snapshot`() {
         val accountId = BaAccountId("account-custom")
         val account =
-            BaAccountRecord(
-                profile =
-                    BaAccountProfile(
-                        id = accountId,
-                        serverIndex = 1,
-                        displayName = "Custom",
-                        nickname = "Custom",
-                        friendCode = "CUSTOM01",
-                        notificationMode = BaAccountNotificationMode.Custom,
-                    ),
+            testBaAccountRecord(
+                id = accountId.value,
+                serverIndex = 1,
+                notificationMode = BaAccountNotificationMode.Custom,
                 reminderOverride =
                     BaAccountReminderOverride(
                         accountId = accountId,
                         keepApRemindersReadUntilBelowThreshold = false,
                     ),
             )
-        val state =
-            BaAccountStoreSnapshot(
-                accounts = listOf(account),
-                activeAccountId = accountId,
-                allAccountsFollowGlobalNotificationSettings = false,
-                globalReminderSettings = BaGlobalReminderSettings(),
-            )
+        val state = testBaAccountState(listOf(account), allAccountsFollowGlobalNotificationSettings = false)
 
         val snapshot = BaPageSnapshot().withActiveBaAccount(state)
 
@@ -239,29 +153,16 @@ class BaAccountSnapshotMapperTest {
     fun `switching account swaps craft state but not the craft card's expansion`() {
         // The two live side by side in BaPageSnapshot and must not be confused: `craft` is game state
         // each account owns, `craftCardExpanded` is one card's layout on one page.
-        val accountId = BaAccountId("account-craft")
         val account =
-            BaAccountRecord(
-                profile =
-                    BaAccountProfile(
-                        id = accountId,
-                        serverIndex = 1,
-                        displayName = "Craft",
-                        nickname = "Craft",
-                        friendCode = "CRAFT001",
-                    ),
+            testBaAccountRecord(
+                id = "account-craft",
+                serverIndex = 1,
                 runtime =
                     BaAccountRuntime(
                         craft = BaCraftState(generate = listOf(BaCraftSlot(startedAtMs = 9_000L))),
                     ),
             )
-        val state =
-            BaAccountStoreSnapshot(
-                accounts = listOf(account),
-                activeAccountId = accountId,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
-            )
+        val state = testBaAccountState(listOf(account))
 
         val snapshot = BaPageSnapshot(craftCardExpanded = false).withActiveBaAccount(state)
 

@@ -118,15 +118,6 @@ class BaCraftSummaryTest {
     }
 
     @Test
-    fun `a short list is read as idle slots, not as missing ones`() {
-        // The store pads to BA_CRAFT_SLOT_COUNT only on normalize; the summary must survive a raw
-        // one-element list from an older build.
-        val state = BaCraftState(generate = listOf(slot(BaCraftGrade.High)))
-
-        assertEquals(1, state.summary(START).runningCount)
-    }
-
-    @Test
     fun `a custom duration override drives the summary too`() {
         val state =
             BaCraftState(

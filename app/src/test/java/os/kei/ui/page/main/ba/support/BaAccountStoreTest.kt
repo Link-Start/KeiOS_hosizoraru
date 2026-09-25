@@ -10,8 +10,8 @@ class BaAccountStoreTest {
     @Test
     fun `same server can hold multiple accounts`() {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
-        val first = testAccount(id = "cn-main", serverIndex = 0, nickname = "Main", sortOrder = 0)
-        val second = testAccount(id = "cn-alt", serverIndex = 0, nickname = "Alt", sortOrder = 1)
+        val first = testBaAccountRecord(id = "cn-main", serverIndex = 0, nickname = "Main", sortOrder = 0)
+        val second = testBaAccountRecord(id = "cn-alt", serverIndex = 0, nickname = "Alt", sortOrder = 1)
 
         store.saveAccounts(listOf(first, second))
 
@@ -27,8 +27,8 @@ class BaAccountStoreTest {
         val store = BaAccountStore(backingStore)
         store.saveAccounts(
             listOf(
-                testAccount(id = "jp-main", serverIndex = 2, sortOrder = 0),
-                testAccount(id = "jp-alt", serverIndex = 2, sortOrder = 1),
+                testBaAccountRecord(id = "jp-main", serverIndex = 2, sortOrder = 0),
+                testBaAccountRecord(id = "jp-alt", serverIndex = 2, sortOrder = 1),
             ),
         )
         assertTrue(store.selectActiveAccount(BaAccountId("jp-alt")))
@@ -43,7 +43,7 @@ class BaAccountStoreTest {
     fun `active account key is cleared when every account is deleted`() {
         val backingStore = InMemoryBaAccountKeyValueStore()
         val store = BaAccountStore(backingStore)
-        store.saveAccounts(listOf(testAccount(id = "only", serverIndex = 1)))
+        store.saveAccounts(listOf(testBaAccountRecord(id = "only", serverIndex = 1)))
         assertEquals(BaAccountId("only"), store.loadState().activeAccountId)
 
         assertTrue(store.deleteAccount(BaAccountId("only")))
@@ -57,9 +57,9 @@ class BaAccountStoreTest {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
             listOf(
-                testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
-                testAccount(id = "cn-alt", serverIndex = 0, sortOrder = 1),
-                testAccount(id = "jp-main", serverIndex = 2, sortOrder = 2),
+                testBaAccountRecord(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                testBaAccountRecord(id = "cn-alt", serverIndex = 0, sortOrder = 1),
+                testBaAccountRecord(id = "jp-main", serverIndex = 2, sortOrder = 2),
             ),
         )
         assertTrue(store.selectActiveAccount(BaAccountId("cn-alt")))
@@ -103,8 +103,8 @@ class BaAccountStoreTest {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
             listOf(
-                testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
-                testAccount(id = "cn-alt", serverIndex = 0, sortOrder = 1),
+                testBaAccountRecord(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                testBaAccountRecord(id = "cn-alt", serverIndex = 0, sortOrder = 1),
             ),
         )
         assertTrue(store.selectActiveAccount(BaAccountId("cn-alt")))
@@ -136,8 +136,8 @@ class BaAccountStoreTest {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
             listOf(
-                testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
-                testAccount(id = "cn-alt", serverIndex = 0, sortOrder = 1),
+                testBaAccountRecord(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                testBaAccountRecord(id = "cn-alt", serverIndex = 0, sortOrder = 1),
             ),
         )
 
@@ -167,8 +167,8 @@ class BaAccountStoreTest {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
             listOf(
-                testAccount(id = "jp-main", serverIndex = 2, nickname = "Main", sortOrder = 0),
-                testAccount(id = "jp-alt", serverIndex = 2, nickname = "Alt", sortOrder = 1),
+                testBaAccountRecord(id = "jp-main", serverIndex = 2, nickname = "Main", sortOrder = 0),
+                testBaAccountRecord(id = "jp-alt", serverIndex = 2, nickname = "Alt", sortOrder = 1),
             ),
         )
         assertTrue(store.selectActiveAccount(BaAccountId("jp-alt")))
@@ -201,8 +201,8 @@ class BaAccountStoreTest {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
             listOf(
-                testAccount(id = "global-main", serverIndex = 1, sortOrder = 0),
-                testAccount(id = "global-alt", serverIndex = 1, sortOrder = 1),
+                testBaAccountRecord(id = "global-main", serverIndex = 1, sortOrder = 0),
+                testBaAccountRecord(id = "global-alt", serverIndex = 1, sortOrder = 1),
             ),
         )
         assertTrue(store.selectActiveAccount(BaAccountId("global-alt")))
@@ -233,8 +233,8 @@ class BaAccountStoreTest {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
             listOf(
-                testAccount(id = "global-main", serverIndex = 1, sortOrder = 0),
-                testAccount(id = "global-alt", serverIndex = 1, sortOrder = 1),
+                testBaAccountRecord(id = "global-main", serverIndex = 1, sortOrder = 0),
+                testBaAccountRecord(id = "global-alt", serverIndex = 1, sortOrder = 1),
             ),
         )
 
@@ -262,12 +262,12 @@ class BaAccountStoreTest {
     @Test
     fun `custom reminder settings are ignored while all accounts follow global`() {
         val account =
-            testAccount(
+            testBaAccountRecord(
                 id = "custom",
                 serverIndex = 2,
             ).copy(
                 profile =
-                    testAccount(id = "custom", serverIndex = 2)
+                    testBaAccountRecord(id = "custom", serverIndex = 2)
                         .profile
                         .copy(notificationMode = BaAccountNotificationMode.Custom),
                 reminderOverride =
@@ -300,12 +300,12 @@ class BaAccountStoreTest {
     fun `custom reminder settings apply when global follow is disabled`() {
         val accountId = BaAccountId("custom")
         val account =
-            testAccount(
+            testBaAccountRecord(
                 id = accountId.value,
                 serverIndex = 2,
             ).copy(
                 profile =
-                    testAccount(id = accountId.value, serverIndex = 2)
+                    testBaAccountRecord(id = accountId.value, serverIndex = 2)
                         .profile
                         .copy(notificationMode = BaAccountNotificationMode.Custom),
                 reminderOverride =
@@ -364,7 +364,7 @@ class BaAccountStoreTest {
         val backingStore = InMemoryBaAccountKeyValueStore()
         val store = BaAccountStore(backingStore)
         val accountId = BaAccountId("cn-main")
-        store.saveAccounts(listOf(testAccount(id = accountId.value, serverIndex = 0)))
+        store.saveAccounts(listOf(testBaAccountRecord(id = accountId.value, serverIndex = 0)))
 
         assertFalse(
             store.updateAccountRuntime(accountId) { runtime ->
@@ -406,22 +406,4 @@ class BaAccountStoreTest {
         store.saveGlobalReminderSettings(BaGlobalReminderSettings(apNotifyEnabled = true))
         assertEquals(firstReminderSettingsTimestamp, store.loadState().globalReminderSettingsUpdatedAtMs)
     }
-
-    private fun testAccount(
-        id: String,
-        serverIndex: Int,
-        nickname: String = "Kei",
-        sortOrder: Int = 0,
-    ): BaAccountRecord =
-        BaAccountRecord(
-            profile =
-                BaAccountProfile(
-                    id = BaAccountId(id),
-                    serverIndex = serverIndex,
-                    displayName = nickname,
-                    nickname = nickname,
-                    friendCode = "ABCDEFGH",
-                    sortOrder = sortOrder,
-                ),
-        )
 }

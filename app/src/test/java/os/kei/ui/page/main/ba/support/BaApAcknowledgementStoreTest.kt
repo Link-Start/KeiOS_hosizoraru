@@ -80,18 +80,7 @@ class BaApAcknowledgementStoreTest {
     fun `deleting an account clears both local anchors with the account`() {
         val accountId = BaAccountId("cn-main")
         val accountStore = BaAccountStore(backing)
-        accountStore.addAccount(
-            BaAccountRecord(
-                profile =
-                    BaAccountProfile(
-                        id = accountId,
-                        serverIndex = 0,
-                        displayName = "Main",
-                        nickname = "Main",
-                        friendCode = "MAIN0001",
-                    ),
-            ),
-        )
+        accountStore.addAccount(testBaAccountRecord(id = accountId.value, serverIndex = 0))
         store.setSuppressionAnchor(accountId, BaApReminderKind.Ap, 1_000L)
         store.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, 2_000L)
         store.setDismissedUntil(accountId, BaApReminderKind.Ap, 3_000L)

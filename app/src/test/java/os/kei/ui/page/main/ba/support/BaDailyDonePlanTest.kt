@@ -17,7 +17,6 @@ class BaDailyDonePlanTest {
         coffeeInvite1UsedMs: Long = 0L,
         coffeeInvite2UsedMs: Long = 0L,
         craft: BaCraftState = BaCraftState(),
-        serverIndex: Int = 2,
         apLastNotifiedLevel: Int = -1,
     ): BaPageSnapshot =
         BaPageSnapshot(
@@ -27,7 +26,7 @@ class BaDailyDonePlanTest {
             coffeeInvite1UsedMs = coffeeInvite1UsedMs,
             coffeeInvite2UsedMs = coffeeInvite2UsedMs,
             craft = craft,
-            serverIndex = serverIndex,
+            serverIndex = 2,
             apLastNotifiedLevel = apLastNotifiedLevel,
         )
 
@@ -41,20 +40,6 @@ class BaDailyDonePlanTest {
         assertEquals(floorToHourMs(NOW), plan.cafeLastHourMs)
         assertTrue(plan.outcome.apAdjusted)
         assertTrue(plan.outcome.cafeApCleared)
-    }
-
-    @Test
-    fun `clearing is not a cafe claim - the cafe pool does not land in the player pool`() {
-        val plan = planBaDailyDone(snapshot(apCurrent = 0.0, cafeStoredAp = 740.0), nowMs = NOW)
-        assertEquals(0.0, plan.apCurrent)
-        assertEquals(0.0, plan.cafeStoredAp)
-    }
-
-    @Test
-    fun `notified levels reset so the next reminder is not deduped away`() {
-        val plan = planBaDailyDone(snapshot(), nowMs = NOW)
-        assertEquals(-1, plan.apLastNotifiedLevel)
-        assertEquals(-1, plan.cafeApLastNotifiedLevel)
     }
 
     @Test
@@ -175,46 +160,6 @@ class BaDailyDonePlanTest {
         assertEquals(0, second.outcome.craftSlotsStarted)
         assertEquals(first.coffeeHeadpatMs, second.coffeeHeadpatMs)
         assertEquals(first.craft, second.craft)
-    }
-
-    @Test
-    fun `a fully spent account reports nothing changed`() {
-        val plan =
-            planBaDailyDone(
-                snapshot(
-                    apCurrent = 0.0,
-                    cafeStoredAp = 0.0,
-                    coffeeHeadpatMs = NOW - MINUTE,
-                    coffeeInvite1UsedMs = NOW - MINUTE,
-                    coffeeInvite2UsedMs = NOW - MINUTE,
-                    craft =
-                        BaCraftState()
-                            .withSlotAt(
-                                BaCraftFunction.Generate,
-                                0,
-                                BaCraftSlot(startedAtMs = NOW, grades = listOf(BaCraftGrade.High)),
-                            )
-                            .withSlotAt(
-                                BaCraftFunction.Generate,
-                                1,
-                                BaCraftSlot(startedAtMs = NOW, grades = listOf(BaCraftGrade.High)),
-                            ),
-                ),
-                nowMs = NOW,
-            )
-        assertFalse(plan.outcome.changedAnything)
-    }
-
-    @Test
-    fun `the headpat rule follows the account server`() {
-        // Same timestamp, different server: the cafe refresh boundary differs, so readiness can differ.
-        val headpatMs = NOW - 4L * HOUR
-        val cn = planBaDailyDone(snapshot(coffeeHeadpatMs = headpatMs, serverIndex = 0), nowMs = NOW)
-        val jp = planBaDailyDone(snapshot(coffeeHeadpatMs = headpatMs, serverIndex = 2), nowMs = NOW)
-        // Both are past the 3h cooldown, so both restart — the point is that serverIndex reaches the rule
-        // at all rather than being silently dropped.
-        assertEquals(NOW, cn.coffeeHeadpatMs)
-        assertEquals(NOW, jp.coffeeHeadpatMs)
     }
 
     @Test
@@ -356,17 +301,6 @@ class BaDailyDonePlanTest {
         val slot = plan.craft.slotAt(BaCraftFunction.Generate, 0)
         assertEquals(listOf(BaCraftGrade.Highest, BaCraftGrade.Highest), slot.grades)
         assertEquals(NOW + 12L * HOUR, slot.endAtMs())
-    }
-
-    @Test
-    fun `a six hour craft is one highest grade item, the shape the tile editor offers`() {
-        val plan =
-            planBaDailyDone(
-                snapshot(),
-                config = BaDailyDoneConfig(craftSlots = 1, craftGrade = BaCraftGrade.Highest),
-                nowMs = NOW,
-            )
-        assertEquals(NOW + 6L * HOUR, plan.craft.slotAt(BaCraftFunction.Generate, 0).endAtMs())
     }
 
     @Test

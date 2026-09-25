@@ -16,7 +16,7 @@ class BaAccountTransferTest {
             )
         val accountId = BaAccountId("cn-main")
         val account =
-            testAccount(id = accountId.value, serverIndex = 0).copy(
+            testBaAccountRecord(id = accountId.value, serverIndex = 0).copy(
                 reminderOverride = customSettings.toAccountReminderOverride(accountId),
             )
         val snapshot =
@@ -41,8 +41,8 @@ class BaAccountTransferTest {
             BaAccountStoreSnapshot(
                 accounts =
                     listOf(
-                        testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
-                        testAccount(id = activeAccountId.value, serverIndex = 0, sortOrder = 1),
+                        testBaAccountRecord(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                        testBaAccountRecord(id = activeAccountId.value, serverIndex = 0, sortOrder = 1),
                     ),
                 activeAccountId = activeAccountId,
                 allAccountsFollowGlobalNotificationSettings = false,
@@ -77,7 +77,7 @@ class BaAccountTransferTest {
             BaAccountStoreSnapshot(
                 accounts =
                     listOf(
-                        testAccount(
+                        testBaAccountRecord(
                             id = "cn-main",
                             serverIndex = 0,
                             nickname = "Local",
@@ -86,7 +86,7 @@ class BaAccountTransferTest {
                             profileUpdatedAtMs = 1_000L,
                             runtimeUpdatedAtMs = 1_000L,
                         ),
-                        testAccount(id = localActiveAccountId.value, serverIndex = 1, sortOrder = 1),
+                        testBaAccountRecord(id = localActiveAccountId.value, serverIndex = 1, sortOrder = 1),
                     ),
                 activeAccountId = localActiveAccountId,
                 allAccountsFollowGlobalNotificationSettings = true,
@@ -101,8 +101,8 @@ class BaAccountTransferTest {
                 exportedAtMs = 100L,
                 accounts =
                     listOf(
-                        testAccount(id = remoteActiveAccountId.value, serverIndex = 2, sortOrder = 0),
-                        testAccount(
+                        testBaAccountRecord(id = remoteActiveAccountId.value, serverIndex = 2, sortOrder = 0),
+                        testBaAccountRecord(
                             id = "cn-main",
                             serverIndex = 0,
                             nickname = "Remote",
@@ -140,7 +140,7 @@ class BaAccountTransferTest {
             BaAccountStoreSnapshot(
                 accounts =
                     listOf(
-                        testAccount(
+                        testBaAccountRecord(
                             id = accountId.value,
                             serverIndex = 0,
                             nickname = "Local",
@@ -161,7 +161,7 @@ class BaAccountTransferTest {
                 exportedAtMs = 100L,
                 accounts =
                     listOf(
-                        testAccount(
+                        testBaAccountRecord(
                             id = accountId.value,
                             serverIndex = 0,
                             nickname = "Remote",
@@ -241,7 +241,7 @@ class BaAccountTransferTest {
             BaAccountStoreSnapshot(
                 accounts =
                     listOf(
-                        testAccount(
+                        testBaAccountRecord(
                             id = "cn-main",
                             serverIndex = 0,
                             nickname = "Base 1",
@@ -249,7 +249,7 @@ class BaAccountTransferTest {
                             profileUpdatedAtMs = 100L,
                             runtimeUpdatedAtMs = 100L,
                         ),
-                        testAccount(
+                        testBaAccountRecord(
                             id = "jp-alt",
                             serverIndex = 2,
                             nickname = "Base 2",
@@ -266,7 +266,7 @@ class BaAccountTransferTest {
             base.copy(
                 accounts =
                     listOf(
-                        testAccount(
+                        testBaAccountRecord(
                             id = "cn-main",
                             serverIndex = 0,
                             nickname = "Device 1",
@@ -282,7 +282,7 @@ class BaAccountTransferTest {
                 accounts =
                     listOf(
                         base.accounts[0],
-                        testAccount(
+                        testBaAccountRecord(
                             id = "jp-alt",
                             serverIndex = 2,
                             nickname = "Device 2",
@@ -320,7 +320,7 @@ class BaAccountTransferTest {
     fun `stable sync fingerprint ignores export time metadata`() {
         val snapshot =
             BaAccountStoreSnapshot(
-                accounts = listOf(testAccount(id = "cn-main", serverIndex = 0)),
+                accounts = listOf(testBaAccountRecord(id = "cn-main", serverIndex = 0)),
                 activeAccountId = BaAccountId("cn-main"),
                 allAccountsFollowGlobalNotificationSettings = true,
                 globalReminderSettings = BaGlobalReminderSettings(),
@@ -333,72 +333,39 @@ class BaAccountTransferTest {
     }
 
     @Test
-    fun `merge falls back to local active account when remote active is missing`() {
-        val localActiveAccountId = BaAccountId("cn-main")
-        val local =
-            BaAccountStoreSnapshot(
-                accounts = listOf(testAccount(id = localActiveAccountId.value, serverIndex = 0)),
-                activeAccountId = localActiveAccountId,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
-            )
-        val remote =
-            BaAccountsTransferPayload(
-                accounts = listOf(testAccount(id = "jp-alt", serverIndex = 2)),
-                activeAccountId = BaAccountId("missing"),
-            )
-
-        val merged = mergeBaAccountsForSync(local = local, remote = remote, nowMs = 10L)
-
-        assertEquals(localActiveAccountId, merged.activeAccountId)
-        assertEquals(listOf("cn-main", "jp-alt"), merged.accounts.map { it.profile.id.value })
-    }
-
-    @Test
-    fun `merge falls back to valid local active account when newer remote active is invalid`() {
-        val localActiveAccountId = BaAccountId("cn-main")
-        val local =
-            BaAccountStoreSnapshot(
-                accounts = listOf(testAccount(id = localActiveAccountId.value, serverIndex = 0)),
-                activeAccountId = localActiveAccountId,
-                allAccountsFollowGlobalNotificationSettings = true,
-                globalReminderSettings = BaGlobalReminderSettings(),
-                activeAccountUpdatedAtMs = 1_000L,
-            )
-        val remote =
-            BaAccountsTransferPayload(
-                accounts = listOf(testAccount(id = "jp-alt", serverIndex = 2)),
-                activeAccountId = BaAccountId("missing"),
-                activeAccountUpdatedAtMs = 2_000L,
-            )
-
-        val merged = mergeBaAccountsForSync(local = local, remote = remote, nowMs = 3_000L)
-
-        assertEquals(localActiveAccountId, merged.activeAccountId)
-        assertEquals(listOf("cn-main", "jp-alt"), merged.accounts.map { it.profile.id.value })
-    }
-
-    private fun testAccount(
-        id: String,
-        serverIndex: Int,
-        nickname: String = "Kei",
-        sortOrder: Int = 0,
-        runtime: BaAccountRuntime = BaAccountRuntime(),
-        profileUpdatedAtMs: Long = 0L,
-        runtimeUpdatedAtMs: Long = 0L,
-    ): BaAccountRecord =
-        BaAccountRecord(
-            profile =
-                BaAccountProfile(
-                    id = BaAccountId(id),
-                    serverIndex = serverIndex,
-                    displayName = nickname,
-                    nickname = nickname,
-                    friendCode = "ABCDEFGH",
-                    sortOrder = sortOrder,
-                ),
-            runtime = runtime,
-            profileUpdatedAtMs = profileUpdatedAtMs,
-            runtimeUpdatedAtMs = runtimeUpdatedAtMs,
+    fun `merge falls back to valid local active account when remote active is missing`() {
+        data class Case(
+            val label: String,
+            val localActiveUpdatedAtMs: Long,
+            val remoteActiveUpdatedAtMs: Long,
+            val nowMs: Long,
         )
+        val cases =
+            listOf(
+                Case("remote active missing, same age", 0L, 0L, nowMs = 10L),
+                Case("newer remote active is invalid", 1_000L, 2_000L, nowMs = 3_000L),
+            )
+        val localActiveAccountId = BaAccountId("cn-main")
+        for (case in cases) {
+            val local =
+                BaAccountStoreSnapshot(
+                    accounts = listOf(testBaAccountRecord(id = localActiveAccountId.value, serverIndex = 0)),
+                    activeAccountId = localActiveAccountId,
+                    allAccountsFollowGlobalNotificationSettings = true,
+                    globalReminderSettings = BaGlobalReminderSettings(),
+                    activeAccountUpdatedAtMs = case.localActiveUpdatedAtMs,
+                )
+            val remote =
+                BaAccountsTransferPayload(
+                    accounts = listOf(testBaAccountRecord(id = "jp-alt", serverIndex = 2)),
+                    activeAccountId = BaAccountId("missing"),
+                    activeAccountUpdatedAtMs = case.remoteActiveUpdatedAtMs,
+                )
+
+            val merged = mergeBaAccountsForSync(local = local, remote = remote, nowMs = case.nowMs)
+
+            assertEquals(localActiveAccountId, merged.activeAccountId, case.label)
+            assertEquals(listOf("cn-main", "jp-alt"), merged.accounts.map { it.profile.id.value }, case.label)
+        }
+    }
 }

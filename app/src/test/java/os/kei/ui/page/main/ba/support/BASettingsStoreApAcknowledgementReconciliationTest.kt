@@ -8,49 +8,39 @@ import kotlin.test.assertTrue
 
 class BASettingsStoreApAcknowledgementReconciliationTest {
     @Test
-    fun `disabled account persists ordinary and cafe acknowledgement resets`() {
-        val fixture =
-            fixture(
-                account =
-                    account(
-                        accountId = BaAccountId("disabled"),
-                        enabled = false,
-                        ap = 130.0,
-                        cafeAp = 130.0,
-                        apLastNotifiedLevel = 130,
-                        cafeApLastNotifiedLevel = 130,
-                    ),
+    fun `disabled or below threshold account persists ordinary and cafe acknowledgement resets`() {
+        data class Case(
+            val label: String,
+            val accountId: String,
+            val enabled: Boolean,
+            val ap: Int,
+            val anchors: Pair<Long, Long>,
+            val dismissals: Pair<Long, Long>,
+        )
+        val cases =
+            listOf(
+                Case("disabled", "disabled", enabled = false, ap = 130, anchors = 1_000L to 2_000L, dismissals = 3_000L to 4_000L),
+                Case("below threshold", "below", enabled = true, ap = 119, anchors = 3_000L to 4_000L, dismissals = 5_000L to 6_000L),
             )
-        fixture.seedAnchors(ap = 1_000L, cafeAp = 2_000L)
-        fixture.seedDismissals(ap = 3_000L, cafeAp = 4_000L)
+        for (case in cases) {
+            val fixture =
+                fixture(
+                    account =
+                        account(
+                            accountId = BaAccountId(case.accountId),
+                            enabled = case.enabled,
+                            ap = case.ap.toDouble(),
+                            cafeAp = case.ap.toDouble(),
+                            apLastNotifiedLevel = case.ap,
+                            cafeApLastNotifiedLevel = case.ap,
+                        ),
+                )
+            fixture.seedAnchors(ap = case.anchors.first, cafeAp = case.anchors.second)
+            fixture.seedDismissals(ap = case.dismissals.first, cafeAp = case.dismissals.second)
 
-        val changed = fixture.reconcile()
-
-        assertTrue(changed)
-        fixture.assertResetState()
-    }
-
-    @Test
-    fun `below threshold persists ordinary and cafe acknowledgement resets`() {
-        val fixture =
-            fixture(
-                account =
-                    account(
-                        accountId = BaAccountId("below"),
-                        enabled = true,
-                        ap = 119.0,
-                        cafeAp = 119.0,
-                        apLastNotifiedLevel = 119,
-                        cafeApLastNotifiedLevel = 119,
-                    ),
-            )
-        fixture.seedAnchors(ap = 3_000L, cafeAp = 4_000L)
-        fixture.seedDismissals(ap = 5_000L, cafeAp = 6_000L)
-
-        val changed = fixture.reconcile()
-
-        assertTrue(changed)
-        fixture.assertResetState()
+            assertTrue(fixture.reconcile(), case.label)
+            fixture.assertResetState(case.label)
+        }
     }
 
     @Test
@@ -177,25 +167,29 @@ class BASettingsStoreApAcknowledgementReconciliationTest {
                 nowMs = NOW_MS,
             )
 
-        fun assertResetState() {
+        fun assertResetState(label: String) {
             val persisted = accountStore.loadAccounts().single().reminderRuntime
-            assertEquals(-1, persisted.apLastNotifiedLevel)
-            assertEquals(-1, persisted.cafeApLastNotifiedLevel)
+            assertEquals(-1, persisted.apLastNotifiedLevel, label)
+            assertEquals(-1, persisted.cafeApLastNotifiedLevel, label)
             assertEquals(
                 0L,
                 acknowledgementStore.loadSuppressionAnchor(accountId, BaApReminderKind.Ap),
+                label,
             )
             assertEquals(
                 0L,
                 acknowledgementStore.loadSuppressionAnchor(accountId, BaApReminderKind.CafeAp),
+                label,
             )
             assertEquals(
                 0L,
                 acknowledgementStore.loadDismissedUntil(accountId, BaApReminderKind.Ap),
+                label,
             )
             assertEquals(
                 0L,
                 acknowledgementStore.loadDismissedUntil(accountId, BaApReminderKind.CafeAp),
+                label,
             )
         }
     }

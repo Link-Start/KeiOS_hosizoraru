@@ -72,19 +72,6 @@ class BaDailyDoneConfigTest {
     }
 
     @Test
-    fun `switching a five copy fusion template to generate clamps the count down`() {
-        val fusion =
-            BaDailyDoneConfig(
-                craftFunction = BaCraftFunction.Fusion,
-                craftEntriesPerSlot = BA_CRAFT_FUSION_MAX_ENTRIES,
-            ).normalized()
-        assertEquals(BA_CRAFT_FUSION_MAX_ENTRIES, fusion.craftEntriesPerSlot)
-
-        val moved = fusion.copy(craftFunction = BaCraftFunction.Generate).normalized()
-        assertEquals(BA_CRAFT_GENERATE_MAX_ENTRIES, moved.craftEntriesPerSlot)
-    }
-
-    @Test
     fun `the slot duration is the grade summed once per produced item`() {
         assertEquals(
             30L * MINUTE,

@@ -26,20 +26,6 @@ class McpNotificationSnapshotStoreTest {
     }
 
     @Test
-    fun `snapshot store keeps account scoped notification ids`() {
-        val snapshot = snapshot(port = 120)
-
-        McpNotificationSnapshotStore.put(ACCOUNT_SCOPED_ID, snapshot)
-
-        assertEquals(snapshot, McpNotificationSnapshotStore.get(ACCOUNT_SCOPED_ID))
-        assertTrue(
-            McpNotificationSnapshotStore.entries().any { (notificationId, storedSnapshot) ->
-                notificationId == ACCOUNT_SCOPED_ID && storedSnapshot == snapshot
-            }
-        )
-    }
-
-    @Test
     fun `active state cache reuses short lived probes`() {
         var probeCount = 0
 

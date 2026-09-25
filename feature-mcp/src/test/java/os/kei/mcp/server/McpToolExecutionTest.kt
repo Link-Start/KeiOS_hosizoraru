@@ -8,6 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -18,8 +19,9 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [35])
 class McpToolExecutionTest {
+    // Virtual time: the CacheRead profile's real 4-second budget would otherwise be spent waiting.
     @Test
-    fun timeoutReturnsToolErrorResult() = runBlocking {
+    fun timeoutReturnsToolErrorResult() = runTest {
         val logs = mutableListOf<String>()
         val result = executeMcpTextTool(
             environment = testEnvironment(logs),

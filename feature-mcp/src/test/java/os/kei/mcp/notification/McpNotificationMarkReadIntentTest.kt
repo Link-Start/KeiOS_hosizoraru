@@ -48,15 +48,11 @@ class McpNotificationMarkReadIntentTest {
     }
 
     @Test
-    fun `ordinary AP production PendingIntent updates current account metadata`() {
+    fun `ordinary and cafe AP production PendingIntents update current account metadata`() {
         assertProductionPendingIntentMetadataUpdate(
             notificationId = 243_220,
             serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
         )
-    }
-
-    @Test
-    fun `cafe AP production PendingIntent updates current account metadata`() {
         assertProductionPendingIntentMetadataUpdate(
             notificationId = 243_221,
             serverName = LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,

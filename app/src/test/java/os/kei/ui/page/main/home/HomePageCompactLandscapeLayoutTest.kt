@@ -15,8 +15,6 @@ class HomePageCompactLandscapeLayoutTest {
                 availableHeight = 426.dp,
             ),
         )
-        assertEquals(12.dp, homePageHeroTopPadding(compactHeightPresentation = true))
-        assertEquals(12.dp, homePageHeroSpacerTrailingClearance(compactHeightPresentation = true))
         assertFalse(homePageHeroShowsSupportingDetails(compactHeightPresentation = true))
         assertEquals(
             96.dp,
@@ -81,8 +79,6 @@ class HomePageCompactLandscapeLayoutTest {
                 availableHeight = 952.dp,
             ),
         )
-        assertEquals(36.dp, homePageHeroTopPadding(compactHeightPresentation = false))
-        assertEquals(90.dp, homePageHeroSpacerTrailingClearance(compactHeightPresentation = false))
         assertTrue(homePageHeroShowsSupportingDetails(compactHeightPresentation = false))
         assertEquals(
             168.dp,

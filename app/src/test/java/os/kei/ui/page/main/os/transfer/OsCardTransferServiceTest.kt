@@ -384,10 +384,6 @@ class OsCardTransferServiceTest {
             )
 
         assertEquals(listOf(BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID), migrated.map { it.id })
-        assertEquals(
-            migrated.map { it.id }.distinct(),
-            migrated.map { it.id },
-        )
     }
 
     @Test

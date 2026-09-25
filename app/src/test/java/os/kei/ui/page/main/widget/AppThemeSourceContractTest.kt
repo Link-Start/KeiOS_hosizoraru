@@ -4,6 +4,8 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoRoot
+import os.kei.ui.testing.withoutComments
 
 /**
  * A component must ask the *app* for the theme, not the system.
@@ -53,13 +55,6 @@ class AppThemeSourceContractTest {
             .flatMap { dir -> dir.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList() }
             .map { file -> file.relativeTo(repoRoot()).path to file.readText().withoutComments() }
 
-    /**
-     * Comments are stripped before scanning, because a doc line *naming* the API is not a call to it —
-     * the comment explaining this very rule tripped the first version of this test.
-     */
-    private fun String.withoutComments(): String =
-        COMMENT.replace(this) { match -> match.value.filter { it == '\n' } }
-
     private companion object {
         val MODULES =
             listOf(
@@ -67,23 +62,10 @@ class AppThemeSourceContractTest {
                 "ui-liquid-glass/src/main",
             )
 
-        /** Block and line comments, newlines preserved so reported positions stay meaningful. */
-        val COMMENT = Regex("""/\*.*?\*/|//[^\n]*""", RegexOption.DOT_MATCHES_ALL)
-
         val ALLOWED =
             setOf(
                 "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/AppThemeAppearance.kt",
                 "app/src/main/java/os/kei/MainActivity.kt",
             )
-
-        fun repoRoot(): File {
-            val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-            return requireNotNull(
-                generateSequence(workingDirectory) { it.parentFile }
-                    .firstOrNull { File(it, "settings.gradle.kts").isFile },
-            ) {
-                "Unable to locate the repository root from $workingDirectory"
-            }
-        }
     }
 }

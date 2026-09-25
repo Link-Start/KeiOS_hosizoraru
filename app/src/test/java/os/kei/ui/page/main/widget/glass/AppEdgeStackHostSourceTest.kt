@@ -3,6 +3,7 @@ package os.kei.ui.page.main.widget.glass
 import java.io.File
 import kotlin.test.assertTrue
 import org.junit.Test
+import os.kei.ui.testing.repoRoot
 
 /**
  * Every stacking host, held to the one contract the compiler cannot check.
@@ -18,20 +19,13 @@ import org.junit.Test
  */
 class AppEdgeStackHostSourceTest {
     @Test
-    fun everyStackingHostWrapsItsListInTheKeepAliveBox() {
+    fun everyStackingHostWrapsItsListInTheKeepAliveBoxAndAbsorbsItsHeadroom() {
         STACKING_HOSTS.forEach { host ->
             val source = sourceFile(host)
             assertTrue(
                 "AppEdgeStackKeepAlive(" in source,
                 "$host provides LocalAppEdgeStackCards, so its list must sit in the keep-alive box",
             )
-        }
-    }
-
-    @Test
-    fun everyStackingHostRunsItsTopInsetThroughTheHelper() {
-        STACKING_HOSTS.forEach { host ->
-            val source = sourceFile(host)
             assertTrue(
                 "appEdgeStackKeepAliveTopPadding(" in source,
                 "$host shifts its list up, so its top inset must absorb the headroom",
@@ -73,7 +67,7 @@ class AppEdgeStackHostSourceTest {
      */
     @Test
     fun theListOfStackingHostsIsComplete() {
-        val root = repositoryRoot()
+        val root = repoRoot()
         val hosts =
             File(root, APP_SOURCE_PREFIX)
                 .walkTopDown()
@@ -114,18 +108,8 @@ private val BOTTOM_CHROME_HOSTS =
         "github/release/GitHubReleaseListPage.kt",
     )
 
-private fun repositoryRoot(): File {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    return requireNotNull(
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .firstOrNull { directory -> File(directory, "${APP_SOURCE_PREFIX}os/components").isDirectory },
-    ) {
-        "Unable to locate the repository root from $workingDirectory"
-    }
-}
-
 private fun sourceFile(relativePath: String): String {
-    val file = File(repositoryRoot(), "$APP_SOURCE_PREFIX$relativePath")
+    val file = File(repoRoot(), "$APP_SOURCE_PREFIX$relativePath")
     assertTrue(file.isFile, "Missing stacking host source: $relativePath")
     return file.readText()
 }

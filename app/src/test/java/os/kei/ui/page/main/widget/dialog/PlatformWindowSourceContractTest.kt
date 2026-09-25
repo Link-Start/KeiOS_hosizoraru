@@ -4,6 +4,8 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoRoot
+import os.kei.ui.testing.withoutComments
 
 /**
  * Presentations open in this window, not a new platform one.
@@ -45,30 +47,15 @@ class PlatformWindowSourceContractTest {
                 PLATFORM_WINDOW.findAll(file.readText().withoutComments()).map { match -> path to match.value }
             }
 
-    private fun String.withoutComments(): String =
-        COMMENT.replace(this) { match -> match.value.filter { it == '\n' } }
-
     private companion object {
         val MODULES = listOf("app/src/main", "ui-liquid-glass/src/main", "ui-pip/src/main")
 
         /** A bare call: not `GitHubDeleteTrackDialog(`, not `x.Dialog(`, not a definition. */
         val PLATFORM_WINDOW = Regex("""(?<![A-Za-z0-9_.])(Dialog|Popup|AlertDialog|BasicAlertDialog)\s*\(""")
 
-        val COMMENT = Regex("""/\*.*?\*/|//[^\n]*""", RegexOption.DOT_MATCHES_ALL)
-
         val ALLOWED =
             setOf(
                 "app/src/main/java/os/kei/ui/page/main/widget/dialog/AppWindowDialogHosts.kt",
             )
-
-        fun repoRoot(): File {
-            val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-            return requireNotNull(
-                generateSequence(workingDirectory) { it.parentFile }
-                    .firstOrNull { File(it, "settings.gradle.kts").isFile },
-            ) {
-                "Unable to locate the repository root from $workingDirectory"
-            }
-        }
     }
 }

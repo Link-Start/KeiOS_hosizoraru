@@ -9,73 +9,53 @@ import kotlin.test.assertTrue
 class MainPagerVisibilityChangeActionTest {
     @Test
     fun `hiding github tab also hides github home card`() {
-        val emittedBottomSets = mutableListOf<Set<String>>()
-        val emittedCards = mutableListOf<Pair<HomeOverviewCard, Boolean>>()
-        val action = buildMainPagerVisibilityChangeAction(
-            visibleBottomPageNames = setOf(BottomPage.GitHub.name, BottomPage.Ba.name),
-            onVisibleBottomPageNamesChange = emittedBottomSets::add,
-            onOverviewCardVisibilityChange = { card, visible ->
-                emittedCards += card to visible
-            }
-        )
+        val harness = Harness(visible = setOf(BottomPage.GitHub, BottomPage.Ba))
 
-        action(BottomPage.GitHub, false)
+        harness.action(BottomPage.GitHub, false)
 
-        assertEquals(listOf(setOf(BottomPage.Ba.name)), emittedBottomSets)
-        assertEquals(listOf(HomeOverviewCard.GITHUB to false), emittedCards)
+        assertEquals(listOf(setOf(BottomPage.Ba.name)), harness.emittedBottomSets)
+        assertEquals(listOf(HomeOverviewCard.GITHUB to false), harness.emittedCards)
     }
 
     @Test
     fun `showing github tab preserves explicit home card state`() {
-        val emittedBottomSets = mutableListOf<Set<String>>()
-        val emittedCards = mutableListOf<Pair<HomeOverviewCard, Boolean>>()
-        val action = buildMainPagerVisibilityChangeAction(
-            visibleBottomPageNames = setOf(BottomPage.Ba.name),
-            onVisibleBottomPageNamesChange = emittedBottomSets::add,
-            onOverviewCardVisibilityChange = { card, visible ->
-                emittedCards += card to visible
-            }
-        )
+        val harness = Harness(visible = setOf(BottomPage.Ba))
 
-        action(BottomPage.GitHub, true)
+        harness.action(BottomPage.GitHub, true)
 
-        assertEquals(listOf(setOf(BottomPage.Ba.name, BottomPage.GitHub.name)), emittedBottomSets)
-        assertTrue(emittedCards.isEmpty())
+        assertEquals(listOf(setOf(BottomPage.Ba.name, BottomPage.GitHub.name)), harness.emittedBottomSets)
+        assertTrue(harness.emittedCards.isEmpty())
     }
 
     @Test
     fun `hiding os tab only changes bottom tabs`() {
-        val emittedBottomSets = mutableListOf<Set<String>>()
-        val emittedCards = mutableListOf<Pair<HomeOverviewCard, Boolean>>()
-        val action = buildMainPagerVisibilityChangeAction(
-            visibleBottomPageNames = setOf(BottomPage.Os.name, BottomPage.GitHub.name),
-            onVisibleBottomPageNamesChange = emittedBottomSets::add,
-            onOverviewCardVisibilityChange = { card, visible ->
-                emittedCards += card to visible
-            }
-        )
+        val harness = Harness(visible = setOf(BottomPage.Os, BottomPage.GitHub))
 
-        action(BottomPage.Os, false)
+        harness.action(BottomPage.Os, false)
 
-        assertEquals(listOf(setOf(BottomPage.GitHub.name)), emittedBottomSets)
-        assertTrue(emittedCards.isEmpty())
+        assertEquals(listOf(setOf(BottomPage.GitHub.name)), harness.emittedBottomSets)
+        assertTrue(harness.emittedCards.isEmpty())
     }
 
     @Test
     fun `home tab visibility action is ignored`() {
+        val harness = Harness(visible = setOf(BottomPage.GitHub))
+
+        harness.action(BottomPage.Home, false)
+
+        assertTrue(harness.emittedBottomSets.isEmpty())
+        assertTrue(harness.emittedCards.isEmpty())
+    }
+
+    private class Harness(visible: Set<BottomPage>) {
         val emittedBottomSets = mutableListOf<Set<String>>()
         val emittedCards = mutableListOf<Pair<HomeOverviewCard, Boolean>>()
         val action = buildMainPagerVisibilityChangeAction(
-            visibleBottomPageNames = setOf(BottomPage.GitHub.name),
+            visibleBottomPageNames = visible.map { it.name }.toSet(),
             onVisibleBottomPageNamesChange = emittedBottomSets::add,
-            onOverviewCardVisibilityChange = { card, visible ->
-                emittedCards += card to visible
+            onOverviewCardVisibilityChange = { card, isVisible ->
+                emittedCards += card to isVisible
             }
         )
-
-        action(BottomPage.Home, false)
-
-        assertTrue(emittedBottomSets.isEmpty())
-        assertTrue(emittedCards.isEmpty())
     }
 }

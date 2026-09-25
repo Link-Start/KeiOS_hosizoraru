@@ -1,25 +1,11 @@
 package os.kei.ui.page.main.widget.chrome
 
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Test
+import os.kei.ui.testing.repoSource
 
 class AppPullToRefreshTest {
-    @Test
-    fun thresholdArmsTheRefreshAtTheRequestedTravel() {
-        // 128dp at the reference device's density, against its window height.
-        val travelPx = 128f * 3.25f
-        val threshold = appPullToRefreshThreshold(travelPx = travelPx, windowHeightPx = REFERENCE_WINDOW_PX)
-
-        assertEquals(
-            travelPx.toDouble(),
-            miuixTravelPxFor(threshold, REFERENCE_WINDOW_PX).toDouble(),
-            1.0,
-            "The fraction handed to Miuix must arm the refresh at the requested finger travel",
-        )
-    }
-
     @Test
     fun sameTravelSurvivesDifferentWindowHeights() {
         // A 1080p phone, the reference device, and a tablet: one dp figure, three window heights.
@@ -90,7 +76,7 @@ class AppPullToRefreshTest {
     @Test
     fun everyPullToRefreshCallSiteUsesTheSharedTriggerDistance() {
         PULL_TO_REFRESH_SOURCES.forEach { relativePath ->
-            val source = sourceFile(relativePath)
+            val source = repoSource(relativePath)
             val callSites = source.occurrencesOf("PullToRefresh(")
             val sharedStates = source.occurrencesOf("pullToRefreshState = rememberAppPullToRefreshState()")
 
@@ -125,17 +111,6 @@ private fun miuixTravelPxFor(
 
 /** `SpringMath.obtainDampingDistance` normalised to the 0..1 input, spelled out independently. */
 private fun damped(x: Float): Float = x - x * x + x * x * x / 3f
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 

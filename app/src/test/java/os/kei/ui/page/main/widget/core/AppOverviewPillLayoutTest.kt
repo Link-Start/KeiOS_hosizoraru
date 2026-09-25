@@ -4,9 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -18,6 +16,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.testing.boundsOf
+import os.kei.ui.testing.distinctRowCount
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -39,7 +39,7 @@ class AppOverviewPillLayoutTest {
 
         setPills(labels)
 
-        assertEquals(1, distinctRowCount(labels))
+        assertEquals(1, composeRule.distinctRowCount(labels))
     }
 
     @Test
@@ -48,7 +48,7 @@ class AppOverviewPillLayoutTest {
 
         setPills(listOf(label))
 
-        val bounds = boundsFor(label)
+        val bounds = composeRule.boundsOf(label)
         val maxHeightPx = with(composeRule.density) { 28.dp.toPx() }
         assertTrue(
             actual = bounds.height <= maxHeightPx,
@@ -83,9 +83,9 @@ class AppOverviewPillLayoutTest {
         }
         composeRule.waitForIdle()
 
-        val titleBounds = boundsFor(title)
-        val topPillBounds = boundsFor(topPill.label)
-        val firstBodyPillBounds = boundsFor(bodyLabels.first())
+        val titleBounds = composeRule.boundsOf(title)
+        val topPillBounds = composeRule.boundsOf(topPill.label)
+        val firstBodyPillBounds = composeRule.boundsOf(bodyLabels.first())
         val sameRowTolerancePx = with(composeRule.density) { 2.dp.toPx() }
 
         assertTrue(
@@ -112,23 +112,6 @@ class AppOverviewPillLayoutTest {
         }
         composeRule.waitForIdle()
     }
-
-    private fun distinctRowCount(labels: List<String>): Int {
-        val tolerancePx = with(composeRule.density) { 2.dp.toPx() }
-        return labels
-            .map(::boundsFor)
-            .map { bounds -> bounds.center.y }
-            .fold(mutableListOf<Float>()) { rows, centerY ->
-                if (rows.none { rowY -> abs(rowY - centerY) <= tolerancePx }) rows += centerY
-                rows
-            }.size
-    }
-
-    private fun boundsFor(text: String): Rect =
-        composeRule
-            .onNodeWithText(text, useUnmergedTree = true)
-            .fetchSemanticsNode()
-            .boundsInRoot
 }
 
 class AppOverviewPillLayoutTestApp : Application()

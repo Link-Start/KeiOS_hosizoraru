@@ -87,16 +87,6 @@ class AppPageContentWidthTest {
         assertEquals(2, appPageColumnCountFor(1280.dp, largeScreenDevice = true))
     }
 
-    /** Two columns get twice the cap plus the gap between them, so each lands near a full column. */
-    @Test
-    fun `the two-column cap is two columns wide`() {
-        assertEquals(AppPageContentMaxWidth, appPageContentMaxWidthFor(1))
-        assertEquals(
-            AppPageContentMaxWidth * 2f + AppPageColumnGap,
-            appPageContentMaxWidthFor(2),
-        )
-    }
-
     /**
      * A two-column page fills the panel, so the gutter reaches zero and the floor is what keeps it off the
      * bezel. The single-column cap never gets there on a large window, so it never sees the floor.

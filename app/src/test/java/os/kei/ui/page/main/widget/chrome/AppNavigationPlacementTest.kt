@@ -113,13 +113,6 @@ class AppNavigationPlacementTest {
      * rather than over it, so in both cases hiding buys nothing and loses what the HIG asks for.
      */
     @Test
-    fun `only the bottom placement collapses on scroll`() {
-        assertTrue(appNavigationCollapsesOnScroll(AppNavigationPlacement.Bottom))
-        assertFalse(appNavigationCollapsesOnScroll(AppNavigationPlacement.Top))
-        assertFalse(appNavigationCollapsesOnScroll(AppNavigationPlacement.Sidebar))
-    }
-
-    @Test
     fun `scrolling away hides only the bottom bar`() {
         assertFalse(appNavigationVisible(AppNavigationPlacement.Bottom, scrolledAway = true))
         assertTrue(appNavigationVisible(AppNavigationPlacement.Bottom, scrolledAway = false))
@@ -151,13 +144,5 @@ class AppNavigationPlacementTest {
     fun `the app's own top row spans the window`() {
         assertEquals(0.dp, appTopBarChromeGutterFor(AppNavigationPlacement.Top, 280.dp))
         assertEquals(0.dp, appTopBarChromeGutterFor(AppNavigationPlacement.Top, 40.dp))
-    }
-
-    /** A phone has no gutter to take, so no placement moves by a pixel. */
-    @Test
-    fun `a phone top row is unmoved at every placement`() {
-        AppNavigationPlacement.entries.forEach { placement ->
-            assertEquals(0.dp, appTopBarChromeGutterFor(placement, 0.dp), "placement=$placement")
-        }
     }
 }

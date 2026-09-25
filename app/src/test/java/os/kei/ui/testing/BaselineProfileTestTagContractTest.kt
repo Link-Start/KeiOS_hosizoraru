@@ -1,6 +1,5 @@
 package os.kei.ui.testing
 
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Test
@@ -36,7 +35,7 @@ class BaselineProfileTestTagContractTest {
         // Without this line every tag inside a sheet, alert, action sheet or menu is invisible to
         // UiAutomator — which is how LiquidSheetPanelTestTag came to exist for the baseline profile and
         // never resolve. Removing it would put every presentation journey back to timing out.
-        val source = sourceFile(SCENE_BACKDROP_HOST)
+        val source = repoSource(SCENE_BACKDROP_HOST)
 
         assertTrue(
             "testTagsAsResourceId = true" in source,
@@ -49,7 +48,7 @@ class BaselineProfileTestTagContractTest {
         // testTagsAsResourceId is what publishes a tag to UiAutomator, and pageRootTestTag is the
         // only place that pairs the two. A page root that reaches for a bare testTag is invisible.
         PAGE_ROOT_SOURCES.forEach { (relativePath, tag) ->
-            val source = sourceFile(relativePath)
+            val source = repoSource(relativePath)
 
             assertTrue(
                 "pageRootTestTag(KeiOsTestTags.$tag)" in source,
@@ -60,7 +59,7 @@ class BaselineProfileTestTagContractTest {
 
     @Test
     fun theSharedModifierStillPublishesTagsAsResourceIds() {
-        val source = sourceFile("app/src/main/java/os/kei/ui/testing/PageRootTestTag.kt")
+        val source = repoSource("app/src/main/java/os/kei/ui/testing/PageRootTestTag.kt")
 
         assertTrue(
             "testTagsAsResourceId = true" in source,
@@ -118,7 +117,7 @@ class BaselineProfileTestTagContractTest {
     fun everySharedTagIsUsed() {
         val callers = PROFILE_CALLER_SOURCES.joinToString("\n") { sourceWithoutComments(it) }
         val tags =
-            CONST_DECLARATION.findAll(sourceFile(PROFILE_TAGS_SOURCE)).map { match -> match.groupValues[1] }.toList()
+            CONST_DECLARATION.findAll(repoSource(PROFILE_TAGS_SOURCE)).map { match -> match.groupValues[1] }.toList()
 
         assertTrue(tags.isNotEmpty(), "Unable to parse tags out of $PROFILE_TAGS_SOURCE")
         tags.forEach { tag ->
@@ -173,7 +172,7 @@ class BaselineProfileTestTagContractTest {
 
     @Test
     fun startupHasAnExplicitFullyDrawnSignal() {
-        val source = sourceFile(MAIN_PAGER_PAGE_HOST)
+        val source = repoSource(MAIN_PAGER_PAGE_HOST)
 
         assertTrue("import androidx.activity.compose.ReportDrawn" in source)
         assertTrue("ReportDrawn()" in source)
@@ -230,15 +229,15 @@ class BaselineProfileTestTagContractTest {
     @Test
     fun thePagesStillPassThePrefixesThoseTagsAssume() {
         assertTrue(
-            """labelPrefix = "about"""" in sourceFile(ABOUT_BOTTOM_CHROME),
+            """labelPrefix = "about"""" in repoSource(ABOUT_BOTTOM_CHROME),
             "$ABOUT_BOTTOM_CHROME must keep the prefix KeiOsTestTags.AboutTabLab is spelled from",
         )
         assertTrue(
-            """labelPrefix = "github_history"""" in sourceFile(GITHUB_HISTORY_PAGE),
+            """labelPrefix = "github_history"""" in repoSource(GITHUB_HISTORY_PAGE),
             "$GITHUB_HISTORY_PAGE must keep the prefix the GitHubHistoryTab* tags are spelled from",
         )
         assertTrue(
-            """labelPrefix = "ba_calendar_pool"""" in sourceFile(BA_CALENDAR_POOL_PAGE),
+            """labelPrefix = "ba_calendar_pool"""" in repoSource(BA_CALENDAR_POOL_PAGE),
             "$BA_CALENDAR_POOL_PAGE must keep the prefix the BaCalendarPoolTab* tags are spelled from",
         )
     }
@@ -253,7 +252,7 @@ class BaselineProfileTestTagContractTest {
 
 private fun keiOsTestTagValues(): List<String> =
     CONST_DECLARATION
-        .findAll(sourceFile("app/src/main/java/os/kei/ui/testing/KeiOsTestTags.kt"))
+        .findAll(repoSource("app/src/main/java/os/kei/ui/testing/KeiOsTestTags.kt"))
         .map { match -> match.groupValues[2] }
         .toList()
 
@@ -266,7 +265,7 @@ private fun keiOsTestTagValues(): List<String> =
  */
 private fun componentOwnedTagValues(): List<String> =
     COMPONENT_TAG_SOURCES.flatMap { relativePath ->
-        CONST_DECLARATION.findAll(sourceFile(relativePath)).map { match -> match.groupValues[2] }
+        CONST_DECLARATION.findAll(repoSource(relativePath)).map { match -> match.groupValues[2] }
     }
 
 private val COMPONENT_TAG_SOURCES =
@@ -291,7 +290,7 @@ private const val SCENE_BACKDROP_HOST =
 private fun profileTagConstants(): List<Pair<String, String>> =
     PROFILE_SOURCE_FILES.flatMap { relativePath ->
         CONST_DECLARATION
-            .findAll(sourceFile(relativePath))
+            .findAll(repoSource(relativePath))
             .map { match -> match.groupValues[1] to match.groupValues[2] }
             .filter { (_, value) -> TAG_SHAPED.matches(value) }
     }
@@ -299,7 +298,7 @@ private fun profileTagConstants(): List<Pair<String, String>> =
 /** Every constant the generator declares for itself: gesture fractions, step counts and timeouts. */
 private fun generatorConstants(): List<Pair<String, String>> =
     Regex("""const val (\w+)\s*=\s*([^\n]+)""")
-        .findAll(sourceFile(GENERATOR_SOURCE))
+        .findAll(repoSource(GENERATOR_SOURCE))
         .map { match -> match.groupValues[1] to match.groupValues[2] }
         .toList()
 
@@ -316,7 +315,7 @@ private val SCOPED_HELPER = Regex("""private fun MacrobenchmarkScope\.(\w+)\s*\(
 private fun generatorSourceWithoutComments(): String = sourceWithoutComments(GENERATOR_SOURCE)
 
 private fun sourceWithoutComments(relativePath: String): String =
-    sourceFile(relativePath)
+    repoSource(relativePath)
         .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
         .replace(Regex("""//[^\n]*"""), "")
 
@@ -359,17 +358,6 @@ private val FORBIDDEN_PROFILE_FIXTURES =
         "pm unhide",
         "ACTION_SEND",
     )
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private val PAGE_ROOT_SOURCES =
     listOf(

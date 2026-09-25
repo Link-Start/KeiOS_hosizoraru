@@ -1,9 +1,9 @@
 package os.kei.ui.page.main.host.main
 
 import org.junit.Test
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoSource
 
 class MainScreenRouteLiquidBackdropContractTest {
 
@@ -20,7 +20,7 @@ class MainScreenRouteLiquidBackdropContractTest {
      */
     @Test
     fun theNavHostProducesNoBackdropLayerOfItsOwn() {
-        val source = sourceFile(MAIN_SCREEN_NAV_HOST_SOURCE)
+        val source = repoSource(MAIN_SCREEN_NAV_HOST_SOURCE)
 
         assertEquals(0, source.occurrencesOf("rememberLayerBackdrop("))
         assertEquals(0, source.occurrencesOf("Modifier.layerBackdrop("))
@@ -33,17 +33,6 @@ class MainScreenRouteLiquidBackdropContractTest {
 }
 
 private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private const val MAIN_SCREEN_NAV_HOST_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/host/main/MainScreenNavHost.kt"

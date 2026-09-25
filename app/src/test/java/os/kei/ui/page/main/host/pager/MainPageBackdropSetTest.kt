@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -14,6 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.testing.repoSource
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -30,7 +30,7 @@ class MainPageBackdropSetTest {
 
     @Test
     fun contentSceneKeepsLayerProducersBeforeConsumerSlot() {
-        val source = sourceFile(MAIN_PAGE_BACKDROP_SET_SOURCE)
+        val source = repoSource(MAIN_PAGE_BACKDROP_SET_SOURCE)
         val contentProducerIndex = source.indexOf(".layerBackdrop(contentProducer)")
         val sheetProducerIndex = source.indexOf(".layerBackdrop(sheetProducer)")
         val consumerIndex = source.indexOf("content()", startIndex = sheetProducerIndex + 1)
@@ -159,17 +159,6 @@ class MainPageBackdropSetTest {
     private fun TestTheme(content: @Composable () -> Unit) {
         MiuixTheme(controller = ThemeController(ColorSchemeMode.Light), content = content)
     }
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 private const val MAIN_PAGE_BACKDROP_SET_SOURCE =

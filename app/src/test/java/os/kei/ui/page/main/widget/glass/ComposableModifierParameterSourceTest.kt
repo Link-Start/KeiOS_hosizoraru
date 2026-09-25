@@ -3,6 +3,7 @@ package os.kei.ui.page.main.widget.glass
 import java.io.File
 import kotlin.test.assertTrue
 import org.junit.Test
+import os.kei.ui.testing.repoRoot
 
 /**
  * A declared `modifier` parameter has to actually reach the composable's own node.
@@ -18,7 +19,7 @@ import org.junit.Test
 class ComposableModifierParameterSourceTest {
     @Test
     fun everyDeclaredModifierParameterIsUsed() {
-        val root = repositoryRoot()
+        val root = repoRoot()
         val offenders =
             sourceRoots(root)
                 .flatMap { sourceRoot ->
@@ -49,7 +50,7 @@ class ComposableModifierParameterSourceTest {
      */
     @Test
     fun theScanReachesEveryModule() {
-        val root = repositoryRoot()
+        val root = repoRoot()
         val roots = sourceRoots(root).map { file -> file.relativeTo(root).invariantSeparatorsPath }
 
         assertTrue(
@@ -189,12 +190,4 @@ private fun matchingIndex(
         index++
     }
     return null
-}
-
-private fun repositoryRoot(): File {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val root =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .firstOrNull { directory -> File(directory, "settings.gradle.kts").isFile }
-    return requireNotNull(root) { "Unable to locate the repository root from $workingDirectory" }
 }

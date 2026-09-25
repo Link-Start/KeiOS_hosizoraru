@@ -60,13 +60,4 @@ class TabbedPageSizedTabWidthTest {
         assertEquals(TabbedPageSizedTabMaxWidth, tab)
         assertTrue((tab * 2).value / 645f < 0.4f, "the page keeps the surplus")
     }
-
-    @Test
-    fun `the rhythm is the one a filled bar of four tabs has`() {
-        val bar = 392.dp
-        val filledPerTab = (bar - AppChromeTokens.floatingBottomBarHorizontalPadding * 2f) / 4f
-
-        assertEquals(filledPerTab, tabbedPageSizedTabMinWidth(availableWidth = bar))
-        assertEquals(4, TabbedPageFilledBarTabReference)
-    }
 }

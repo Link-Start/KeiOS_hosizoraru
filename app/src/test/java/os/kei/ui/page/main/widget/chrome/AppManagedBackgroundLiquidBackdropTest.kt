@@ -279,21 +279,8 @@ class AppManagedBackgroundLiquidBackdropTest {
 private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }
 
 /**
- * The page behind a route must never show through it.
- *
- * This is the "二级菜单的透明度在白色背景下生效" issue. `Modifier.layerBackdrop` draws only
- * `drawContent()` to the screen and records the `rememberLayerBackdrop { ... }` block into an offscreen
- * layer separately, so a `drawRect(baseColor)` written inside that block reaches the sampled layer and
- * never the screen. Every route that exported a backdrop therefore had no opaque base and was
- * transparent down to the main pager: the page underneath and the custom background image composited
- * together, which is what "two backgrounds" describes — and in light theme the pager's near-white
- * `colorScheme.surface` was the one showing through.
- *
- * Only the non-exporting branch ever painted a base, which is why About and WebDavSync already looked
- * right and the issue read as half-fixed.
- *
- * Asserted by putting a colour behind the host that neither theme uses (`background` is White in light
- * and `#242424` in dark) and proving it cannot be seen.
+ * [AppManagedBackgroundHost] with the settings the tests do not vary: full opacity, crop, no scrim.
+ * A disabled host with no image is the "nothing behind the page" case.
  */
 @Composable
 private fun testManagedBackgroundHost(

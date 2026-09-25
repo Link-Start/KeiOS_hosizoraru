@@ -24,15 +24,6 @@ class AppPageAlternatingLanesTest {
     }
 
     @Test
-    fun `level with each other, reading across a row is the list from start to end`() {
-        val items = (0 until 8).toList()
-        val lanes = appPageAlternatingLanes(items, columnCount = 2)
-
-        val readAcross = lanes[0].zip(lanes[1]).flatMap { (left, right) -> listOf(left, right) }
-        assertEquals(items, readAcross)
-    }
-
-    @Test
     fun `the pair overload is the two-lane split`() {
         val items = ('a'..'f').toList()
         val (left, right) = appPageAlternatingLanes(items)

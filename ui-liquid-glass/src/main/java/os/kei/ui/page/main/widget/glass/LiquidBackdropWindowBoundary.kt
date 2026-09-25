@@ -5,11 +5,6 @@ package os.kei.ui.page.main.widget.glass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
 
@@ -41,36 +36,4 @@ internal fun LiquidBackdropWindowBoundary(content: @Composable () -> Unit) {
 @Composable
 fun AppLiquidWindowBoundary(content: @Composable () -> Unit) {
     LiquidBackdropWindowBoundary(content = content)
-}
-
-@Composable
-internal fun LiquidBackdropWindowDialog(
-    onDismissRequest: () -> Unit,
-    properties: DialogProperties,
-    content: @Composable () -> Unit,
-) {
-    LiquidBackdropWindowBoundary {
-        Dialog(
-            onDismissRequest = onDismissRequest,
-            properties = properties,
-            content = content,
-        )
-    }
-}
-
-@Composable
-internal fun LiquidBackdropWindowPopup(
-    popupPositionProvider: PopupPositionProvider,
-    onDismissRequest: (() -> Unit)?,
-    properties: PopupProperties,
-    content: @Composable () -> Unit,
-) {
-    LiquidBackdropWindowBoundary {
-        Popup(
-            popupPositionProvider = popupPositionProvider,
-            onDismissRequest = onDismissRequest,
-            properties = properties,
-            content = content,
-        )
-    }
 }

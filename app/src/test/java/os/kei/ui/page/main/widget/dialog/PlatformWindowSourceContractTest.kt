@@ -10,8 +10,8 @@ import kotlin.test.assertTrue
  *
  * A Liquid Glass surface samples a `LayerBackdrop` of the content behind it, and that backdrop cannot be
  * read from a separate `Dialog` or `Popup` window: the blur silently draws nothing. So every dialog, sheet
- * and menu goes through the shared host, which keeps it in-window, and the two places that do open a
- * platform window are named here.
+ * and menu goes through the shared host, which keeps it in-window, and the one place that does open a
+ * platform window is named here.
  *
  * This replaces five per-screen tests that each asserted one dialog used the shared host. They could only
  * notice the screen they read; this notices any screen.
@@ -26,7 +26,7 @@ class PlatformWindowSourceContractTest {
         assertTrue(
             offenders.isEmpty(),
             "These open a platform window, where Liquid Glass cannot sample the page: $offenders. " +
-                "Host the presentation through AppWindowDialogHost or the Liquid presentation boundary.",
+                "Host the presentation through AppWindowDialogHost or the in-window Liquid overlay portal.",
         )
     }
 
@@ -51,7 +51,7 @@ class PlatformWindowSourceContractTest {
     private companion object {
         val MODULES = listOf("app/src/main", "ui-liquid-glass/src/main", "ui-pip/src/main")
 
-        /** A bare call: not `LiquidBackdropWindowDialog(`, not `x.Dialog(`, not a definition. */
+        /** A bare call: not `GitHubDeleteTrackDialog(`, not `x.Dialog(`, not a definition. */
         val PLATFORM_WINDOW = Regex("""(?<![A-Za-z0-9_.])(Dialog|Popup|AlertDialog|BasicAlertDialog)\s*\(""")
 
         val COMMENT = Regex("""/\*.*?\*/|//[^\n]*""", RegexOption.DOT_MATCHES_ALL)
@@ -59,7 +59,6 @@ class PlatformWindowSourceContractTest {
         val ALLOWED =
             setOf(
                 "app/src/main/java/os/kei/ui/page/main/widget/dialog/AppWindowDialogHosts.kt",
-                "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidBackdropWindowBoundary.kt",
             )
 
         fun repoRoot(): File {

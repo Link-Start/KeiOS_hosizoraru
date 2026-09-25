@@ -41,8 +41,11 @@ The scan found no direct production use of:
   `ExposedDropdownMenu`.
 - MIUIX dropdown components outside the project-owned adapter chain.
 - XML or View-system `Spinner`, `AutoCompleteTextView`, or `PopupMenu`.
-- Raw Compose `Popup` outside `LiquidBackdropWindowPopup`, which is the
-  project-owned window boundary used by `SnapshotWindowListPopup`.
+- Raw Compose `Popup` anywhere. Since 2bcc2063a (2026-08-09) the dropdown and
+  action menu are hosted in-window through `LiquidOverlayPortal`, and the
+  unused `LiquidBackdropWindowPopup`/`LiquidBackdropWindowDialog` wrappers were
+  removed on 2026-09-25. `PlatformWindowSourceContractTest` bans platform
+  windows repo-wide.
 
 ## Shared component chain
 
@@ -76,7 +79,7 @@ anchor / LiquidActionBar slot
 | Dropdown rows | `ui-liquid-glass/.../glass/LiquidGlassDropdownItems.kt` | Action, info, single-choice, and multiple-choice rows; semantics; selection state; text/icon layout. |
 | Action-menu model | `ui-liquid-glass/.../glass/LiquidGlassActionMenu.kt` | Quick actions, command rows, nested submenu state, submenu back handling, and menu dismissal policy. |
 | Popup adapter | `ui-liquid-glass/.../sheet/MiuixSnapshotAdapters.kt` | Window-safe placement, reveal/exit animation, focus, back interception, and delayed removal after exit. |
-| Window boundary | `ui-liquid-glass/.../glass/LiquidBackdropWindowBoundary.kt` | The only raw Compose `Popup` boundary for dropdown/menu windows. |
+| In-window host | `ui-liquid-glass/.../glass/LiquidOverlayHost.kt` (`LiquidOverlayPortal`) | Hosts dropdown and menu presentations inside the page window, where Liquid Glass can sample the backdrop. |
 
 ## Production dropdown selectors
 

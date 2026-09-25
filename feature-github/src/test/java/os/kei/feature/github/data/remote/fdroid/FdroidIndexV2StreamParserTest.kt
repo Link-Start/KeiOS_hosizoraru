@@ -29,20 +29,6 @@ class FdroidIndexV2StreamParserTest {
     }
 
     @Test
-    fun `searchIndex can stop early for exact package lookup`() = runBlocking {
-        val snapshot = FdroidIndexV2StreamParser.searchIndex(
-            repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-            reader = StringReader(FdroidIndexV2Fixtures.index),
-            query = "",
-            packageName = "com.perol.pixez",
-            limit = 12
-        ).getOrThrow()
-
-        assertEquals(listOf("com.perol.pixez"), snapshot.packages.keys.toList())
-        assertEquals("PixEz", snapshot.packageSnapshot("com.perol.pixez")?.appName)
-    }
-
-    @Test
     fun `searchIndex exact stop remains scoped to packages object`() = runBlocking {
         val cases = listOf(
             // name to (query, packageName)

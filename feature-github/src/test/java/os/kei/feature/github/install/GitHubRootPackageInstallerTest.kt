@@ -5,8 +5,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.core.privilege.PrivilegeMode
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -21,56 +19,42 @@ class GitHubRootPackageInstallerTest {
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun `session id is read from the pm create line`() {
-        assertEquals(1935741244, parseRootInstallSessionId("Success: created install session [1935741244]"))
+    fun `session id is read from pm install-create output`() {
+        val rows = listOf(
+            "the pm create line" to ("Success: created install session [1935741244]" to 1935741244),
+            "vendor output without the success prefix" to ("created session [42]\n" to 42),
+            "an error instead of a session" to ("Error: java.lang.SecurityException" to null),
+            "empty brackets" to ("Success: created install session []" to null),
+            "session zero is unusable" to ("Success: created install session [0]" to null),
+            "no output" to ("" to null),
+        )
+
+        rows.forEach { (label, row) ->
+            assertEquals(row.second, parseRootInstallSessionId(row.first), label)
+        }
     }
 
     @Test
-    fun `session id survives vendor output without the success prefix`() {
-        assertEquals(42, parseRootInstallSessionId("created session [42]\n"))
-    }
+    fun `install-commit output succeeds only on a terminal success line`() {
+        val downgrade = """
+            Success: streamed 4096 bytes
+            Failure [INSTALL_FAILED_VERSION_DOWNGRADE]
+        """.trimIndent()
+        val noTerminalLine = "Exception occurred while executing 'install-commit'"
+        // output to (succeeded, message); a null message is not checked
+        val rows = listOf(
+            "a success line" to ("Success\n" to (true to "Success")),
+            "a failure line outranks a success line in the same output" to
+                (downgrade to (false to "Failure [INSTALL_FAILED_VERSION_DOWNGRADE]")),
+            "output without a terminal line" to (noTerminalLine to (false to noTerminalLine)),
+            "empty output" to ("" to (false to null)),
+        )
 
-    @Test
-    fun `missing or unusable session id maps to null`() {
-        assertNull(parseRootInstallSessionId("Error: java.lang.SecurityException"))
-        assertNull(parseRootInstallSessionId("Success: created install session []"))
-        assertNull(parseRootInstallSessionId("Success: created install session [0]"))
-        assertNull(parseRootInstallSessionId(""))
-    }
-
-    @Test
-    fun `success line reports success`() {
-        val outcome = parseRootInstallOutcome("Success\n")
-
-        assertTrue(outcome.succeeded)
-        assertEquals("Success", outcome.message)
-    }
-
-    @Test
-    fun `failure line outranks a success line in the same output`() {
-        val outcome =
-            parseRootInstallOutcome(
-                """
-                Success: streamed 4096 bytes
-                Failure [INSTALL_FAILED_VERSION_DOWNGRADE]
-                """.trimIndent(),
-            )
-
-        assertFalse(outcome.succeeded)
-        assertEquals("Failure [INSTALL_FAILED_VERSION_DOWNGRADE]", outcome.message)
-    }
-
-    @Test
-    fun `output without a terminal line is not treated as success`() {
-        val outcome = parseRootInstallOutcome("Exception occurred while executing 'install-commit'")
-
-        assertFalse(outcome.succeeded)
-        assertEquals("Exception occurred while executing 'install-commit'", outcome.message)
-    }
-
-    @Test
-    fun `empty output is not treated as success`() {
-        assertFalse(parseRootInstallOutcome("").succeeded)
+        rows.forEach { (label, row) ->
+            val outcome = parseRootInstallOutcome(row.first)
+            assertEquals(row.second.first, outcome.succeeded, label)
+            row.second.second?.let { assertEquals(it, outcome.message, label) }
+        }
     }
 
     @Test

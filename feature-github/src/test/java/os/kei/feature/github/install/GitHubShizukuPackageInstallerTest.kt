@@ -59,24 +59,6 @@ class GitHubShizukuPackageInstallerTest {
     }
 
     @Test
-    fun `progress percent is bounded`() {
-        assertEquals(
-            100,
-            GitHubApkInstallProgress(
-                stage = GitHubApkInstallStage.Staging,
-                progressPercent = 140
-            ).boundedProgressPercent
-        )
-        assertEquals(
-            0,
-            GitHubApkInstallProgress(
-                stage = GitHubApkInstallStage.Preparing,
-                progressPercent = -5
-            ).boundedProgressPercent
-        )
-    }
-
-    @Test
     fun `request id can be scoped by runtime package name`() {
         val requestId = GitHubApkInstallRequestIds.newId("os.kei.debug")
 

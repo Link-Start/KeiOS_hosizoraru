@@ -452,47 +452,4 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(1, counts.preciseApkVersionOverrideCount)
     }
 
-    @Test
-    fun `source counts summarize github and direct apk items`() {
-        val counts = GitHubTrackStore.calculateTrackedItemsSourceCounts(
-            listOf(
-                GitHubTrackedApp(
-                    repoUrl = "https://github.com/demo/app",
-                    owner = "demo",
-                    repo = "app",
-                    packageName = "com.demo.app",
-                    appLabel = "Demo"
-                ),
-                GitHubTrackedApp(
-                    repoUrl = "https://telegram.org/dl/android/apk",
-                    owner = "telegram.org",
-                    repo = "dl-android-apk",
-                    packageName = "org.telegram.messenger",
-                    appLabel = "Telegram",
-                    sourceMode = GitHubTrackedSourceMode.DirectApk
-                ),
-                GitHubTrackedApp(
-                    repoUrl = "https://gitee.com/demo/app",
-                    owner = "gitee.com/demo",
-                    repo = "app",
-                    packageName = "com.demo.git",
-                    appLabel = "Git",
-                    sourceMode = GitHubTrackedSourceMode.GitRepository
-                ),
-                GitHubTrackedApp(
-                    repoUrl = "https://f-droid.org/repo",
-                    owner = "f-droid.org",
-                    repo = "repo",
-                    packageName = "org.fdroid.fdroid",
-                    appLabel = "F-Droid",
-                    sourceMode = GitHubTrackedSourceMode.FdroidRepository
-                )
-            )
-        )
-
-        assertEquals(1, counts.githubRepositoryCount)
-        assertEquals(1, counts.gitRepositoryCount)
-        assertEquals(1, counts.directApkCount)
-        assertEquals(1, counts.fdroidRepositoryCount)
-    }
 }

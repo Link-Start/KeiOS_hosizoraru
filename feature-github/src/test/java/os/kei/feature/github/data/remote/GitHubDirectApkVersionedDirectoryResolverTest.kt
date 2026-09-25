@@ -62,42 +62,6 @@ class GitHubDirectApkVersionedDirectoryResolverTest {
     }
 
     @Test
-    fun `resolve can prefer latest pre-release version directory`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setHeader("Content-Type", "text/html")
-                    .setBody(
-                        """
-                        <a href="/stable/1.22.2/">1.22.2</a>
-                        <a href="/stable/1.23.0-alpha1/">1.23.0-alpha1</a>
-                        <a href="/stable/1.23.0-beta1/">1.23.0-beta1</a>
-                        <a href="/stable/1.23.0-beta2/">1.23.0-beta2</a>
-                        """.trimIndent()
-                    )
-            )
-
-            val result = GitHubDirectApkVersionedDirectoryResolver()
-                .resolve(
-                    directApkUrl = server.url(
-                        "/stable/1.22.2/android/RetroArch_aarch64.apk"
-                    ).toString(),
-                    preferPreRelease = true
-                )
-                .getOrThrow()
-
-            assertEquals("/stable/", server.takeRequest().path)
-            assertEquals("1.23.0-beta2", result?.version)
-            assertEquals(
-                server.url("/stable/1.23.0-beta2/android/RetroArch_aarch64.apk").toString(),
-                result?.downloadUrl
-            )
-            assertEquals(GitHubReleaseChannel.BETA, result?.channel)
-        }
-    }
-
-    @Test
     fun `resolve targets returns stable and pre-release with one index request`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(

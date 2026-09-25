@@ -39,15 +39,7 @@ class GitHubAppInstallHistoryStoreTest {
                 GitHubAppInstallHistoryStore.encodeRecord(record).toString(),
             )
 
-        assertNotNull(decoded)
-        assertEquals(record.id, decoded.id)
-        assertEquals(record.action, decoded.action)
-        assertEquals(record.previousVersionName, decoded.previousVersionName)
-        assertEquals(record.previousVersionCode, decoded.previousVersionCode)
-        assertEquals(record.currentVersionName, decoded.currentVersionName)
-        assertEquals(record.currentVersionCode, decoded.currentVersionCode)
-        assertEquals(record.replacing, decoded.replacing)
-        assertEquals(record.currentInstallSourceInfo, decoded.currentInstallSourceInfo)
+        assertEquals(record, decoded)
     }
 
     @Test

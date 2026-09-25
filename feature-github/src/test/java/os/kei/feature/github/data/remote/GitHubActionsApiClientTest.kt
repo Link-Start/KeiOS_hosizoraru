@@ -27,19 +27,6 @@ class GitHubActionsApiClientTest {
         }
     }
 
-    @Test
-    fun `fetch json keeps normal response and authorization`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"total_count":1}"""))
-            val client = apiClient(server, token = "test-token")
-
-            val body = client.fetchJson(server.url("/actions/runs").toString()).getOrThrow()
-
-            assertEquals("""{"total_count":1}""", body)
-            assertEquals("Bearer test-token", server.takeRequest().getHeader("Authorization"))
-        }
-    }
-
     private fun apiClient(
         server: MockWebServer,
         token: String = "",

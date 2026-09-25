@@ -7,29 +7,22 @@ import org.junit.Test
 import os.kei.core.system.isPackageManagerBulkQueryFailure
 import os.kei.feature.github.model.InstalledAppItem
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class GitHubInstalledAppRepositoryTest {
     @Test
-    fun `installed package query detects binder parcel failures`() {
-        assertTrue(BadParcelableException("short package list").isPackageManagerBulkQueryFailure())
-        assertTrue(DeadObjectException().isPackageManagerBulkQueryFailure())
-        assertTrue(TransactionTooLargeException().isPackageManagerBulkQueryFailure())
-    }
+    fun `installed package query tells binder parcel failures from ordinary ones`() {
+        val rows = listOf(
+            "short parcel" to (BadParcelableException("short package list") to true),
+            "dead binder" to (DeadObjectException() to true),
+            "transaction too large" to (TransactionTooLargeException() to true),
+            "wrapped parcel failure" to
+                (IllegalStateException("package manager failed", BadParcelableException("partial list")) to true),
+            "ordinary failure" to (IllegalArgumentException("bad package flag") to false),
+        )
 
-    @Test
-    fun `installed package query detects nested binder parcel failures`() {
-        val wrapped =
-            IllegalStateException("package manager failed", BadParcelableException("partial list"))
-
-        assertTrue(wrapped.isPackageManagerBulkQueryFailure())
-    }
-
-    @Test
-    fun `installed package query keeps ordinary failures distinct`() {
-        val ordinary = IllegalArgumentException("bad package flag")
-
-        assertEquals(false, ordinary.isPackageManagerBulkQueryFailure())
+        rows.forEach { (label, row) ->
+            assertEquals(row.second, row.first.isPackageManagerBulkQueryFailure(), label)
+        }
     }
 
     @Test

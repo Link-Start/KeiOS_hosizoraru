@@ -1,6 +1,8 @@
 package os.kei.feature.github.data.remote.fdroid
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import java.io.StringReader
 import os.kei.feature.github.model.FdroidIndexFormat
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -85,11 +87,16 @@ class FdroidIndexV2ParserTest {
         assertEquals("This app tracks and reports your activity", feature.description)
     }
 
+    /**
+     * Through the stream parser, which is the path the app uses: it reads the repo block itself and
+     * hands each requested package to [FdroidIndexV2Parser.parsePackage].
+     */
     @Test
-    fun `parseIndex reads repo metadata and package versions`() {
-        val snapshot = FdroidIndexV2Parser.parseIndex(
+    fun `index reads repo metadata and package versions`() = runBlocking {
+        val snapshot = FdroidIndexV2StreamParser.loadPackages(
             repoUrl = "https://f-droid.org/repo",
-            rawJson = fdroidIndexFixture
+            reader = StringReader(fdroidIndexFixture),
+            packageNames = setOf("org.fdroid.fdroid")
         ).getOrThrow()
 
         assertEquals("https://f-droid.org/repo", snapshot.repoUrl)
@@ -129,10 +136,11 @@ class FdroidIndexV2ParserTest {
     }
 
     @Test
-    fun `parseIndex supports compact string metadata`() {
-        val snapshot = FdroidIndexV2Parser.parseIndex(
+    fun `index supports compact string metadata`() = runBlocking {
+        val snapshot = FdroidIndexV2StreamParser.loadPackages(
             repoUrl = "https://repo.example/fdroid/repo",
-            rawJson = """
+            packageNames = setOf("com.example.app"),
+            reader = StringReader("""
                 {
                   "repo": {
                     "name": "Example Repo",
@@ -165,7 +173,7 @@ class FdroidIndexV2ParserTest {
                     }
                   }
                 }
-            """.trimIndent()
+            """.trimIndent())
         ).getOrThrow()
 
         val pkg = snapshot.packageSnapshot("com.example.app")

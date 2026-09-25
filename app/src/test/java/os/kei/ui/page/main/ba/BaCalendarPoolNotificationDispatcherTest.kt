@@ -11,8 +11,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -69,34 +67,6 @@ class BaCalendarPoolNotificationDispatcherTest {
             assertFlag(intent, Intent.FLAG_ACTIVITY_SINGLE_TOP, label)
             assertFlag(intent, Intent.FLAG_ACTIVITY_CLEAR_TOP, label)
         }
-    }
-
-    @Test
-    fun `notification target selection keeps token for repeated server routes`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val intent =
-            baCalendarPoolOpenIntent(
-                context = context,
-                destination = BaCalendarPoolNotificationDestination.Calendar,
-                serverIndex = 2,
-            )
-
-        val first = intent.toBaCalendarPoolInitialServerSelection(token = 1L)
-        val second = intent.toBaCalendarPoolInitialServerSelection(token = 2L)
-
-        assertEquals(2, first.serverIndex)
-        assertEquals(1L, first.token)
-        assertEquals(2, second.serverIndex)
-        assertEquals(2L, second.token)
-        assertNotEquals(first, second)
-    }
-
-    @Test
-    fun `notification target selection preserves null server routes`() {
-        val selection = Intent().toBaCalendarPoolInitialServerSelection(token = 3L)
-
-        assertNull(selection.serverIndex)
-        assertEquals(3L, selection.token)
     }
 
     @Test

@@ -28,12 +28,6 @@ internal fun Intent.baCalendarPoolServerIndexOrNull(): Int? {
     return raw.takeIf { it in 0..2 }
 }
 
-internal fun Intent?.toBaCalendarPoolInitialServerSelection(token: Long): BaCalendarPoolInitialServerSelection =
-    BaCalendarPoolInitialServerSelection(
-        serverIndex = this?.baCalendarPoolServerIndexOrNull(),
-        token = token,
-    )
-
 /**
  * The route carries what the intent extra used to: which server to jump to, and a nonce that tells
  * the page a fresh request arrived even when the server index is unchanged.

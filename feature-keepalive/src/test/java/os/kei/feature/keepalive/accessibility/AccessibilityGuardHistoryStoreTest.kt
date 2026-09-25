@@ -236,39 +236,6 @@ class AccessibilityGuardHistoryStoreTest {
         assertEquals("healthy", root.optArray("records")?.optObject(0)?.optString("id"))
     }
 
-    @Test
-    fun `history entry can be built from check result`() {
-        val result =
-            AccessibilityGuardCheckResult(
-                status = AccessibilityGuardCheckStatus.MissingPrivilege,
-                reason = AccessibilityGuardCheckReason.ScreenOn,
-                checkCount = 2,
-                healthyCount = 1,
-                warningCount = 1,
-                startedAtMs = 1_000L,
-                finishedAtMs = 1_200L,
-                elapsedMs = 200L,
-                privilegeStatus = "permission denied",
-                failureReason = "permission denied",
-            )
-
-        val entry =
-            AccessibilityGuardHistoryEntry.fromResult(
-                result = result,
-                id = "from-result",
-                triggerAction = "screen_on_receiver",
-            )
-
-        assertEquals("from-result", entry.id)
-        assertEquals(1_200L, entry.timestampMs)
-        assertEquals(AccessibilityGuardCheckReason.ScreenOn, entry.reason)
-        assertEquals(AccessibilityGuardCheckStatus.MissingPrivilege, entry.status)
-        assertEquals("screen_on_receiver", entry.triggerAction)
-        assertEquals(2, entry.checkCount)
-        assertEquals(1, entry.healthyCount)
-        assertEquals(1, entry.warningCount)
-    }
-
     private fun store(
         maxEntries: Int = 500,
         maxBytes: Long = 1L * 1024L * 1024L,

@@ -44,6 +44,8 @@ class AccessibilityGuardCheckRunnerTest {
         val history = historyStore.latest(1).single()
         assertEquals(AccessibilityGuardCheckStatus.Healthy, history.status)
         assertEquals("manual_check", history.triggerAction)
+        // A history row is stamped when the check finished, not when it started.
+        assertEquals(1_100L, history.timestampMs)
         assertEquals(1, history.checkCount)
         assertEquals(1, history.healthyCount)
     }

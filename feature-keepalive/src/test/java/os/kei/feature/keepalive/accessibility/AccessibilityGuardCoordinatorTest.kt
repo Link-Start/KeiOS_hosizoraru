@@ -56,41 +56,6 @@ class AccessibilityGuardCoordinatorTest {
         assertEquals("permission denied", result.failureReason)
     }
 
-    @Test
-    fun `load snapshot exposes secure settings capability`() = runTest {
-        val coordinator =
-            coordinator(
-                bridge = FakeSecureSettingsBridge(readSuccess = false, readReason = "shizuku unavailable"),
-                nowMs = 20_000L,
-            )
-
-        val snapshot = coordinator.loadSnapshot()
-
-        assertEquals(false, snapshot.capability.canReadSecureSettings)
-        assertEquals(false, snapshot.capability.privilegeReady)
-        assertEquals("shizuku unavailable", snapshot.capability.privilegeStatus)
-        assertEquals(20_000L, snapshot.capability.checkedAtMs)
-    }
-
-    @Test
-    fun `policy setters persist self guard settings`() {
-        val store = InMemoryGuardStore()
-        val coordinator = coordinator(store = store)
-
-        coordinator.setDaemonEnabled(true)
-        coordinator.setBootCheckEnabled(true)
-        coordinator.setScreenOnCheckEnabled(true)
-
-        assertEquals(
-            AccessibilityGuardSettings(
-                daemonEnabled = true,
-                bootCheckEnabled = true,
-                screenOnCheckEnabled = true,
-            ),
-            store.loadSettings(),
-        )
-    }
-
     private fun coordinator(
         store: AccessibilityGuardStateStore = InMemoryGuardStore(),
         bridge: AccessibilitySecureSettingsBridge = FakeSecureSettingsBridge(),

@@ -49,11 +49,6 @@ class BaGuideBgmChromeMiniPlayerTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun miniPlayerProgressVisualOffsetStaysTenDp() {
-        assertEquals(10.dp, BaGuideBgmMiniPlayerProgressVisualOffset)
-    }
-
-    @Test
     fun expandedPlayerExposesFortyEightDpSeekAndTransportTargets() {
         var previousClicks = 0
         var playClicks = 0

@@ -43,7 +43,6 @@ import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -215,17 +214,6 @@ private class SearchFieldHarness {
     lateinit var query: MutableState<String>
     lateinit var visible: MutableState<Boolean>
     val focusEvents = mutableListOf<Boolean>()
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 private const val SURFACE_TAG = "ba-bgm-bottom-search-surface"

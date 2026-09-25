@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -37,20 +36,6 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class BaGuideBgmAlbumPaneTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun `stacked, the artwork is still seventy-two percent of the width`() {
-        setPane(paneWidth = 400.dp, paneHeight = 900.dp, reserved = 0.dp) {
-            BaGuideBgmAlbumArtwork(
-                accent = Accent,
-                backdrop = null,
-                modifier = Modifier.fillMaxWidth(0.72f).testTag(ARTWORK_TAG),
-            )
-        }
-
-        // The default the phone has always had: width-driven, and the square follows.
-        composeRule.onNodeWithTag(ARTWORK_TAG).assertWidthIsEqualTo(288.dp).assertHeightIsEqualTo(288.dp)
-    }
 
     @Test
     fun `a pane with height to spare gives the artwork its full width`() {

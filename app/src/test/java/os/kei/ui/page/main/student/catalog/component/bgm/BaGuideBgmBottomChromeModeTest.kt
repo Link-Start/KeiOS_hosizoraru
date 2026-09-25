@@ -5,55 +5,32 @@ import org.junit.Test
 
 class BaGuideBgmBottomChromeModeTest {
     @Test
-    fun searchInputKeepsFocusAboveEveryDockState() {
-        assertEquals(
-            BaGuideBgmBottomChromeMode.SearchInput,
-            resolveBaGuideBgmBottomChromeMode(
-                searchVisible = false,
-                searchInputActive = true,
-                compact = false
-            )
+    fun modeFollowsSearchInputThenSearchThenCompact() {
+        data class Case(
+            val label: String,
+            val searchVisible: Boolean,
+            val searchInputActive: Boolean,
+            val compact: Boolean,
+            val expected: BaGuideBgmBottomChromeMode,
         )
-        assertEquals(
-            BaGuideBgmBottomChromeMode.SearchInput,
-            resolveBaGuideBgmBottomChromeMode(
-                searchVisible = true,
-                searchInputActive = true,
-                compact = true
+        listOf(
+            Case("input active, search closed", false, true, false, BaGuideBgmBottomChromeMode.SearchInput),
+            Case("input active over compact search", true, true, true, BaGuideBgmBottomChromeMode.SearchInput),
+            Case("expanded search during compact scroll", true, false, true, BaGuideBgmBottomChromeMode.SearchExpanded),
+            Case("search closed, compact", false, false, true, BaGuideBgmBottomChromeMode.Compact),
+            Case("search closed, not compact", false, false, false, BaGuideBgmBottomChromeMode.Expanded),
+        ).forEach { case ->
+            assertEquals(
+                case.expected,
+                BaGuideBgmChromePresentationDeriver
+                    .derive(
+                        searchVisible = case.searchVisible,
+                        searchInputActive = case.searchInputActive,
+                        compact = case.compact,
+                    ).mode,
+                case.label,
             )
-        )
-    }
-
-    @Test
-    fun expandedSearchKeepsBaselineDuringCompactScroll() {
-        assertEquals(
-            BaGuideBgmBottomChromeMode.SearchExpanded,
-            resolveBaGuideBgmBottomChromeMode(
-                searchVisible = true,
-                searchInputActive = false,
-                compact = true
-            )
-        )
-    }
-
-    @Test
-    fun dockFallsBackToCompactOrExpandedWhenSearchIsClosed() {
-        assertEquals(
-            BaGuideBgmBottomChromeMode.Compact,
-            resolveBaGuideBgmBottomChromeMode(
-                searchVisible = false,
-                searchInputActive = false,
-                compact = true
-            )
-        )
-        assertEquals(
-            BaGuideBgmBottomChromeMode.Expanded,
-            resolveBaGuideBgmBottomChromeMode(
-                searchVisible = false,
-                searchInputActive = false,
-                compact = false
-            )
-        )
+        }
     }
 
     @Test

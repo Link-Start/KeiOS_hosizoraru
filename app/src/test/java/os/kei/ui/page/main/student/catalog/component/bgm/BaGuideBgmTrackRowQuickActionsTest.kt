@@ -37,7 +37,6 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -278,10 +277,6 @@ class BaGuideBgmTrackRowQuickActionsTest {
         const val QUICK_PLAY_TEST_TAG = "liquid_action_menu_quick_play"
         const val QUICK_FAVORITE_TEST_TAG = "liquid_action_menu_quick_favorite"
         const val QUICK_OFFLINE_TEST_TAG = "liquid_action_menu_quick_offline"
-        const val BGM_TRACK_ROW_SOURCE =
-            "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmTrackRow.kt"
-        const val LIQUID_ACTION_MENU_SOURCE =
-            "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassActionMenu.kt"
     }
 }
 
@@ -289,14 +284,3 @@ class BaGuideBgmTrackRowQuickActionsTestApp : Application()
 
 private fun hasContentDescriptionExactly(value: String): SemanticsMatcher =
     SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(value))
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}

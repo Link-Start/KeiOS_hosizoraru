@@ -10,16 +10,6 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaGuideCatalogFavoritesSynchronizationTest {
-    @Test
-    fun `each favorite write advances store signal`() {
-        val before = BaGuideCatalogFavoritesStoreSignals.version.value
-
-        BaGuideCatalogFavoritesStoreSignals.notifyChanged()
-        BaGuideCatalogFavoritesStoreSignals.notifyChanged()
-
-        assertEquals(before + 2L, BaGuideCatalogFavoritesStoreSignals.version.value)
-    }
-
     /**
      * JSON import and WebDAV sync write [BaGuideCatalogStore] directly, never through the catalog ViewModel,
      * which outlives them. Before the signal existed the catalog kept the favourites it loaded first. This

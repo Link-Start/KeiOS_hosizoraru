@@ -8,20 +8,19 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaGuideStudentBgmLookupCoordinatorTest {
     @Test
     fun `prewarm cached entries stores ready states without network`() = runBlocking {
         var networkCalls = 0
-        val entry = catalogEntry(contentId = 1L)
+        val entry = testCatalogEntry(contentId = 1L)
         val item = resolvedItem("cached.mp3")
         val coordinator = BaGuideStudentBgmLookupCoordinator(
             scope = CoroutineScope(Dispatchers.Unconfined),
@@ -44,8 +43,8 @@ class BaGuideStudentBgmLookupCoordinatorTest {
 
     @Test
     fun `prewarm skips entries already checked as cache misses`() = runBlocking {
-        val firstEntry = catalogEntry(contentId = 11L)
-        val secondEntry = catalogEntry(contentId = 12L)
+        val firstEntry = testCatalogEntry(contentId = 11L)
+        val secondEntry = testCatalogEntry(contentId = 12L)
         val checkedContentIds = mutableListOf<Long>()
         val coordinator = BaGuideStudentBgmLookupCoordinator(
             scope = CoroutineScope(Dispatchers.Unconfined),
@@ -66,7 +65,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
     @Test
     fun `visible network prewarm stores ready state when resolved`() = runBlocking {
         var networkCalls = 0
-        val entry = catalogEntry(contentId = 21L)
+        val entry = testCatalogEntry(contentId = 21L)
         val item = resolvedItem("visible.mp3")
         val coordinator =
             BaGuideStudentBgmLookupCoordinator(
@@ -92,7 +91,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
     @Test
     fun `visible network prewarm keeps idle state when unresolved`() = runBlocking {
         var networkCalls = 0
-        val entry = catalogEntry(contentId = 22L)
+        val entry = testCatalogEntry(contentId = 22L)
         val coordinator =
             BaGuideStudentBgmLookupCoordinator(
                 scope = CoroutineScope(Dispatchers.Unconfined),
@@ -114,7 +113,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
     fun `resolve entry reuses ready state before loaders`() = runBlocking {
         var cacheCalls = 0
         var networkCalls = 0
-        val entry = catalogEntry(contentId = 2L)
+        val entry = testCatalogEntry(contentId = 2L)
         val item = resolvedItem("ready.mp3")
         val coordinator = BaGuideStudentBgmLookupCoordinator(
             scope = CoroutineScope(Dispatchers.Unconfined),
@@ -140,7 +139,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
 
     @Test
     fun `mark ready skips state map replacement when state is unchanged`() = runBlocking {
-        val entry = catalogEntry(contentId = 31L)
+        val entry = testCatalogEntry(contentId = 31L)
         val item = resolvedItem("same.mp3")
         val coordinator =
             BaGuideStudentBgmLookupCoordinator(
@@ -160,7 +159,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
 
     @Test
     fun `cache prewarm does not replace active loading state`() = runTest {
-        val entry = catalogEntry(contentId = 32L)
+        val entry = testCatalogEntry(contentId = 32L)
         val cachedItem = resolvedItem("cached-race.mp3")
         val networkItem = resolvedItem("network-race.mp3")
         val cacheStarted = CompletableDeferred<Unit>()
@@ -204,7 +203,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
 
     @Test
     fun `network miss stores missing state`() = runBlocking {
-        val entry = catalogEntry(contentId = 3L)
+        val entry = testCatalogEntry(contentId = 3L)
         val coordinator = BaGuideStudentBgmLookupCoordinator(
             scope = CoroutineScope(Dispatchers.Unconfined),
             ioDispatcher = Dispatchers.Unconfined,
@@ -224,7 +223,7 @@ class BaGuideStudentBgmLookupCoordinatorTest {
 
     @Test
     fun `resolve entry while loading fans out result to every caller`() = runTest {
-        val entry = catalogEntry(contentId = 4L)
+        val entry = testCatalogEntry(contentId = 4L)
         val item = resolvedItem("network.mp3")
         val deferred = CompletableDeferred<BaGuideStudentBgmResolvedItem?>()
         val coordinator = BaGuideStudentBgmLookupCoordinator(
@@ -251,34 +250,14 @@ class BaGuideStudentBgmLookupCoordinatorTest {
         assertEquals(item.favorite.audioUrl, ready.item.favorite.audioUrl)
     }
 
-    private fun catalogEntry(contentId: Long): BaGuideCatalogEntry {
-        return BaGuideCatalogEntry(
-            entryId = contentId.toInt(),
-            pid = 49443,
-            contentId = contentId,
-            name = "Demo",
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = "",
-            type = 0,
-            order = contentId.toInt(),
-            createdAtSec = 0L,
-            detailUrl = "https://www.gamekee.com/ba/$contentId",
-            tab = BaGuideCatalogTab.Student
-        )
-    }
-
     private fun resolvedItem(audioUrl: String): BaGuideStudentBgmResolvedItem {
         return BaGuideStudentBgmResolvedItem(
-            favorite = GuideBgmFavoriteItem(
+            favorite = testBgmFavorite(
                 audioUrl = audioUrl,
+                sourceUrl = "https://www.gamekee.com/ba/demo",
                 title = "BGM",
                 studentTitle = "Demo",
-                studentImageUrl = "",
-                imageUrl = "",
-                sourceUrl = "https://www.gamekee.com/ba/demo",
-                note = "",
-                favoritedAtMs = 0L
+                favoritedAtMs = 0L,
             ),
             fromCache = true
         )

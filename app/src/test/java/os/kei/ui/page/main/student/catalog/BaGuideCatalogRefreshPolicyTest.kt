@@ -128,18 +128,12 @@ class BaGuideCatalogRefreshPolicyTest {
         )
 
     private fun catalogEntry(tab: BaGuideCatalogTab): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = tab.ordinal + 1,
-            pid = tab.ordinal + 1,
-            contentId = (tab.ordinal + 1).toLong(),
+        testCatalogEntry(
+            contentId = tab.ordinal + 1L,
             name = tab.name,
-            alias = "",
-            aliasDisplay = "",
+            tab = tab,
             iconUrl = "https://example.com/${tab.name}.png",
-            type = 1,
             order = tab.ordinal,
             createdAtSec = 1L,
-            detailUrl = "https://www.gamekee.com/ba/tj/${tab.ordinal + 1}.html",
-            tab = tab,
         )
 }

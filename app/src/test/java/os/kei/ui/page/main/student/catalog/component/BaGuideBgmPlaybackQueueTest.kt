@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.catalog.component
 
 import org.junit.Test
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -30,25 +31,25 @@ class BaGuideBgmPlaybackQueueTest {
     }
 
     @Test
-    fun `queue offset cycles inside visible playlist`() {
+    fun `offset moves and wraps inside the queue`() {
         val queue = listOf(track("a"), track("b"), track("c"))
 
-        assertEquals(
-            "c",
-            selectBaGuideBgmPlaybackQueueOffset(
-                queue = queue,
-                selectedAudioUrl = "b",
-                offset = 1
-            )?.audioUrl
-        )
-        assertEquals(
-            "a",
-            selectBaGuideBgmPlaybackQueueOffset(
-                queue = queue,
-                selectedAudioUrl = "b",
-                offset = -1
-            )?.audioUrl
-        )
+        listOf(
+            Triple("b", 1, "c"),
+            Triple("b", -1, "a"),
+            Triple("c", 1, "a"),
+            Triple("a", -1, "c"),
+        ).forEach { (selected, offset, expected) ->
+            assertEquals(
+                expected,
+                selectBaGuideBgmPlaybackQueueOffset(
+                    queue = queue,
+                    selectedAudioUrl = selected,
+                    offset = offset
+                )?.audioUrl,
+                "$selected offset $offset",
+            )
+        }
     }
 
     @Test
@@ -79,38 +80,11 @@ class BaGuideBgmPlaybackQueueTest {
         assertEquals("b", selection.selectedAudioUrl)
     }
 
-    @Test
-    fun `system media previous and next stay inside active queue`() {
-        val queue = listOf(track("a"), track("b"), track("c"))
-
-        assertEquals(
-            "a",
-            selectBaGuideBgmPlaybackQueueOffset(
-                queue = queue,
-                selectedAudioUrl = "c",
-                offset = 1
-            )?.audioUrl
-        )
-        assertEquals(
-            "c",
-            selectBaGuideBgmPlaybackQueueOffset(
-                queue = queue,
-                selectedAudioUrl = "a",
-                offset = -1
-            )?.audioUrl
-        )
-    }
-
-    private fun track(id: String): GuideBgmFavoriteItem {
-        return GuideBgmFavoriteItem(
+    private fun track(id: String): GuideBgmFavoriteItem =
+        testBgmFavorite(
             audioUrl = id,
+            sourceUrl = "https://www.gamekee.com/ba/tj/$id.html",
             title = "Track $id",
             studentTitle = "Student $id",
-            studentImageUrl = "",
-            imageUrl = "",
-            sourceUrl = "https://www.gamekee.com/ba/tj/$id.html",
-            note = "",
-            favoritedAtMs = 1L
         )
-    }
 }

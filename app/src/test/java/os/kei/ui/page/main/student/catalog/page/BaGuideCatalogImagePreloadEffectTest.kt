@@ -5,6 +5,8 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 
 class BaGuideCatalogImagePreloadEffectTest {
@@ -111,33 +113,11 @@ class BaGuideCatalogImagePreloadEffectTest {
         iconUrl: String,
         tab: BaGuideCatalogTab = BaGuideCatalogTab.Student,
     ): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = iconUrl.hashCode(),
-            pid = 0,
-            contentId = iconUrl.hashCode().toLong(),
-            name = iconUrl,
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = iconUrl,
-            type = 0,
-            order = 0,
-            createdAtSec = 0L,
-            detailUrl = "",
-            tab = tab,
-        )
+        testCatalogEntry(contentId = iconUrl.hashCode().toLong(), name = iconUrl, tab = tab, iconUrl = iconUrl, order = 0, detailUrl = "")
 
     private fun favorite(
         studentImageUrl: String,
         imageUrl: String = "",
     ): GuideBgmFavoriteItem =
-        GuideBgmFavoriteItem(
-            audioUrl = "audio-$studentImageUrl-$imageUrl",
-            title = "",
-            studentTitle = "",
-            studentImageUrl = studentImageUrl,
-            imageUrl = imageUrl,
-            sourceUrl = "",
-            note = "",
-            favoritedAtMs = 1L,
-        )
+        testBgmFavorite(audioUrl = "audio-$studentImageUrl-$imageUrl", studentImageUrl = studentImageUrl, imageUrl = imageUrl)
 }

@@ -112,13 +112,10 @@ class BaGuideBgmFavoriteUndoTest {
 class BaGuideBgmFavoriteUndoTestApp : Application()
 
 private val Removed =
-    GuideBgmFavoriteItem(
+    testBgmFavorite(
         audioUrl = "https://example.invalid/bgm/removed.ogg",
+        sourceUrl = "https://example.invalid/student/hoshino",
         title = "Removed Track",
         studentTitle = "Hoshino",
-        studentImageUrl = "",
-        imageUrl = "",
-        sourceUrl = "https://example.invalid/student/hoshino",
-        note = "",
         favoritedAtMs = 2_000L,
     )

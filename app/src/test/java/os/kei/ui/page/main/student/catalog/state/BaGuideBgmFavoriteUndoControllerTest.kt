@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
 
 /**
  * The undo offer on removing a BGM favourite from the favourites list.
@@ -105,14 +106,11 @@ private class FakeBgmFavorites(
 private fun favorite(
     name: String,
     favoritedAtMs: Long,
-) = GuideBgmFavoriteItem(
+) = testBgmFavorite(
     audioUrl = "https://example.invalid/bgm/$name.ogg",
+    sourceUrl = "https://example.invalid/student/$name",
     title = name,
     studentTitle = "Student $name",
-    studentImageUrl = "",
-    imageUrl = "",
-    sourceUrl = "https://example.invalid/student/$name",
-    note = "",
     favoritedAtMs = favoritedAtMs,
 )
 

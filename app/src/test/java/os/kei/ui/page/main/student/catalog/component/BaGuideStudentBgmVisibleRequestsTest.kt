@@ -2,7 +2,7 @@ package os.kei.ui.page.main.student.catalog.component
 
 import org.junit.Test
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 
 class BaGuideStudentBgmVisibleRequestsTest {
@@ -81,18 +81,5 @@ class BaGuideStudentBgmVisibleRequestsTest {
     }
 
     private fun catalogEntry(index: Int): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = index,
-            pid = 0,
-            contentId = index.toLong(),
-            name = "Student $index",
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = "student-$index",
-            type = 0,
-            order = index,
-            createdAtSec = 0L,
-            detailUrl = "https://www.gamekee.com/ba/$index",
-            tab = BaGuideCatalogTab.Student,
-        )
+        testCatalogEntry(contentId = index.toLong(), iconUrl = "student-$index")
 }

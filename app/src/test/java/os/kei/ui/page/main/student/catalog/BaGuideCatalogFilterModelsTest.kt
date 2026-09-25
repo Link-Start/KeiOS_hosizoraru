@@ -225,22 +225,14 @@ class BaGuideCatalogFilterModelsTest {
         order: Int,
         attributes: BaGuideCatalogEntryFilterAttributes,
         tab: BaGuideCatalogTab = BaGuideCatalogTab.Student,
-    ): BaGuideCatalogEntry {
-        val contentId = order.toLong() + 100L
-        return BaGuideCatalogEntry(
-            entryId = order + 10,
-            pid = 49443,
-            contentId = contentId,
+    ): BaGuideCatalogEntry =
+        testCatalogEntry(
+            contentId = order + 100L,
             name = name,
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = "",
-            type = 1,
+            tab = tab,
             order = order,
             createdAtSec = 1L,
-            detailUrl = "https://www.gamekee.com/ba/tj/$contentId.html",
-            tab = tab,
             filterAttributes = attributes,
+            entryId = order + 10,
         )
-    }
 }

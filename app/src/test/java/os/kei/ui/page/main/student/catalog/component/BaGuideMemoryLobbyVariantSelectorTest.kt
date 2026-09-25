@@ -22,7 +22,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Rule
@@ -185,27 +184,12 @@ class BaGuideMemoryLobbyVariantSelectorTest {
     private companion object {
         const val LONG_VARIANT_LABEL =
             "A very long memorial-lobby video variant label that must stay on one line"
-        const val MEMORY_LOBBY_CARDS_SOURCE =
-            "app/src/main/java/os/kei/ui/page/main/student/catalog/component/BaGuideMemoryLobbyCards.kt"
-        const val APP_DROPDOWN_CONTROLS_SOURCE =
-            "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/AppDropdownControls.kt"
 
         val buttonRoleMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
         val radioRoleMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
         val selectedRadioMatcher =
             radioRoleMatcher and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
     }
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 @androidx.compose.runtime.Composable

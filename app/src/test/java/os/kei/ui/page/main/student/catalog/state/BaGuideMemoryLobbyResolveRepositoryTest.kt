@@ -5,7 +5,7 @@ import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -100,20 +100,7 @@ class BaGuideMemoryLobbyResolveRepositoryTest {
     }
 
     private fun catalogEntry(): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = 1,
-            pid = 49443,
-            contentId = 1L,
-            name = "Demo",
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = "https://example.com/icon.png",
-            type = 0,
-            order = 0,
-            createdAtSec = 0L,
-            detailUrl = "https://www.gamekee.com/ba/1.html",
-            tab = BaGuideCatalogTab.Student,
-        )
+        testCatalogEntry(name = "Demo", iconUrl = "https://example.com/icon.png", order = 0, detailUrl = "https://www.gamekee.com/ba/1.html")
 
     private fun studentGuideInfo(
         galleryItems: List<BaGuideGalleryItem>,

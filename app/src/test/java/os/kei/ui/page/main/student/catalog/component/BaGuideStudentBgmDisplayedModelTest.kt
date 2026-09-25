@@ -3,12 +3,13 @@ package os.kei.ui.page.main.student.catalog.component
 import org.junit.Test
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.favoriteStudentBgmEntryContentIds
 import os.kei.ui.page.main.student.catalog.state.filterAndSortStudentBgmEntries
 import os.kei.ui.page.main.student.catalog.state.visibleCatalogEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -17,8 +18,8 @@ class BaGuideStudentBgmDisplayedModelTest {
     fun `favorite content ids resolve from normalized source urls`() {
         val entries =
             listOf(
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
+                testCatalogEntry(contentId = 1L, name = "Alice", order = 1),
+                testCatalogEntry(contentId = 2L, name = "Bob", order = 2),
             )
         val favorites =
             mapOf(
@@ -34,9 +35,9 @@ class BaGuideStudentBgmDisplayedModelTest {
     fun `filter and sort keeps base order when favorite set is empty`() {
         val entries =
             listOf(
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
-                catalogEntry(contentId = 3L, name = "Carol", order = 3),
+                testCatalogEntry(contentId = 1L, name = "Alice", order = 1),
+                testCatalogEntry(contentId = 2L, name = "Bob", order = 2),
+                testCatalogEntry(contentId = 3L, name = "Carol", order = 3),
             )
 
         val result =
@@ -53,9 +54,9 @@ class BaGuideStudentBgmDisplayedModelTest {
     fun `filter and sort places favorites first then entry order`() {
         val entries =
             listOf(
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
-                catalogEntry(contentId = 3L, name = "Carol", order = 3),
+                testCatalogEntry(contentId = 1L, name = "Alice", order = 1),
+                testCatalogEntry(contentId = 2L, name = "Bob", order = 2),
+                testCatalogEntry(contentId = 3L, name = "Carol", order = 3),
             )
 
         val result =
@@ -69,75 +70,45 @@ class BaGuideStudentBgmDisplayedModelTest {
     }
 
     @Test
-    fun `student bgm favorite visibility can hide favorite entries`() {
-        val entries =
-            listOf(
-                catalogEntry(contentId = 3L, name = "Carol", order = 3),
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
+    fun `favorite visibility hides favorites only when asked`() {
+        data class Case(
+            val label: String,
+            val entryIds: List<Long>,
+            val favoriteId: Long,
+            val visible: (List<BaGuideCatalogEntry>, Long, Boolean) -> List<BaGuideCatalogEntry>,
+        )
+        listOf(
+            Case("student bgm", listOf(3L, 1L, 2L), 3L) { entries, id, hidden ->
+                visibleStudentBgmEntriesWithFavoriteVisibility(entries, setOf(id), hidden)
+            },
+            Case("memory lobby", listOf(2L, 1L, 3L), 2L) { entries, id, hidden ->
+                visibleMemoryLobbyEntriesWithFavoriteVisibility(entries, setOf(id), hidden)
+            },
+            Case("catalog", listOf(2L, 1L, 3L), 2L) { entries, id, hidden ->
+                visibleCatalogEntriesWithFavoriteVisibility(entries, mapOf(id to 100L), hidden)
+            },
+        ).forEach { case ->
+            val entries = case.entryIds.map { id -> testCatalogEntry(contentId = id, name = "Student $id", order = id.toInt()) }
+
+            assertEquals(
+                case.entryIds - case.favoriteId,
+                case.visible(entries, case.favoriteId, true).map { it.contentId },
+                "${case.label}: hidden",
             )
-
-        val visible =
-            visibleStudentBgmEntriesWithFavoriteVisibility(
-                filteredEntries = entries,
-                favoriteContentIds = setOf(3L),
-                favoritesHidden = true,
+            assertEquals(
+                case.entryIds,
+                case.visible(entries, case.favoriteId, false).map { it.contentId },
+                "${case.label}: shown",
             )
-        val restored =
-            visibleStudentBgmEntriesWithFavoriteVisibility(
-                filteredEntries = entries,
-                favoriteContentIds = setOf(3L),
-                favoritesHidden = false,
-            )
-
-        assertEquals(listOf(1L, 2L), visible.map { it.contentId })
-        assertEquals(listOf(3L, 1L, 2L), restored.map { it.contentId })
-    }
-
-    @Test
-    fun `memory lobby favorite visibility can hide favorite content ids`() {
-        val entries =
-            listOf(
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 3L, name = "Carol", order = 3),
-            )
-
-        val visible =
-            visibleMemoryLobbyEntriesWithFavoriteVisibility(
-                filteredEntries = entries,
-                favoriteContentIds = setOf(2L),
-                favoritesHidden = true,
-            )
-
-        assertEquals(listOf(1L, 3L), visible.map { it.contentId })
-    }
-
-    @Test
-    fun `catalog favorite visibility can hide pinned favorites`() {
-        val entries =
-            listOf(
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 3L, name = "Carol", order = 3),
-            )
-
-        val visible =
-            visibleCatalogEntriesWithFavoriteVisibility(
-                filteredEntries = entries,
-                favoriteCatalogEntries = mapOf(2L to 100L),
-                favoritesHidden = true,
-            )
-
-        assertEquals(listOf(1L, 3L), visible.map { it.contentId })
+        }
     }
 
     @Test
     fun `displayed model builds row state and favorite flags once`() {
         val entries =
             listOf(
-                catalogEntry(contentId = 1L, name = "Alice", order = 1),
-                catalogEntry(contentId = 2L, name = "Bob", order = 2),
+                testCatalogEntry(contentId = 1L, name = "Alice", order = 1),
+                testCatalogEntry(contentId = 2L, name = "Bob", order = 2),
             )
         val favorite = favorite(sourceUrl = "https://www.gamekee.com/ba/1")
         val readyFavorite = favorite(sourceUrl = "https://www.gamekee.com/ba/2")
@@ -176,7 +147,7 @@ class BaGuideStudentBgmDisplayedModelTest {
     @Test
     fun `displayed model fills favorite fallback artwork from entry`() {
         val entry =
-            catalogEntry(
+            testCatalogEntry(
                 contentId = 8L,
                 name = "Aris",
                 order = 1,
@@ -201,36 +172,6 @@ class BaGuideStudentBgmDisplayedModelTest {
         assertEquals(playableFavorite.audioUrl, model.rows.single().readyAudioUrl)
     }
 
-    private fun catalogEntry(
-        contentId: Long,
-        name: String,
-        order: Int,
-        iconUrl: String = "",
-    ): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = contentId.toInt(),
-            pid = 49443,
-            contentId = contentId,
-            name = name,
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = iconUrl,
-            type = 0,
-            order = order,
-            createdAtSec = 0L,
-            detailUrl = "https://www.gamekee.com/ba/$contentId",
-            tab = BaGuideCatalogTab.Student,
-        )
-
     private fun favorite(sourceUrl: String): GuideBgmFavoriteItem =
-        GuideBgmFavoriteItem(
-            audioUrl = "$sourceUrl/audio.mp3",
-            title = "BGM",
-            studentTitle = "Demo",
-            studentImageUrl = "",
-            imageUrl = "",
-            sourceUrl = sourceUrl,
-            note = "",
-            favoritedAtMs = 0L,
-        )
+        testBgmFavorite(audioUrl = "$sourceUrl/audio.mp3", sourceUrl = sourceUrl, title = "BGM", studentTitle = "Demo", favoritedAtMs = 0L)
 }

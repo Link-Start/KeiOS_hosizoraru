@@ -16,6 +16,7 @@ import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_AUDIO_URL
 import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_SOURCE_URL
 import os.kei.ui.page.main.student.BA_GUIDE_BGM_MEDIA_METADATA_STUDENT_TITLE
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -146,16 +147,12 @@ class BaGuideBgmMediaItemMapperTest {
         title: String,
         student: String,
         image: String
-    ): GuideBgmFavoriteItem {
-        return GuideBgmFavoriteItem(
+    ): GuideBgmFavoriteItem =
+        testBgmFavorite(
             audioUrl = id,
+            sourceUrl = "https://www.gamekee.com/ba/tj/1.html",
             title = title,
             studentTitle = student,
             studentImageUrl = image,
-            imageUrl = "",
-            sourceUrl = "https://www.gamekee.com/ba/tj/1.html",
-            note = "",
-            favoritedAtMs = 1L
         )
-    }
 }

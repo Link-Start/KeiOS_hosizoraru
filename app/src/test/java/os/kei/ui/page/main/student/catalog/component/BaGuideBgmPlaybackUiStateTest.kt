@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.catalog.component
 
 import org.junit.Test
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -36,15 +37,5 @@ class BaGuideBgmPlaybackUiStateTest {
     private fun favorite(
         audioUrl: String,
         title: String,
-    ): GuideBgmFavoriteItem =
-        GuideBgmFavoriteItem(
-            audioUrl = audioUrl,
-            title = title,
-            studentTitle = title,
-            studentImageUrl = "",
-            imageUrl = "",
-            sourceUrl = "",
-            note = "",
-            favoritedAtMs = 1L,
-        )
+    ): GuideBgmFavoriteItem = testBgmFavorite(audioUrl = audioUrl, title = title, studentTitle = title)
 }

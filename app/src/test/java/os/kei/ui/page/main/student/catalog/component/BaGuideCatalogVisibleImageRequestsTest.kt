@@ -2,7 +2,7 @@ package os.kei.ui.page.main.student.catalog.component
 
 import org.junit.Test
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 
 class BaGuideCatalogVisibleImageRequestsTest {
@@ -122,18 +122,5 @@ class BaGuideCatalogVisibleImageRequestsTest {
     }
 
     private fun catalogEntry(iconUrl: String): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = iconUrl.hashCode(),
-            pid = 0,
-            contentId = iconUrl.hashCode().toLong(),
-            name = iconUrl,
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = iconUrl,
-            type = 0,
-            order = 0,
-            createdAtSec = 0L,
-            detailUrl = "",
-            tab = BaGuideCatalogTab.Student,
-        )
+        testCatalogEntry(contentId = iconUrl.hashCode().toLong(), name = iconUrl, iconUrl = iconUrl, order = 0, detailUrl = "")
 }

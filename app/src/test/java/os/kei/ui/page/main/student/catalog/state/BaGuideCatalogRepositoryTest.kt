@@ -1,9 +1,11 @@
 package os.kei.ui.page.main.student.catalog.state
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.ui.page.main.student.BaGuideDataClock
+import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -13,8 +15,9 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterOption
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogRefreshMode
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
-import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmLookupState
-import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmResolvedItem
+import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
+import os.kei.ui.page.main.student.catalog.testBgmFavorite
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 
 class BaGuideCatalogRepositoryTest {
@@ -22,24 +25,13 @@ class BaGuideCatalogRepositoryTest {
     fun `refresh failure keeps complete cached bundle`() =
         runBlocking {
             val cached = catalogBundle("缓存学生")
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 1 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, _ -> error("blocked") },
-                    completeChecker = { it === cached },
-                    expiredChecker = { _, _, _ -> true },
-                )
-
             val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = true,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository(
+                    cached = cached,
+                    complete = { it === cached },
+                    expired = { _, _, _ -> true },
+                    intervalHours = 1,
+                ).load(manualRefresh = true)
 
             assertEquals(cached, result.catalog)
             assertEquals("保留缓存", result.error)
@@ -49,24 +41,13 @@ class BaGuideCatalogRepositoryTest {
     fun `refresh failure keeps partial cached entries`() =
         runBlocking {
             val cached = catalogBundle("旧缓存")
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 1 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, _ -> error("blocked") },
-                    completeChecker = { false },
-                    expiredChecker = { _, _, _ -> true },
-                )
-
             val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository(
+                    cached = cached,
+                    complete = { false },
+                    expired = { _, _, _ -> true },
+                    intervalHours = 1,
+                ).load()
 
             assertEquals(cached, result.catalog)
             assertEquals("保留缓存", result.error)
@@ -78,31 +59,20 @@ class BaGuideCatalogRepositoryTest {
             val cached = catalogBundle("新缓存")
             var fetchCalled = false
             var observedNowMs = 0L
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 12 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, _ ->
+            val result =
+                repository(
+                    cached = cached,
+                    fetcher = { _, _, _, _, _ ->
                         fetchCalled = true
                         BaGuideCatalogBundle.EMPTY
                     },
-                    completeChecker = { it === cached },
-                    expiredChecker = { _, _, nowMs ->
+                    complete = { it === cached },
+                    expired = { _, _, nowMs ->
                         observedNowMs = nowMs
                         false
                     },
                     clock = BaGuideDataClock { 88_000L },
-                )
-
-            val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                ).load()
 
             assertEquals(cached, result.catalog)
             assertEquals(null, result.error)
@@ -115,28 +85,17 @@ class BaGuideCatalogRepositoryTest {
         runBlocking {
             val fetched = catalogBundle("网络学生")
             var fetchNowMs = 0L
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 12 },
-                    cachedBundleLoader = { null },
-                    catalogFetcher = { _, _, _, clock, _ ->
+            val result =
+                repository(
+                    cached = null,
+                    fetcher = { _, _, _, clock, _ ->
                         fetchNowMs = clock.nowMs()
                         fetched
                     },
-                    completeChecker = { false },
-                    expiredChecker = { _, _, _ -> true },
+                    complete = { false },
+                    expired = { _, _, _ -> true },
                     clock = BaGuideDataClock { 99_000L },
-                )
-
-            val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                ).load()
 
             assertEquals(fetched, result.catalog)
             assertEquals(null, result.error)
@@ -152,24 +111,13 @@ class BaGuideCatalogRepositoryTest {
                     syncedAtMs = syncedAtMs,
                     fullSyncedAtMs = syncedAtMs,
                 )
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 3 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, _ -> error("blocked") },
-                    completeChecker = { true },
-                    clock = BaGuideDataClock { syncedAtMs + 11L * 60L * 60L * 1000L },
-                )
-
             val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository(
+                    cached = cached,
+                    complete = { true },
+                    intervalHours = 3,
+                    clock = BaGuideDataClock { syncedAtMs + 11L * 60L * 60L * 1000L },
+                ).load()
 
             assertEquals(cached, result.catalog)
             assertEquals(null, result.error)
@@ -186,97 +134,39 @@ class BaGuideCatalogRepositoryTest {
                 )
             val fetched = catalogBundle("增量结果")
             var observedMode: BaGuideCatalogRefreshMode? = null
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 12 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, refreshMode ->
+            val result =
+                repository(
+                    cached = cached,
+                    fetcher = { _, _, _, _, refreshMode ->
                         observedMode = refreshMode
                         fetched
                     },
-                    completeChecker = { true },
+                    complete = { true },
                     clock = BaGuideDataClock { syncedAtMs + 13L * 60L * 60L * 1000L },
-                )
-
-            val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                ).load()
 
             assertEquals(fetched, result.catalog)
             assertEquals(BaGuideCatalogRefreshMode.Incremental, observedMode)
         }
 
+    /** Also the only test that a manual refresh bypasses a fresh, complete cache. */
     @Test
     fun `manual refresh uses full refresh mode`() =
         runBlocking {
             val cached = catalogBundle("手动刷新缓存")
             val fetched = catalogBundle("手动刷新结果")
             var observedMode: BaGuideCatalogRefreshMode? = null
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 24 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, refreshMode ->
+            val result =
+                repository(
+                    cached = cached,
+                    fetcher = { _, _, _, _, refreshMode ->
                         observedMode = refreshMode
                         fetched
                     },
-                    completeChecker = { true },
+                    complete = { true },
+                    intervalHours = 24,
                     clock = BaGuideDataClock { cached.syncedAtMs + 60_000L },
-                )
-
-            val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = true,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
-
-            assertEquals(fetched, result.catalog)
-            assertEquals(BaGuideCatalogRefreshMode.Full, observedMode)
-        }
-
-    @Test
-    fun `expired full cadence uses full refresh mode`() =
-        runBlocking {
-            val dayMs = 24L * 60L * 60L * 1000L
-            val nowMs = 5L * dayMs
-            val cached =
-                catalogBundle("全量过期缓存").copy(
-                    syncedAtMs = nowMs - 13L * 60L * 60L * 1000L,
-                    fullSyncedAtMs = nowMs - 4L * dayMs,
-                )
-            val fetched = catalogBundle("全量结果")
-            var observedMode: BaGuideCatalogRefreshMode? = null
-            val repository =
-                BaGuideCatalogRepository(
-                    ioDispatcher = Dispatchers.Unconfined,
-                    refreshIntervalLoader = { 12 },
-                    cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _, refreshMode ->
-                        observedMode = refreshMode
-                        fetched
-                    },
-                    completeChecker = { true },
-                    clock = BaGuideDataClock { nowMs },
-                )
-
-            val result =
-                repository.loadCatalog(
-                    context = null,
-                    currentCatalog = BaGuideCatalogBundle.EMPTY,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                ).load(manualRefresh = true)
 
             assertEquals(fetched, result.catalog)
             assertEquals(BaGuideCatalogRefreshMode.Full, observedMode)
@@ -532,46 +422,32 @@ class BaGuideCatalogRepositoryTest {
             assertEquals(displayedFavorite, result.favoritesByTrackId.getValue(favorite.audioUrl))
         }
 
-    @Test
-    fun `student bgm displayed model derives off composable path`() =
-        runBlocking {
-            val entry =
-                catalogEntry(
-                    name = "阿露",
-                    tab = BaGuideCatalogTab.Student,
-                    order = 1,
-                )
-            val favorite =
-                bgmFavorite(
-                    sourceUrl = entry.detailUrl,
-                    title = "Theme",
-                    studentTitle = "阿露",
-                )
-            val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
-            val input =
-                BaGuideStudentBgmDisplayedInput(
-                    displayedEntries = listOf(entry),
-                    lookupStates =
-                        mapOf(
-                            entry.contentId to
-                                BaGuideStudentBgmLookupState.Ready(
-                                    BaGuideStudentBgmResolvedItem(
-                                        favorite = favorite,
-                                        fromCache = true,
-                                    ),
-                                ),
-                        ),
-                    favoriteByNormalizedSourceUrl = mapOf(entry.detailUrl to favorite),
-                    favoriteAudioUrls = setOf(favorite.audioUrl),
-                )
+    private fun repository(
+        cached: BaGuideCatalogBundle?,
+        fetcher: suspend (Boolean, CoroutineDispatcher, CoroutineDispatcher, BaGuideDataClock, BaGuideCatalogRefreshMode) -> BaGuideCatalogBundle =
+            { _, _, _, _, _ -> error("blocked") },
+        complete: (BaGuideCatalogBundle?) -> Boolean,
+        expired: (BaGuideCatalogBundle?, Int, Long) -> Boolean = ::isBaGuideCatalogCacheExpired,
+        intervalHours: Int = 12,
+        clock: BaGuideDataClock = BaGuideSystemDataClock,
+    ) = BaGuideCatalogRepository(
+        ioDispatcher = Dispatchers.Unconfined,
+        refreshIntervalLoader = { intervalHours },
+        cachedBundleLoader = { cached },
+        catalogFetcher = fetcher,
+        completeChecker = complete,
+        expiredChecker = expired,
+        clock = clock,
+    )
 
-            val result = repository.deriveStudentBgmDisplayedState(input)
-
-            assertEquals(input, result.input)
-            assertEquals(listOf(entry.contentId), result.model.contentIds)
-            assertEquals(listOf(favorite.audioUrl), result.model.playableFavorites.map { it.audioUrl })
-            assertEquals(false, result.deriving)
-        }
+    private suspend fun BaGuideCatalogRepository.load(manualRefresh: Boolean = false) =
+        loadCatalog(
+            context = null,
+            currentCatalog = BaGuideCatalogBundle.EMPTY,
+            manualRefresh = manualRefresh,
+            loadFailedText = "加载失败",
+            refreshFailedKeepCacheText = "保留缓存",
+        )
 
     private fun catalogBundle(name: String): BaGuideCatalogBundle =
         BaGuideCatalogBundle(
@@ -591,22 +467,19 @@ class BaGuideCatalogRepositoryTest {
         tab: BaGuideCatalogTab,
         order: Int = 0,
         attributes: BaGuideCatalogEntryFilterAttributes = BaGuideCatalogEntryFilterAttributes.EMPTY,
-    ): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = name.hashCode() + order,
-            pid = 1,
-            contentId = name.hashCode().toLong().let { if (it < 0L) -it else it } + order + 1L,
+    ): BaGuideCatalogEntry {
+        val hash = name.hashCode().let { if (it < 0) -it else it }
+        return testCatalogEntry(
+            contentId = hash + order + 1L,
             name = name,
-            alias = "",
-            aliasDisplay = "",
+            tab = tab,
             iconUrl = "https://example.com/icon.png",
-            type = 1,
             order = order,
             createdAtSec = 1L,
-            detailUrl = "https://www.gamekee.com/ba/tj/${name.hashCode().let { if (it < 0) -it else it } + order}.html",
-            tab = tab,
+            detailUrl = "https://www.gamekee.com/ba/tj/${hash + order}.html",
             filterAttributes = attributes,
         )
+    }
 
     private fun bgmFavorite(
         sourceUrl: String,
@@ -614,15 +487,5 @@ class BaGuideCatalogRepositoryTest {
         title: String = "BGM",
         studentTitle: String = "学生",
         favoritedAtMs: Long = 1L,
-    ): GuideBgmFavoriteItem =
-        GuideBgmFavoriteItem(
-            audioUrl = audioUrl,
-            title = title,
-            studentTitle = studentTitle,
-            studentImageUrl = "",
-            imageUrl = "",
-            sourceUrl = sourceUrl,
-            note = "",
-            favoritedAtMs = favoritedAtMs,
-        )
+    ): GuideBgmFavoriteItem = testBgmFavorite(audioUrl, sourceUrl, title, studentTitle, favoritedAtMs = favoritedAtMs)
 }

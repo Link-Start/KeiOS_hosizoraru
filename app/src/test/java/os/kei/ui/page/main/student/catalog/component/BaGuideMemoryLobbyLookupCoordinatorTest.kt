@@ -9,8 +9,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.ui.page.main.student.BaGuideGalleryItem
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
@@ -21,7 +20,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
     fun `prewarm cached entries stores ready states without network`() =
         runBlocking {
             var networkCalls = 0
-            val entry = catalogEntry(contentId = 1L)
+            val entry = testCatalogEntry(contentId = 1L)
             val item = resolvedItem("https://example.com/cached.png")
             val coordinator =
                 BaGuideMemoryLobbyLookupCoordinator(
@@ -47,7 +46,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
     @Test
     fun `visible network miss stores missing state`() =
         runBlocking {
-            val entry = catalogEntry(contentId = 2L)
+            val entry = testCatalogEntry(contentId = 2L)
             val coordinator =
                 BaGuideMemoryLobbyLookupCoordinator(
                     scope = CoroutineScope(Dispatchers.Unconfined),
@@ -64,7 +63,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
     @Test
     fun `resolve entry while loading fans out result to every caller`() =
         runTest {
-            val entry = catalogEntry(contentId = 3L)
+            val entry = testCatalogEntry(contentId = 3L)
             val item = resolvedItem("https://example.com/network.png")
             val deferred = CompletableDeferred<BaGuideMemoryLobbyResolvedItem?>()
             val coordinator =
@@ -100,7 +99,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
     fun `fresh cached missing state skips visible network prewarm`() =
         runBlocking {
             var networkCalls = 0
-            val entry = catalogEntry(contentId = 4L)
+            val entry = testCatalogEntry(contentId = 4L)
             val coordinator =
                 BaGuideMemoryLobbyLookupCoordinator(
                     scope = CoroutineScope(Dispatchers.Unconfined),
@@ -122,7 +121,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
     @Test
     fun `cache prewarm does not replace active loading state`() =
         runTest {
-            val entry = catalogEntry(contentId = 5L)
+            val entry = testCatalogEntry(contentId = 5L)
             val cachedItem = resolvedItem("https://example.com/cached-race.png")
             val networkItem = resolvedItem("https://example.com/network-race.png")
             val cacheStarted = CompletableDeferred<Unit>()
@@ -163,22 +162,6 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
                 )
             assertEquals(networkItem.galleryItems.single().mediaUrl, ready.item.galleryItems.single().mediaUrl)
         }
-
-    private fun catalogEntry(contentId: Long): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = contentId.toInt(),
-            pid = 49443,
-            contentId = contentId,
-            name = "Demo",
-            alias = "",
-            aliasDisplay = "",
-            iconUrl = "",
-            type = 0,
-            order = contentId.toInt(),
-            createdAtSec = 0L,
-            detailUrl = "https://www.gamekee.com/ba/$contentId",
-            tab = BaGuideCatalogTab.Student,
-        )
 
     private fun resolvedItem(mediaUrl: String): BaGuideMemoryLobbyResolvedItem =
         BaGuideMemoryLobbyResolvedItem(

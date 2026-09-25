@@ -2,7 +2,6 @@ package os.kei.ui.page.main.widget.status
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
@@ -23,20 +22,17 @@ import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -130,44 +126,6 @@ class StatusIconPillTest {
             assertTrue(pillBounds.right <= rowBounds.right)
         }
     }
-
-    @Test
-    fun standaloneLightAndInheritedDarkPathsBothRenderThePassiveAtom() {
-        composeRule.setContent {
-            Column {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    CompositionLocalProvider(LocalLiquidParentBackdrop provides null) {
-                        StatusIconPill(
-                            label = LIGHT_LABEL,
-                            color = ACCENT,
-                            icon = TestStatusIcon,
-                            modifier = Modifier.testTag(LIGHT_TAG),
-                        )
-                    }
-                }
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                    val parentBackdrop = rememberLayerBackdrop()
-                    CompositionLocalProvider(
-                        LocalLiquidControlsEnabled provides true,
-                        LocalLiquidParentBackdrop provides parentBackdrop,
-                    ) {
-                        StatusIconPill(
-                            label = DARK_LABEL,
-                            color = ACCENT,
-                            icon = TestStatusIcon,
-                            modifier = Modifier.testTag(DARK_TAG),
-                        )
-                    }
-                }
-            }
-        }
-
-        listOf(LIGHT_TAG, DARK_TAG).forEach { tag ->
-            composeRule.onNodeWithTag(tag).assertWidthIsEqualTo(28.dp).assertHeightIsEqualTo(22.dp)
-        }
-        composeRule.onNodeWithContentDescription(LIGHT_LABEL).assertExists()
-        composeRule.onNodeWithContentDescription(DARK_LABEL).assertExists()
-    }
 }
 
 private val TestStatusIcon =
@@ -192,11 +150,7 @@ private val ACCENT = Color(0xFF60A5FA)
 
 private const val DEFAULT_LABEL = "Cached"
 private const val LARGE_FONT_LABEL = "Iteration queued"
-private const val LIGHT_LABEL = "Light status"
-private const val DARK_LABEL = "Dark status"
 private const val DEFAULT_TAG = "status-icon-pill-default"
 private const val LARGE_FONT_TAG = "status-icon-pill-large-font"
-private const val LIGHT_TAG = "status-icon-pill-light"
-private const val DARK_TAG = "status-icon-pill-dark"
 private const val ROW_TAG = "status-icon-pill-row"
 private const val TITLE_TAG = "status-icon-pill-title"

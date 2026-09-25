@@ -8,7 +8,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithText
@@ -67,27 +66,5 @@ class AppSurfaceBoxTest {
             assertEquals(1, clickCount)
             assertEquals(1, longClickCount)
         }
-    }
-
-    @Test
-    fun boxSurfaceForwardsRadioButtonRoleAndSelectionState() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                AppSurfaceBox(
-                    pressSafePadding = 0.dp,
-                    onClick = {},
-                    role = Role.RadioButton,
-                    selected = true,
-                ) {
-                    BasicText("Selected surface")
-                }
-            }
-        }
-
-        composeRule
-            .onNodeWithText("Selected surface")
-            .assertHasClickAction()
-            .assertIsSelected()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
     }
 }

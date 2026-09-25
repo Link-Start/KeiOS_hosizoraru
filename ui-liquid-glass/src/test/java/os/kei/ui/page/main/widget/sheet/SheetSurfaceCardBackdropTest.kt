@@ -25,7 +25,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -35,6 +34,10 @@ import kotlin.test.assertTrue
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
+/**
+ * The one wiring test for SheetSurfaceCard: it is AppSurfaceCard with `exportBackdropToContent = true`, and
+ * every other export rule (no parent, disabled effects, window boundary) is AppSurfaceCardBackdropTest's.
+ */
 class SheetSurfaceCardBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -73,27 +76,5 @@ class SheetSurfaceCardBackdropTest {
             assertNotSame(sheetBackdrop, cardBackdrop)
             assertTrue(overridesFallback)
         }
-    }
-
-    @Test
-    fun standaloneSheetSurfaceCardKeepsSolidFallback() {
-        var contentBackdrop: Backdrop? = null
-
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                SheetSurfaceCard {
-                    contentBackdrop = LocalLiquidParentBackdrop.current
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(24.dp)
-                                .testTag("standalone-sheet-card-content"),
-                    )
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("standalone-sheet-card-content").assertExists()
-        composeRule.runOnIdle { assertNull(contentBackdrop) }
     }
 }

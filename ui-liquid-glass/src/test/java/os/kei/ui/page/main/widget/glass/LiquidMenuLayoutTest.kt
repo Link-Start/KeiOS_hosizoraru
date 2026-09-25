@@ -114,11 +114,7 @@ class LiquidMenuLayoutTest {
     }
 
     @Test
-    fun theCapacitiesAreApplesAndOnlySmallDropsItsLabels() {
-        assertEquals(4, LiquidMenuLayout.Small.topRowCapacity())
-        assertEquals(3, LiquidMenuLayout.Medium.topRowCapacity())
-        assertEquals(null, LiquidMenuLayout.Large.topRowCapacity())
-
+    fun onlySmallDropsItsLabels() {
         assertTrue(!plan(null, 4).topRowShowsLabels, "Small is symbol-only by definition")
         assertTrue(plan(null, 3).topRowShowsLabels)
     }

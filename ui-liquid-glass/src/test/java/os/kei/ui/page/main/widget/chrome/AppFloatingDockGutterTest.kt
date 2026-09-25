@@ -52,21 +52,14 @@ class AppFloatingDockGutterTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `the dock sits on the chrome column, in reach, not against the bezel`() {
-        setContent(AppNavigationPlacement.Top, columnCount = 1) { Dock(dockAtStart = false) }
-
-        // 14dp of dock spacing outside the 280dp gutter a 720dp column leaves on a 1280dp panel. The same
-        // 294dp the tabbed pages' bottom chrome takes, which is what makes the two line up.
-        assertDp(1280.dp - dockBounds().second, AppFloatingDockEdgeSpacing + 280.dp, "end")
-    }
-
-    @Test
     fun `a page widening to two columns does not drag the dock out with it`() {
         setContent(AppNavigationPlacement.Top, columnCount = 2) { Dock(dockAtStart = false) }
 
-        // The same 294dp as the single-column case above: the cards reach the bezel and the dock does not
-        // follow. This is the one that was wrong on the Pad — GitHub, OS, MCP and BA all lay out in two lanes,
-        // so all four docks had left the reachable column.
+        // 14dp of dock spacing outside the 280dp gutter a 720dp chrome column leaves on a 1280dp panel — the
+        // same 294dp the tabbed pages' bottom chrome takes — while the two-column cards reach the bezel. This
+        // is the one that was wrong on the Pad: GitHub, OS, MCP and BA all lay out in two lanes, so all four
+        // docks had left the reachable column. (At one column the chrome and content columns coincide, so
+        // only this case can tell the two rules apart.)
         assertDp(
             1280.dp - dockBounds().second,
             AppFloatingDockEdgeSpacing + 280.dp,

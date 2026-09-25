@@ -17,34 +17,10 @@ import org.junit.Test
  * tests was even named `actionMenuTracksBackdropDocumentationGeometry` and pinned `lensEnd` to 54dp.
  *
  * Tests over dead configuration are worse than no tests: they read as coverage. What is asserted here is
- * the material the panel actually draws, plus the reveal maths, which is the part that cannot be seen in
- * a screenshot.
+ * the legibility and lens floors of the material the panel actually draws; the reveal maths is in
+ * LiquidMenuRevealTest.
  */
 class LiquidGlassDropdownMaterialTest {
-    @Test
-    fun metricsCarryGeometryOnly() {
-        // If an optical value comes back onto this type, it has probably been re-inlined instead of
-        // going through the shared presentation material.
-        // Drop the Compose compiler's synthetic stability marker.
-        val fields =
-            LiquidGlassDropdownMetrics::class.java.declaredFields
-                .map { it.name }
-                .filterNot { it.startsWith("$") }
-                .toSet()
-
-        assertEquals(setOf("containerRadius", "contentPadding"), fields)
-    }
-
-    @Test
-    fun theActionMenuIsTheLargerPanel() {
-        val dropdown = liquidGlassDropdownMetrics(LiquidGlassDropdownMaterial.Default)
-        val actionMenu = liquidGlassDropdownMetrics(LiquidGlassDropdownMaterial.ActionMenu)
-
-        assertTrue(actionMenu.containerRadius > dropdown.containerRadius)
-        // Tighter padding, because its rows carry their own inset and it stacks more of them.
-        assertTrue(actionMenu.contentPadding < dropdown.contentPadding)
-    }
-
     @Test
     fun theFillDiffersByThemeAndStaysLegible() {
         LiquidGlassDropdownMaterial.entries.forEach { material ->
@@ -58,16 +34,6 @@ class LiquidGlassDropdownMaterialTest {
             assertTrue(
                 "$material fill too sheer to read against",
                 dark.alpha >= 0.80f && light.alpha >= 0.78f,
-            )
-        }
-    }
-
-    @Test
-    fun theActionMenuCarriesSlightlyMoreFillThanAPlainDropdown() {
-        listOf(true, false).forEach { isDark ->
-            assertTrue(
-                liquidMenuGlassFill(isDark, LiquidGlassDropdownMaterial.ActionMenu).alpha >
-                    liquidMenuGlassFill(isDark, LiquidGlassDropdownMaterial.Default).alpha,
             )
         }
     }

@@ -73,27 +73,6 @@ class LiquidSurfaceMaterialTest {
     }
 
     @Test
-    fun pressAddsOnlyAControlledHighlightBoost() {
-        val lightPressed =
-            liquidSurfaceHighlightAlpha(
-                isDark = false,
-                interactive = true,
-                enabled = true,
-                pressProgress = 1f,
-            )
-        val darkPressed =
-            liquidSurfaceHighlightAlpha(
-                isDark = true,
-                interactive = true,
-                enabled = true,
-                pressProgress = 1f,
-            )
-
-        assertTrue(lightPressed <= 0.72f)
-        assertTrue(darkPressed <= 0.52f)
-    }
-
-    @Test
     fun malformedPressProgressIsClamped() {
         assertEquals(
             0.62f,

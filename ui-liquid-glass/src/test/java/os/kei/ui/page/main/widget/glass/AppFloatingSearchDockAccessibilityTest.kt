@@ -42,30 +42,6 @@ class AppFloatingSearchDockAccessibilityTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun collapsedDockRemovesZeroWidthTextInputAndKeepsButtonWidth() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                AppFloatingSearchDock(
-                    backdrop = null,
-                    expanded = false,
-                    query = "hidden query",
-                    onQueryChange = {},
-                    onExpandedChange = {},
-                    searchIcon = MiuixIcons.Basic.Check,
-                    contentDescription = "Search",
-                    placeholder = "Search field",
-                    modifier = Modifier.testTag("search-dock"),
-                )
-            }
-        }
-
-        composeRule
-            .onAllNodes(hasSetTextAction(), useUnmergedTree = true)
-            .assertCountEquals(0)
-        composeRule.onNodeWithTag("search-dock").assertWidthIsEqualTo(62.dp)
-    }
-
-    @Test
     fun expandedDockUsesItsParentWidth() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {

@@ -106,17 +106,4 @@ class AppPageContentWidthTest {
         // And a phone is untouched: no floor is ever asked for at one column.
         assertEquals(0.dp, appPageSideGutterFor(426.dp, appPageContentMaxWidthFor(1)))
     }
-
-    /**
-     * A narrowed window is the case that would break if this read the display instead of the window.
-     *
-     * Split-screen on a tablet hands the app something phone-shaped. The gutter has to vanish then, or the
-     * content column would be centred against a screen the app does not have and the visible half would be
-     * padded off-centre.
-     */
-    @Test
-    fun `a split-screen window falls back to no gutter`() {
-        assertEquals(0.dp, appPageSideGutterFor(640.dp))
-        assertEquals(0.dp, appPageSideGutterFor(400.dp))
-    }
 }

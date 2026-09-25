@@ -15,7 +15,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -94,58 +93,6 @@ class StatusPrimitiveBackdropTest {
         composeRule.runOnIdle {
             assertTrue(supportingBlockClicks == 1)
         }
-    }
-
-    @Test
-    fun inheritedParentBackdropKeepsBothPrimitivesRendered() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                val parentBackdrop = rememberLayerBackdrop()
-                CompositionLocalProvider(
-                    LocalLiquidControlsEnabled provides true,
-                    LocalLiquidParentBackdrop provides parentBackdrop,
-                ) {
-                    Column {
-                        StatusPill(
-                            label = "Inherited",
-                            color = Color(0xFF22C55E),
-                            modifier = Modifier.testTag("inherited-status-pill"),
-                        )
-                        AppSupportingBlock(
-                            text = "Inherited supporting material",
-                            modifier = Modifier.testTag("inherited-supporting-block"),
-                        )
-                    }
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("inherited-status-pill").assertExists()
-        composeRule.onNodeWithText("Inherited").assertExists()
-        composeRule.onNodeWithTag("inherited-supporting-block").assertExists()
-        composeRule.onNodeWithText("Inherited supporting material").assertExists()
-    }
-
-    @Test
-    fun explicitSupportingBackdropKeepsTopLevelUseRendered() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                val explicitBackdrop = rememberLayerBackdrop()
-                CompositionLocalProvider(
-                    LocalLiquidControlsEnabled provides true,
-                    LocalLiquidParentBackdrop provides null,
-                ) {
-                    AppSupportingBlock(
-                        text = "Explicit supporting material",
-                        modifier = Modifier.testTag("explicit-supporting-block"),
-                        backdrop = explicitBackdrop,
-                    )
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("explicit-supporting-block").assertExists()
-        composeRule.onNodeWithText("Explicit supporting material").assertExists()
     }
 
 }

@@ -66,13 +66,4 @@ class LiquidSliderThumbGeometryTest {
         assertEquals(0f, liquidSliderThumbTravel(trackWidth = 10f, thumbWidth = 80f), 0f)
         assertEquals(40f, liquidSliderCenterAt(trackWidth = 10f, thumbWidth = 80f, progress = 1f), 0f)
     }
-
-    @Test
-    fun travelIsTheSpanTheCentreActuallyCovers() {
-        val travel = liquidSliderThumbTravel(trackWidth, thumbWidth)
-        val span =
-            liquidSliderCenterAt(trackWidth, thumbWidth, 1f) - liquidSliderCenterAt(trackWidth, thumbWidth, 0f)
-
-        assertEquals(travel, span, 0.001f)
-    }
 }

@@ -17,7 +17,8 @@ class LiquidPresentationActionTest {
 
     /**
      * "Make destructive choices visually prominent ... place these buttons at the top of the action
-     * sheet where they tend to be most noticeable" and "place the Cancel button at the bottom".
+     * sheet where they tend to be most noticeable" and "place the Cancel button at the bottom". The two
+     * Defaults also prove the order is stable within a role.
      */
     @Test
     fun actionSheetPutsDestructiveFirstAndCancelLast() {
@@ -34,18 +35,6 @@ class LiquidPresentationActionTest {
             listOf("Delete Draft", "Save Draft", "Duplicate", "Cancel"),
             ordered.map { it.label },
         )
-    }
-
-    @Test
-    fun actionSheetOrderingIsStableWithinEachRole() {
-        val ordered = liquidActionSheetOrder(
-            listOf(
-                action("First", LiquidActionRole.Default),
-                action("Second", LiquidActionRole.Default),
-                action("Third", LiquidActionRole.Default),
-            ),
-        )
-        assertEquals(listOf("First", "Second", "Third"), ordered.map { it.label })
     }
 
     /**

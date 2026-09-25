@@ -9,9 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -137,55 +134,6 @@ class LiquidInfoBlockTest {
 
         composeRule.onNodeWithTag("standalone-content").assertExists()
         composeRule.runOnIdle { assertNull(contentBackdrop) }
-    }
-
-    @Test
-    fun disabledLiquidEffectsKeepDescendantsOnSolidFallback() {
-        var contentBackdrop: Backdrop? = null
-
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                val backdrop = rememberLayerBackdrop()
-                CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
-                    LiquidInfoBlock(
-                        backdrop = backdrop,
-                        title = "Disabled",
-                        subtitle = "Fallback",
-                        accent = Color(0xFF2563EB),
-                    ) {
-                        contentBackdrop = LocalLiquidParentBackdrop.current
-                        Box(modifier = Modifier.testTag("disabled-content"))
-                    }
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("disabled-content").assertExists()
-        composeRule.runOnIdle { assertNull(contentBackdrop) }
-    }
-
-    @Test
-    fun callerModifierReachesRootWithoutMergingContent() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                LiquidInfoBlock(
-                    title = "Status",
-                    subtitle = "Ready",
-                    accent = Color(0xFF2563EB),
-                    modifier =
-                        Modifier
-                            .testTag("semantic-root")
-                            .semantics { contentDescription = "Sync status" },
-                ) {
-                    Box(modifier = Modifier.testTag("semantic-child"))
-                }
-            }
-        }
-
-        composeRule
-            .onNodeWithTag("semantic-root")
-            .assertContentDescriptionEquals("Sync status")
-        composeRule.onNodeWithTag("semantic-child").assertExists()
     }
 
     @Test

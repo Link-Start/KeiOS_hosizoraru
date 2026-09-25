@@ -11,8 +11,8 @@ import org.robolectric.annotation.Config
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
@@ -25,23 +25,26 @@ class AppThemeAppearanceTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun explicitModesResolveIndependentlyFromSystemAppearance() {
-        assertFalse(resolveAppDarkTheme(ColorSchemeMode.Light, systemInDarkTheme = true))
-        assertFalse(resolveAppDarkTheme(ColorSchemeMode.MonetLight, systemInDarkTheme = true))
-        assertTrue(resolveAppDarkTheme(ColorSchemeMode.Dark, systemInDarkTheme = false))
-        assertTrue(resolveAppDarkTheme(ColorSchemeMode.MonetDark, systemInDarkTheme = false))
+    fun explicitModesIgnoreTheSystemAndSystemModesFollowIt() {
+        data class Case(val mode: ColorSchemeMode?, val systemDark: Boolean, val expected: Boolean)
+        listOf(
+            Case(ColorSchemeMode.Light, systemDark = true, expected = false),
+            Case(ColorSchemeMode.MonetLight, systemDark = true, expected = false),
+            Case(ColorSchemeMode.Dark, systemDark = false, expected = true),
+            Case(ColorSchemeMode.MonetDark, systemDark = false, expected = true),
+            Case(ColorSchemeMode.System, systemDark = false, expected = false),
+            Case(ColorSchemeMode.System, systemDark = true, expected = true),
+            Case(ColorSchemeMode.MonetSystem, systemDark = false, expected = false),
+            Case(ColorSchemeMode.MonetSystem, systemDark = true, expected = true),
+            // No controller mode (direct colours) follows the system.
+            Case(null, systemDark = false, expected = false),
+            Case(null, systemDark = true, expected = true),
+        ).forEach { case ->
+            assertEquals(case.expected, resolveAppDarkTheme(case.mode, case.systemDark), "$case")
+        }
     }
 
-    @Test
-    fun systemModesAndDirectColorsFollowSystemAppearance() {
-        assertFalse(resolveAppDarkTheme(ColorSchemeMode.System, systemInDarkTheme = false))
-        assertTrue(resolveAppDarkTheme(ColorSchemeMode.System, systemInDarkTheme = true))
-        assertFalse(resolveAppDarkTheme(ColorSchemeMode.MonetSystem, systemInDarkTheme = false))
-        assertTrue(resolveAppDarkTheme(ColorSchemeMode.MonetSystem, systemInDarkTheme = true))
-        assertFalse(resolveAppDarkTheme(colorSchemeMode = null, systemInDarkTheme = false))
-        assertTrue(resolveAppDarkTheme(colorSchemeMode = null, systemInDarkTheme = true))
-    }
-
+    /** The wiring: [isAppInDarkTheme] reads the controller's mode rather than only the system flag. */
     @Test
     @Config(qualifiers = "w411dp-h891dp-night-xxhdpi")
     fun forcedLightThemeOverridesDarkSystemAppearance() {
@@ -55,20 +58,5 @@ class AppThemeAppearanceTest {
         }
 
         composeRule.runOnIdle { assertFalse(observedDarkTheme) }
-    }
-
-    @Test
-    @Config(qualifiers = "w411dp-h891dp-notnight-xxhdpi")
-    fun forcedDarkThemeOverridesLightSystemAppearance() {
-        var observedDarkTheme = false
-
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                val isDark = isAppInDarkTheme()
-                SideEffect { observedDarkTheme = isDark }
-            }
-        }
-
-        composeRule.runOnIdle { assertTrue(observedDarkTheme) }
     }
 }

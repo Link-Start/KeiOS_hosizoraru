@@ -29,50 +29,37 @@ class GitHubShareImportNotificationHelperTest {
     @Test
     fun `waiting install notification keeps live update semantics`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = GitHubShareImportNotificationState(
-            phase = GitHubShareImportNotificationPhase.WaitingInstall,
-            owner = "owner",
-            repo = "repo",
-            assetName = "app-arm64.apk",
-            count = 12
-        )
+        // The text stays the same whether or not the pending track has a scanned package name.
+        listOf("", "demo.app").forEach { packageName ->
+            val case = "packageName=\"$packageName\""
+            val state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.WaitingInstall,
+                owner = "owner",
+                repo = "repo",
+                assetName = "app-arm64.apk",
+                packageName = packageName,
+                count = 12
+            )
 
-        val notification = buildModern(context, state)
+            val notification = buildModern(context, state)
 
-        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
-        assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
-        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
-        assertEquals(
-            "Waiting for install",
-            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
-        )
-        assertEquals(
-            "repo · 12 min",
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
-        )
-        assertEquals(2, notification.actions.size)
-        assertEquals("Open flow", notification.actions[0].title.toString())
-        assertEquals("Refresh", notification.actions[1].title.toString())
-    }
-
-    @Test
-    fun `waiting install notification shows exact package linkage when package is scanned`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = GitHubShareImportNotificationState(
-            phase = GitHubShareImportNotificationPhase.WaitingInstall,
-            owner = "owner",
-            repo = "repo",
-            assetName = "app-arm64.apk",
-            packageName = "demo.app",
-            count = 12
-        )
-
-        val notification = buildModern(context, state)
-
-        assertEquals(
-            "repo · 12 min",
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
-        )
+            assertEquals(Notification.CATEGORY_PROGRESS, notification.category, case)
+            assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId, case)
+            assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0, case)
+            assertEquals(
+                "Waiting for install",
+                notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+                case
+            )
+            assertEquals(
+                "repo · 12 min",
+                notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+                case
+            )
+            assertEquals(2, notification.actions.size, case)
+            assertEquals("Open flow", notification.actions[0].title.toString(), case)
+            assertEquals("Refresh", notification.actions[1].title.toString(), case)
+        }
     }
 
     @Test
@@ -130,105 +117,82 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `added notification keeps live update and tracking actions`() {
+    fun `terminal notifications keep live update and mark read actions`() {
+        data class Case(
+            val name: String,
+            val state: GitHubShareImportNotificationState,
+            val title: String,
+            val text: String?,
+            val primaryAction: String,
+        )
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = GitHubShareImportNotificationState(
-            phase = GitHubShareImportNotificationPhase.Added,
-            owner = "owner",
-            repo = "repo",
-            appLabel = "Demo"
-        )
+        listOf(
+            Case(
+                name = "added",
+                state = GitHubShareImportNotificationState(
+                    phase = GitHubShareImportNotificationPhase.Added,
+                    owner = "owner",
+                    repo = "repo",
+                    appLabel = "Demo"
+                ),
+                title = "GitHub tracking added",
+                text = "Demo was added to owner/repo tracking",
+                primaryAction = "View tracking",
+            ),
+            Case(
+                name = "already tracked",
+                state = GitHubShareImportNotificationState(
+                    phase = GitHubShareImportNotificationPhase.AlreadyTracked,
+                    owner = "owner",
+                    repo = "repo",
+                    appLabel = "Demo"
+                ),
+                title = "GitHub tracking already exists",
+                text = null,
+                primaryAction = "View tracking",
+            ),
+            Case(
+                name = "cancelled",
+                state = GitHubShareImportNotificationState(
+                    phase = GitHubShareImportNotificationPhase.Cancelled
+                ),
+                title = "Share import cancelled",
+                text = null,
+                primaryAction = "View GitHub",
+            ),
+            Case(
+                name = "failed",
+                state = GitHubShareImportNotificationState(
+                    phase = GitHubShareImportNotificationPhase.Failed,
+                    primaryLabel = "Network timeout"
+                ),
+                title = "Share import failed",
+                text = "Network timeout",
+                primaryAction = "View GitHub",
+            ),
+        ).forEach { case ->
+            val notification = buildModern(context, case.state)
 
-        val notification = buildModern(context, state)
-
-        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
-        assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
-        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT == 0)
-        assertNotNull(notification.deleteIntent)
-        assertEquals(
-            "GitHub tracking added",
-            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
-        )
-        assertEquals(
-            "Demo was added to owner/repo tracking",
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
-        )
-        assertEquals(2, notification.actions.size)
-        assertEquals("View tracking", notification.actions[0].title.toString())
-        assertEquals("Mark read", notification.actions[1].title.toString())
-    }
-
-    @Test
-    fun `already tracked notification keeps live update and tracking actions`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = GitHubShareImportNotificationState(
-            phase = GitHubShareImportNotificationPhase.AlreadyTracked,
-            owner = "owner",
-            repo = "repo",
-            appLabel = "Demo"
-        )
-
-        val notification = buildModern(context, state)
-
-        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
-        assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
-        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT == 0)
-        assertNotNull(notification.deleteIntent)
-        assertEquals(
-            "GitHub tracking already exists",
-            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
-        )
-        assertEquals(2, notification.actions.size)
-        assertEquals("View tracking", notification.actions[0].title.toString())
-        assertEquals("Mark read", notification.actions[1].title.toString())
-    }
-
-    @Test
-    fun `cancelled notification keeps live update and mark read actions`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = GitHubShareImportNotificationState(
-            phase = GitHubShareImportNotificationPhase.Cancelled
-        )
-
-        val notification = buildModern(context, state)
-
-        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
-        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT == 0)
-        assertNotNull(notification.deleteIntent)
-        assertEquals(
-            "Share import cancelled",
-            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
-        )
-        assertEquals(2, notification.actions.size)
-        assertEquals("View GitHub", notification.actions[0].title.toString())
-        assertEquals("Mark read", notification.actions[1].title.toString())
-    }
-
-    @Test
-    fun `failed notification keeps live update and mark read actions`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = GitHubShareImportNotificationState(
-            phase = GitHubShareImportNotificationPhase.Failed,
-            primaryLabel = "Network timeout"
-        )
-
-        val notification = buildModern(context, state)
-
-        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
-        assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId)
-        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT == 0)
-        assertNotNull(notification.deleteIntent)
-        assertEquals(
-            "Share import failed",
-            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()
-        )
-        assertEquals(
-            "Network timeout",
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString()
-        )
-        assertEquals(2, notification.actions.size)
-        assertEquals("View GitHub", notification.actions[0].title.toString())
-        assertEquals("Mark read", notification.actions[1].title.toString())
+            assertEquals(Notification.CATEGORY_PROGRESS, notification.category, case.name)
+            assertEquals(McpNotificationHelper.LIVE_CHANNEL_ID, notification.channelId, case.name)
+            assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT == 0, case.name)
+            assertNotNull(notification.deleteIntent, case.name)
+            assertEquals(
+                case.title,
+                notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+                case.name
+            )
+            if (case.text != null) {
+                assertEquals(
+                    case.text,
+                    notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+                    case.name
+                )
+            }
+            assertEquals(2, notification.actions.size, case.name)
+            assertEquals(case.primaryAction, notification.actions[0].title.toString(), case.name)
+            assertEquals("Mark read", notification.actions[1].title.toString(), case.name)
+        }
     }
 
     @Test

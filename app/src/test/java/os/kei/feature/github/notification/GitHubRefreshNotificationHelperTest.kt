@@ -119,87 +119,104 @@ class GitHubRefreshNotificationHelperTest {
     }
 
     @Test
-    fun `mi island refresh summary allows first float preference without repeated force float`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(true)
-        val state = createRefreshState(
-            running = true,
-            current = 2,
-            total = 4,
-            displayProgressPercent = 50
+    fun `mi island refresh float flags follow first float preference and float behavior`() {
+        data class Case(
+            val name: String,
+            val applyPreference: () -> Unit,
+            val running: Boolean,
+            val expectedIslandFirstFloat: Boolean,
+            val expectedEnableFloat: Boolean,
+            val expectUpdatable: Boolean = false,
+            val expectNotOngoing: Boolean = false,
         )
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-
-        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
-        assertTrue(focusParam.contains("\"enableFloat\":false"))
-        assertTrue(focusParam.contains("\"updatable\":true"))
-    }
-
-    @Test
-    fun `mi island refresh summary can disable first float preference`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(false)
-        val state = createRefreshState(
-            running = true,
-            current = 2,
-            total = 4,
-            displayProgressPercent = 50
-        )
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        listOf(
+            Case(
+                name = "running summary allows first float preference without repeated force float",
+                applyPreference = { GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(true) },
+                running = true,
+                expectedIslandFirstFloat = true,
+                expectedEnableFloat = false,
+                expectUpdatable = true,
+            ),
+            Case(
+                name = "running summary can disable first float preference",
+                applyPreference = { GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(false) },
+                running = true,
+                expectedIslandFirstFloat = false,
+                expectedEnableFloat = false,
+            ),
+            Case(
+                name = "completed summary floats when start and finish behavior is enabled",
+                applyPreference = {
+                    GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
+                        SuperIslandFloatBehavior.StartAndFinish
+                    )
+                },
+                running = false,
+                expectedIslandFirstFloat = true,
+                expectedEnableFloat = true,
+                expectNotOngoing = true,
+            ),
+            Case(
+                name = "completed summary stays quiet for start only behavior",
+                applyPreference = {
+                    GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
+                        SuperIslandFloatBehavior.StartOnly
+                    )
+                },
+                running = false,
+                expectedIslandFirstFloat = true,
+                expectedEnableFloat = false,
+            ),
+            Case(
+                name = "completed summary stays quiet for summary only behavior",
+                applyPreference = {
+                    GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
+                        SuperIslandFloatBehavior.SummaryOnly
+                    )
+                },
+                running = false,
+                expectedIslandFirstFloat = false,
+                expectedEnableFloat = false,
+            ),
+        ).forEach { case ->
+            case.applyPreference()
+            val state = if (case.running) {
+                createRefreshState(
+                    running = true,
+                    current = 2,
+                    total = 4,
+                    displayProgressPercent = 50
+                )
+            } else {
+                createRefreshState(running = false)
+            }
+            val notification = invokeMiIslandNotification(context, state)
+            val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
-        assertTrue(focusParam.contains("\"enableFloat\":false"))
-    }
-
-    @Test
-    fun `mi island refresh completed summary floats when start and finish behavior is enabled`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
-            SuperIslandFloatBehavior.StartAndFinish
-        )
-        val state = createRefreshState(running = false)
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-
-        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
-        assertFalse(
-            notification.extras.getBoolean(
-                NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING,
-                false
+            assertTrue(
+                focusParam.contains("\"islandFirstFloat\":${case.expectedIslandFirstFloat}"),
+                "${case.name}: $focusParam"
             )
-        )
-        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
-        assertTrue(focusParam.contains("\"enableFloat\":true"))
-    }
-
-    @Test
-    fun `mi island refresh completed summary stays quiet for start only behavior`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
-            SuperIslandFloatBehavior.StartOnly
-        )
-        val state = createRefreshState(running = false)
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-
-        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
-        assertTrue(focusParam.contains("\"enableFloat\":false"))
-    }
-
-    @Test
-    fun `mi island refresh completed summary stays quiet for summary only behavior`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
-            SuperIslandFloatBehavior.SummaryOnly
-        )
-        val state = createRefreshState(running = false)
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-
-        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
-        assertTrue(focusParam.contains("\"enableFloat\":false"))
+            assertTrue(
+                focusParam.contains("\"enableFloat\":${case.expectedEnableFloat}"),
+                "${case.name}: $focusParam"
+            )
+            if (case.expectUpdatable) {
+                assertTrue(focusParam.contains("\"updatable\":true"), "${case.name}: $focusParam")
+            }
+            if (case.expectNotOngoing) {
+                assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0, case.name)
+                assertFalse(
+                    notification.extras.getBoolean(
+                        NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING,
+                        false
+                    ),
+                    case.name
+                )
+            }
+        }
     }
 
     @Test

@@ -38,15 +38,3 @@ internal object BaGuideBgmChromePresentationDeriver {
         )
     }
 }
-
-internal fun resolveBaGuideBgmBottomChromeMode(
-    searchVisible: Boolean,
-    searchInputActive: Boolean,
-    compact: Boolean,
-): BaGuideBgmBottomChromeMode =
-    BaGuideBgmChromePresentationDeriver
-        .derive(
-            searchVisible = searchVisible,
-            searchInputActive = searchInputActive,
-            compact = compact,
-        ).mode

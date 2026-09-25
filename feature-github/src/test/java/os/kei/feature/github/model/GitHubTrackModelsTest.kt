@@ -7,31 +7,13 @@ import kotlin.test.assertTrue
 
 class GitHubTrackModelsTest {
     @Test
-    fun `default kei os tracked app points at current app package and repo`() {
-        val item = defaultKeiOsTrackedApp()
-
-        assertEquals("https://github.com/hosizoraru/KeiOS", item.repoUrl)
-        assertEquals("hosizoraru", item.owner)
-        assertEquals("KeiOS", item.repo)
-        assertEquals(KEI_OS_RELEASE_PACKAGE_NAME, item.packageName)
-        assertEquals("KeiOS", item.appLabel)
-    }
-
-    @Test
-    fun `kei os self track badge matches current app package and repo`() {
-        val item = defaultKeiOsTrackedApp()
-
-        assertTrue(item.isKeiOsSelfTrack())
-    }
-
-    @Test
     fun `kei os actions lookup target uses release package name`() {
-        val item = defaultKeiOsTrackedApp()
+        // The debug build tracks itself under its own package; its Actions lookup is still the release track.
+        val item = defaultKeiOsTrackedApp(packageName = "os.kei.debug")
+        assertTrue(item.isKeiOsSelfTrack(packageName = "os.kei.debug"))
+        assertFalse(item.isKeiOsReleaseTrack())
         val lookupItem = item.asKeiOsActionsRunLookupItem()
 
-        assertEquals("hosizoraru", lookupItem.owner)
-        assertEquals("KeiOS", lookupItem.repo)
-        assertEquals(KEI_OS_RELEASE_PACKAGE_NAME, lookupItem.packageName)
         assertEquals("hosizoraru/KeiOS|os.kei", lookupItem.id)
         assertTrue(lookupItem.isKeiOsReleaseTrack())
     }

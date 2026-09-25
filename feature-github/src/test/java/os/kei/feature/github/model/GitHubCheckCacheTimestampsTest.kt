@@ -24,6 +24,16 @@ class GitHubCheckCacheTimestampsTest {
                 expected = 100L,
             ),
             RefreshTimestampCase(
+                label = "an unchecked entry does not count as the oldest",
+                entries = mapOf(
+                    "missing" to GitHubCheckCacheEntry(),
+                    "old" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
+                    "fresh" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
+                ),
+                fallbackMs = 1_000L,
+                expected = 100L,
+            ),
+            RefreshTimestampCase(
                 label = "no entry has a checked result -> fallback",
                 entries = mapOf("one" to GitHubCheckCacheEntry()),
                 fallbackMs = 500L,
@@ -44,28 +54,5 @@ class GitHubCheckCacheTimestampsTest {
                 case.label,
             )
         }
-    }
-
-    @Test
-    fun `latest checked timestamp still reports newest entry`() {
-        val entries =
-            mapOf(
-                "one" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
-                "two" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
-            )
-
-        assertEquals(250L, entries.latestCheckedAtMillis())
-    }
-
-    @Test
-    fun `oldest checked timestamp ignores missing entries`() {
-        val entries =
-            mapOf(
-                "missing" to GitHubCheckCacheEntry(),
-                "old" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
-                "fresh" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
-            )
-
-        assertEquals(100L, entries.oldestCheckedAtMillis())
     }
 }

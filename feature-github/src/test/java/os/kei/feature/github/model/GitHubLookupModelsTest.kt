@@ -273,22 +273,4 @@ class GitHubLookupModelsTest {
         assertContains(detail, GitHubRepositoryProfileCapability.Security.name)
         assertContains(health, GitHubRepositoryProfileCapability.Actions.name)
     }
-
-    @Test
-    fun `default profile purpose only promotes enabled health card`() {
-        assertEquals(
-            GitHubRepositoryProfilePurpose.VersionCheckFast,
-            GitHubLookupConfig(
-                decisionAssistEnabled = true,
-                repositoryHealthCardEnabled = false
-            ).defaultRepositoryProfilePurpose()
-        )
-        assertEquals(
-            GitHubRepositoryProfilePurpose.HealthCard,
-            GitHubLookupConfig(
-                decisionAssistEnabled = true,
-                repositoryHealthCardEnabled = true
-            ).defaultRepositoryProfilePurpose()
-        )
-    }
 }

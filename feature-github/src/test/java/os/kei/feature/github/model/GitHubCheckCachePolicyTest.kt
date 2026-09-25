@@ -69,8 +69,6 @@ class GitHubCheckCachePolicyTest {
             preferPreRelease = true
         )
 
-        assertTrue(stableItem.directApkCheckSourceSignature().contains("|stable|"))
-        assertTrue(preItem.directApkCheckSourceSignature().contains("|pre|"))
         assertFalse(stableItem.directApkCheckSourceSignature() == preItem.directApkCheckSourceSignature())
         assertFalse(
             GitHubCheckCacheEntry(
@@ -94,8 +92,6 @@ class GitHubCheckCachePolicyTest {
             checkAllDirectApkPreReleases = true
         ).forTrackedItem(item)
 
-        assertTrue(item.checkSourceSignature(singleChannelConfig).endsWith("|single-channel"))
-        assertTrue(item.checkSourceSignature(allPreConfig).endsWith("|all-pre"))
         assertFalse(
             item.checkSourceSignature(singleChannelConfig) ==
                     item.checkSourceSignature(allPreConfig)

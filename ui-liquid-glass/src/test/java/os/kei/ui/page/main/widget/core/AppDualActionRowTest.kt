@@ -26,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppDualActionRowTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -70,8 +70,6 @@ class AppDualActionRowTest {
         assertTrue(secondBounds.right <= rowBounds.right + tolerance)
     }
 }
-
-class AppDualActionRowTestApp : Application()
 
 private const val ROW_TAG = "dual-action-row"
 private const val FIRST_TAG = "dual-action-first"

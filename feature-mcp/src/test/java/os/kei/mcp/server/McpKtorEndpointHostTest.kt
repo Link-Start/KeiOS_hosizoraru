@@ -1,5 +1,6 @@
 package os.kei.mcp.server
 
+import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
@@ -28,7 +29,7 @@ import kotlin.test.assertTrue
 import os.kei.core.privilege.PrivilegedShell
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = McpServerTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class McpKtorEndpointHostTest {
     private val client = OkHttpClient()
     private val jsonMediaType = "application/json".toMediaType()

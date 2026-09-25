@@ -38,7 +38,7 @@ import kotlin.test.assertSame
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppSurfaceCardBackdropTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -327,5 +327,3 @@ class AppSurfaceCardBackdropTest {
         }
     }
 }
-
-class AppSurfaceCardBackdropTestApp : Application()

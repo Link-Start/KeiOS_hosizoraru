@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.sheet
 
+import android.app.Application
 import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
@@ -34,7 +35,7 @@ private const val DYNAMIC_DISMISS_SHEET_TAG = "dynamic-dismiss-liquid-sheet"
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = LiquidGlassBottomSheetTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )

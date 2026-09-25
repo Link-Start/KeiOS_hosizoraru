@@ -51,7 +51,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaGuideBgmBottomSearchFieldTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -219,4 +219,3 @@ private class SearchFieldHarness {
 private const val SURFACE_TAG = "ba-bgm-bottom-search-surface"
 private const val SEARCH_ROOT_TAG = "ba-bgm-bottom-search-root"
 private const val TEST_PLACEHOLDER = "Search music or students"
-class BaGuideBgmBottomSearchFieldTestApp : Application()

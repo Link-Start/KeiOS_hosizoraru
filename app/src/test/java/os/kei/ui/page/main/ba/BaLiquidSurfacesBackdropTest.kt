@@ -32,7 +32,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaLiquidSurfacesBackdropTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class BaLiquidSurfacesBackdropTest {
@@ -248,5 +248,3 @@ class BaLiquidSurfacesBackdropTest {
         }
     }
 }
-
-class BaLiquidSurfacesBackdropTestApp : Application()

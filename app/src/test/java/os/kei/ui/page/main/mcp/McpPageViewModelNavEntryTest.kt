@@ -31,7 +31,7 @@ import kotlin.test.assertTrue
  * cards a reader had opened were closed again after process death.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(application = McpPageViewModelNavEntryTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class McpPageViewModelNavEntryTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -81,5 +81,3 @@ class McpPageViewModelNavEntryTest {
 private class TestViewModelStoreOwner : ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
 }
-
-class McpPageViewModelNavEntryTestApp : Application()

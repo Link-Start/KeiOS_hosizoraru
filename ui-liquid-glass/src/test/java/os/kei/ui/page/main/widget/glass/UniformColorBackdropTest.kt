@@ -46,7 +46,7 @@ import kotlin.test.assertTrue
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(application = UniformColorBackdropTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class UniformColorBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -216,5 +216,3 @@ class UniformColorBackdropTest {
         assertTrue(deltas.all { abs(it) <= tolerance }, "expected $expected, was $actual")
     }
 }
-
-class UniformColorBackdropTestApp : Application()

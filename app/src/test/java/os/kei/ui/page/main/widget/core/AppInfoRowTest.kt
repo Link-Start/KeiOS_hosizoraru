@@ -31,7 +31,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = AppInfoRowTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -202,8 +202,6 @@ class AppInfoRowTest {
         }
     }
 }
-
-class AppInfoRowTestApp : Application()
 
 private const val LEADING_TAG = "app-info-row-leading"
 private const val MULTILINE_ROW_TAG = "app-info-row-multiline"

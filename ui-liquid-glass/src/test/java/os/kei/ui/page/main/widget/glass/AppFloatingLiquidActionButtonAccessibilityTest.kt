@@ -44,7 +44,7 @@ import kotlin.test.assertEquals
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppFloatingLiquidActionButtonAccessibilityTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -166,5 +166,3 @@ private fun TestFloatingAction(
 private fun FloatingActionTestTheme(content: @androidx.compose.runtime.Composable () -> Unit) {
     MiuixTheme(controller = ThemeController(ColorSchemeMode.Light), content = content)
 }
-
-class AppFloatingLiquidActionButtonAccessibilityTestApp : Application()

@@ -27,7 +27,7 @@ import kotlin.test.assertEquals
  * kept it in the tree with a stale position.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(application = KeepComposedUnplacedTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class KeepComposedUnplacedTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -57,5 +57,3 @@ class KeepComposedUnplacedTest {
         assertEquals(1, created, "showing it again must not compose the content anew")
     }
 }
-
-class KeepComposedUnplacedTestApp : Application()

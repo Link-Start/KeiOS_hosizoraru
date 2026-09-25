@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = OsImportPreviewDialogTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -218,8 +218,6 @@ class OsImportPreviewDialogTest {
         composeRule.waitForIdle()
     }
 }
-
-class OsImportPreviewDialogTestApp : Application()
 
 private val VALID_PREVIEW =
     OsCardImportPreview(

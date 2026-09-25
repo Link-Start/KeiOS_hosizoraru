@@ -29,7 +29,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaGuideBgmAlbumPaneTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w1280dp-h800dp-xhdpi",
 )
@@ -87,5 +87,3 @@ class BaGuideBgmAlbumPaneTest {
 
 private val Accent = Color(0xFF2563EB)
 private const val ARTWORK_TAG = "bgm-album-artwork"
-
-class BaGuideBgmAlbumPaneTestApp : Application()

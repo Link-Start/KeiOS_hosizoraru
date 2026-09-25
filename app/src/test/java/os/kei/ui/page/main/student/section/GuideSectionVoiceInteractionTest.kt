@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GuideSectionVoiceInteractionTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -126,8 +126,6 @@ class GuideSectionVoiceInteractionTest {
         composeRule.runOnIdle { assertEquals(PLAYBACK_URL, toggledUrl) }
     }
 }
-
-class GuideSectionVoiceInteractionTestApp : Application()
 
 private const val LANGUAGE_CARD_TAG = "guide-voice-language-card"
 private const val ENTRY_CARD_TAG = "guide-voice-entry-card"

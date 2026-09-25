@@ -43,7 +43,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = StudentGuideLocalBackdropFallbackTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -146,8 +146,6 @@ class StudentGuideLocalBackdropFallbackTest {
     }
 
 }
-
-class StudentGuideLocalBackdropFallbackTestApp : Application()
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

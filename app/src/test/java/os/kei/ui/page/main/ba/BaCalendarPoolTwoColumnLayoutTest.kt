@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaCalendarPoolTwoColumnLayoutTestApp::class,
+    application = Application::class,
     sdk = [35],
     // The tablet AVD in landscape: wide enough that the page takes its two-column shape.
     qualifiers = "w1280dp-h800dp-xhdpi",
@@ -106,5 +106,3 @@ class BaCalendarPoolTwoColumnLayoutTest {
         }
     }
 }
-
-class BaCalendarPoolTwoColumnLayoutTestApp : Application()

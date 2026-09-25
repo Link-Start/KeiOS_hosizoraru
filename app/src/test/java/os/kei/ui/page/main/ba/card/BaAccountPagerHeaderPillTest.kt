@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaAccountPagerHeaderPillTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -201,8 +201,6 @@ class BaAccountPagerHeaderPillTest {
     }
 
 }
-
-class BaAccountPagerHeaderPillTestApp : Application()
 
 private const val TITLE_LABEL = "Schale Office (Global)"
 private const val DISPLAY_NAME_LABEL = "Sensei Account"

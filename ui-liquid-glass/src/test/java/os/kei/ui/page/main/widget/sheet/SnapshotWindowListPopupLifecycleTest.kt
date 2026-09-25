@@ -34,7 +34,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = SnapshotWindowListPopupLifecycleTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -138,5 +138,3 @@ class SnapshotWindowListPopupLifecycleTest {
         composeRule.onNodeWithTag("back-popup").assertDoesNotExist()
     }
 }
-
-class SnapshotWindowListPopupLifecycleTestApp : Application()

@@ -46,7 +46,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = DebugLiquidDropdownSelectorSamplesTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -246,5 +246,3 @@ class DebugLiquidDropdownSelectorSamplesTest {
             radioRoleMatcher and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
     }
 }
-
-class DebugLiquidDropdownSelectorSamplesTestApp : Application()

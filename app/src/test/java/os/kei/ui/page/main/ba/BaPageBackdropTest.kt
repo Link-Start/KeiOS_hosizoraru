@@ -29,7 +29,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaPageBackdropTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class BaPageBackdropTest {
@@ -124,5 +124,3 @@ class BaPageBackdropTest {
     }
 
 }
-
-class BaPageBackdropTestApp : Application()

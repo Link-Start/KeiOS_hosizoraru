@@ -21,7 +21,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = MainPageBackdropSetTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class MainPageBackdropSetTest {
@@ -163,5 +163,3 @@ class MainPageBackdropSetTest {
 
 private const val MAIN_PAGE_BACKDROP_SET_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/host/pager/MainPageBackdropSet.kt"
-
-class MainPageBackdropSetTestApp : Application()

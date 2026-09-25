@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = StudentGuidePassiveMetadataPillTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -184,8 +184,6 @@ private fun TestPassiveMetadataPill(
         overflow = TextOverflow.Ellipsis,
     )
 }
-
-class StudentGuidePassiveMetadataPillTestApp : Application()
 
 private const val ONE_X_LABEL = "Read-only metadata"
 private const val LARGE_FONT_LABEL = "Large-font metadata"

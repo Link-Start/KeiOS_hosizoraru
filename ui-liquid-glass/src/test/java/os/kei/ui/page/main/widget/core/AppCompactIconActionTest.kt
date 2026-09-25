@@ -43,7 +43,7 @@ import kotlin.test.assertEquals
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppCompactIconActionTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -200,5 +200,3 @@ class AppCompactIconActionTest {
 private fun CompactActionTestTheme(content: @androidx.compose.runtime.Composable () -> Unit) {
     MiuixTheme(controller = ThemeController(ColorSchemeMode.Light), content = content)
 }
-
-class AppCompactIconActionTestApp : Application()

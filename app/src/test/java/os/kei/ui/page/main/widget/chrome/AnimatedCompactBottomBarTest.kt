@@ -31,7 +31,7 @@ import kotlin.test.assertEquals
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AnimatedCompactBottomBarTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -165,5 +165,3 @@ class AnimatedCompactBottomBarTest {
 private const val TRANSITION_MIDPOINT_MILLIS = 120L
 private const val EXPANDED_DOCK_LABEL = "Expanded dock"
 private const val COMPACT_DOCK_LABEL = "Compact dock"
-
-class AnimatedCompactBottomBarTestApp : Application()

@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaGuideCatalogFilterActionPopupTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "zh-rCN-w360dp-h800dp-xxhdpi",
 )
@@ -156,8 +156,6 @@ class BaGuideCatalogFilterActionPopupTest {
             SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox) and hasClickAction()
     }
 }
-
-class BaGuideCatalogFilterActionPopupTestApp : Application()
 
 private const val LONG_FILTER_ID = 1
 private const val SELECTED_OPTION_ID = 101

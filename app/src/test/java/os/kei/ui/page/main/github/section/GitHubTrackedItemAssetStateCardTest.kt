@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GitHubTrackedItemAssetStateCardTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -172,8 +172,6 @@ class GitHubTrackedItemAssetStateCardTest {
         )
     }
 }
-
-class GitHubTrackedItemAssetStateCardTestApp : Application()
 
 private val progressMatcher = SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)
 

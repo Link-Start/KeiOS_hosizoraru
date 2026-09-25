@@ -13,7 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = BackgroundTickReceiverTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class AppBackgroundTickReceiverTest {
     @Test
     fun `github tick enqueues scheduler job instead of running in receiver`() {
@@ -107,5 +107,3 @@ class AppBackgroundTickReceiverTest {
         assertTrue(jobInfo.isPersisted)
     }
 }
-
-class BackgroundTickReceiverTestApp : Application()

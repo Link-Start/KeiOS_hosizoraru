@@ -35,7 +35,7 @@ import kotlin.test.assertSame
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppLiquidDialogActionsTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -143,5 +143,3 @@ class AppLiquidDialogActionsTest {
             .assertWidthIsAtLeast(140.dp)
     }
 }
-
-class AppLiquidDialogActionsTestApp : Application()

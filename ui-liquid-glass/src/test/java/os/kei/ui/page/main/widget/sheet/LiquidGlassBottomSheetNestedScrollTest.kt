@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.sheet
 
+import android.app.Application
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
@@ -25,7 +26,7 @@ private const val NESTED_CONTENT_TAG = "nested-liquid-sheet-content"
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = LiquidGlassBottomSheetTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )

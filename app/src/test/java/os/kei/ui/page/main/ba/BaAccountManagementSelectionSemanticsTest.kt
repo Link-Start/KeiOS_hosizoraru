@@ -47,7 +47,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaAccountManagementSelectionSemanticsTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -190,8 +190,6 @@ private fun TestAccountRow(
 
 private fun androidx.compose.ui.test.SemanticsNodeInteraction.bounds(): Rect =
     fetchSemanticsNode().boundsInRoot
-
-class BaAccountManagementSelectionSemanticsTestApp : Application()
 
 private val FIRST_ACCOUNT =
     testAccount(

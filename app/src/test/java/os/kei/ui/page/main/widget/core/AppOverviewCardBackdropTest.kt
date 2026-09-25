@@ -47,7 +47,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = AppOverviewCardBackdropTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class AppOverviewCardBackdropTest {
@@ -174,5 +174,3 @@ class AppOverviewCardBackdropTest {
     }
 
 }
-
-class AppOverviewCardBackdropTestApp : Application()

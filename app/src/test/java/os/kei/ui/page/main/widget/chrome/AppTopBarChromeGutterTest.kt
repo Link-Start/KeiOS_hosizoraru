@@ -36,7 +36,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppTopBarChromeGutterTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w1280dp-h800dp-land-xhdpi",
 )
@@ -103,5 +103,3 @@ class AppTopBarChromeGutterTest {
 private const val NAVIGATION_TAG = "top-bar-navigation-icon"
 private const val ACTION_TAG = "top-bar-action"
 private val CONTROL_SIZE = 44.dp
-
-class AppTopBarChromeGutterTestApp : Application()

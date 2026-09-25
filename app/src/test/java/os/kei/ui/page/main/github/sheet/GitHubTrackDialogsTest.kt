@@ -44,7 +44,7 @@ import kotlin.test.assertNull
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GitHubTrackDialogsTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -278,8 +278,6 @@ class GitHubTrackDialogsTest {
         composeRule.waitForIdle()
     }
 }
-
-class GitHubTrackDialogsTestApp : Application()
 
 private fun trackedApp(): GitHubTrackedApp =
     GitHubTrackedApp(

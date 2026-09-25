@@ -29,7 +29,7 @@ import kotlin.test.assertEquals
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppSurfaceBoxTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -91,5 +91,3 @@ class AppSurfaceBoxTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
     }
 }
-
-class AppSurfaceBoxTestApp : Application()

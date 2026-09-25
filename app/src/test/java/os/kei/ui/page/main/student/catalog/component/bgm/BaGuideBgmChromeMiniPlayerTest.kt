@@ -40,7 +40,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaGuideBgmChromeMiniPlayerTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -341,5 +341,3 @@ private const val MINI_PLAYER_SURFACE_TEST_TAG = "ba_bgm_mini_player_surface"
 private val HIDDEN_PROGRESS_SAMPLES = listOf(0.01f, 0.25f, 0.5f)
 
 private val VISIBLE_PROGRESS_SAMPLES = listOf(0.51f, 0.75f)
-
-class BaGuideBgmChromeMiniPlayerTestApp : Application()

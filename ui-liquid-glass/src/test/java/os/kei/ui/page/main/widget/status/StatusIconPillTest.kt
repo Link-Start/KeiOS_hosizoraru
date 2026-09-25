@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = StatusIconPillTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -169,8 +169,6 @@ class StatusIconPillTest {
         composeRule.onNodeWithContentDescription(DARK_LABEL).assertExists()
     }
 }
-
-class StatusIconPillTestApp : Application()
 
 private val TestStatusIcon =
     ImageVector

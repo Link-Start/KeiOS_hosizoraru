@@ -40,7 +40,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GitHubAppCandidateRowTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -254,5 +254,3 @@ class GitHubAppCandidateRowTest {
             )
     }
 }
-
-class GitHubAppCandidateRowTestApp : Application()

@@ -43,7 +43,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaGuideBgmTrackRowQuickActionsTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "en-w360dp-h800dp-xxhdpi",
 )
@@ -279,8 +279,6 @@ class BaGuideBgmTrackRowQuickActionsTest {
         const val QUICK_OFFLINE_TEST_TAG = "liquid_action_menu_quick_offline"
     }
 }
-
-class BaGuideBgmTrackRowQuickActionsTestApp : Application()
 
 private fun hasContentDescriptionExactly(value: String): SemanticsMatcher =
     SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(value))

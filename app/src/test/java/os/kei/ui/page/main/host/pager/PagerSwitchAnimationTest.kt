@@ -26,7 +26,7 @@ import kotlin.test.assertEquals
  * target page rather than a fraction short of it.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(application = PagerSwitchAnimationTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class PagerSwitchAnimationTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -89,5 +89,3 @@ class PagerSwitchAnimationTest {
 
     private fun PagerState.landing(): String = "$currentPage+$currentPageOffsetFraction"
 }
-
-class PagerSwitchAnimationTestApp : Application()

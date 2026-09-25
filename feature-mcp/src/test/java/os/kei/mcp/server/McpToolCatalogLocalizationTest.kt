@@ -1,5 +1,6 @@
 package os.kei.mcp.server
 
+import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
@@ -12,7 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = McpServerTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class McpToolCatalogLocalizationTest {
     @Test
     fun translatedToolDescriptionsCoverEveryRegisteredTool() {

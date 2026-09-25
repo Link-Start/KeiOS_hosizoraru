@@ -54,7 +54,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaCalendarPoolEntryStatusPillTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -251,8 +251,6 @@ class BaCalendarPoolEntryStatusPillTest {
         }
     }
 }
-
-class BaCalendarPoolEntryStatusPillTestApp : Application()
 
 private fun SemanticsNodeInteraction.bounds(): Rect = fetchSemanticsNode().boundsInRoot
 

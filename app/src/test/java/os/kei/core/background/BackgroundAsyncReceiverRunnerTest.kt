@@ -23,7 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = BackgroundAsyncReceiverRunnerTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 @OptIn(ExperimentalCoroutinesApi::class)
 class BackgroundAsyncReceiverRunnerTest {
     @Test
@@ -171,5 +171,3 @@ class BackgroundAsyncReceiverRunnerTest {
         const val NOW_MS = 20_000_000L
     }
 }
-
-class BackgroundAsyncReceiverRunnerTestApp : Application()

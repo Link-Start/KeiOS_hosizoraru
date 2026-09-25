@@ -38,7 +38,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppPageSidebarGutterTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w1280dp-h800dp-xhdpi",
 )
@@ -149,5 +149,3 @@ class AppPageSidebarGutterTest {
 
 private const val CONTENT_TAG = "page-content-row"
 private const val SECONDARY_TAG = "page-content-row-secondary"
-
-class AppPageSidebarGutterTestApp : Application()

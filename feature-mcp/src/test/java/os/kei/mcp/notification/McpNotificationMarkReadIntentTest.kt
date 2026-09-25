@@ -17,7 +17,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = McpNotificationMarkReadIntentTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class McpNotificationMarkReadIntentTest {
@@ -205,5 +205,3 @@ class McpNotificationMarkReadIntentTest {
         )
     }
 }
-
-class McpNotificationMarkReadIntentTestApp : Application()

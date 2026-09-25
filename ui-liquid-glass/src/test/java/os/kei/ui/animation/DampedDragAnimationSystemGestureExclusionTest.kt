@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = DampedDragAnimationSystemGestureExclusionTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -163,5 +163,3 @@ class DampedDragAnimationSystemGestureExclusionTest {
 }
 
 private const val DRAG_TARGET_TAG = "damped-drag-target"
-
-class DampedDragAnimationSystemGestureExclusionTestApp : Application()

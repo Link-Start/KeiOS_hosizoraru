@@ -41,7 +41,7 @@ import kotlin.test.assertTrue
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(application = FlatLiquidBackdropTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class FlatLiquidBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
@@ -160,5 +160,3 @@ class FlatLiquidBackdropTest {
         assertTrue(worst <= tolerance, "worst channel difference ${worst * 255f}/255 exceeds ${tolerance * 255f}")
     }
 }
-
-class FlatLiquidBackdropTestApp : Application()

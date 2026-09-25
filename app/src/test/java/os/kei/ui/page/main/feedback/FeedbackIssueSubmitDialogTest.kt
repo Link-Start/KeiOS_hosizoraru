@@ -42,7 +42,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = FeedbackIssueSubmitDialogTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -298,8 +298,6 @@ class FeedbackIssueSubmitDialogTest {
         composeRule.waitForIdle()
     }
 }
-
-class FeedbackIssueSubmitDialogTestApp : Application()
 
 private const val EXIT_OBSERVATION_MILLIS = 16L
 private const val EXIT_COMPLETION_MILLIS = 300L

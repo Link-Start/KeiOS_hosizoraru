@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AboutCompactInfoRowTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -123,8 +123,6 @@ class AboutCompactInfoRowTest {
         }
     }
 }
-
-class AboutCompactInfoRowTestApp : Application()
 
 private val COMPACT_ROW_WIDTH = 280.dp
 private const val ROW_TAG = "about-compact-info-row"

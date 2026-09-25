@@ -18,7 +18,7 @@ import kotlin.test.assertNotNull
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = NotificationSemanticIconBuilderTestApp::class,
+    application = Application::class,
     sdk = [35]
 )
 class NotificationSemanticIconBuilderTest {
@@ -131,5 +131,3 @@ class NotificationSemanticIconBuilderTest {
         assertEquals(expected.height, actualBitmap.height)
     }
 }
-
-class NotificationSemanticIconBuilderTestApp : Application()

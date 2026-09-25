@@ -26,7 +26,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppPageTwoColumnPanesTestApp::class,
+    application = Application::class,
     sdk = [35],
     // The tablet AVD in landscape, which is the geometry this container exists for.
     qualifiers = "w1280dp-h800dp-xhdpi",
@@ -138,5 +138,3 @@ class AppPageTwoColumnPanesTest {
 
 private const val PRIMARY_TAG = "two-column-pane-primary"
 private const val SECONDARY_TAG = "two-column-pane-secondary"
-
-class AppPageTwoColumnPanesTestApp : Application()

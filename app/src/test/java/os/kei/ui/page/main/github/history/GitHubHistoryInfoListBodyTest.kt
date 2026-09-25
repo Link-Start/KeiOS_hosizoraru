@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GitHubHistoryInfoListBodyTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "en-rUS-w360dp-h800dp-xxhdpi",
 )
@@ -147,8 +147,6 @@ class GitHubHistoryInfoListBodyTest {
         composeRule.runOnIdle { assertEquals(false, requestedExpansion) }
     }
 }
-
-class GitHubHistoryInfoListBodyTestApp : Application()
 
 private val largeFontTrackChangeRecord =
     GitHubTrackChangeHistoryUiRecord(

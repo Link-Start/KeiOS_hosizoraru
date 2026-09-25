@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = GitHubShareImportNotificationHelperTestApp::class,
+    application = Application::class,
     sdk = [35]
 )
 class GitHubShareImportNotificationHelperTest {
@@ -921,5 +921,3 @@ class GitHubShareImportNotificationHelperTest {
             ?: error("Missing focus action: $key")
     }
 }
-
-class GitHubShareImportNotificationHelperTestApp : Application()

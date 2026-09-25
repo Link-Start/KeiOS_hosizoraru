@@ -27,7 +27,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = McpOverviewPillLayoutTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "zh-rCN-w375dp-h817dp-520dpi",
 )
@@ -105,5 +105,3 @@ class McpOverviewPillLayoutTest {
         )
     }
 }
-
-class McpOverviewPillLayoutTestApp : Application()

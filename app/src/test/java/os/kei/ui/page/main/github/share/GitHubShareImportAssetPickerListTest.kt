@@ -43,7 +43,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GitHubShareImportAssetPickerListTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -225,5 +225,3 @@ class GitHubShareImportAssetPickerListTest {
             )
     }
 }
-
-class GitHubShareImportAssetPickerListTestApp : Application()

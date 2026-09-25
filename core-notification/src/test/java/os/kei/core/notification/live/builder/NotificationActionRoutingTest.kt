@@ -11,7 +11,7 @@ import os.kei.core.notification.live.LiveNotificationPayload
 import kotlin.test.assertEquals
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = NotificationActionRoutingTestApp::class)
+@Config(application = Application::class)
 class NotificationActionRoutingTest {
     @Test
     @Config(sdk = [36])
@@ -105,5 +105,3 @@ class NotificationActionRoutingTest {
             channelId = "test_notification_action_routing",
         )
 }
-
-class NotificationActionRoutingTestApp : Application()

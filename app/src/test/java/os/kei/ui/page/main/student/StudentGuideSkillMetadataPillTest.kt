@@ -34,7 +34,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = StudentGuideSkillMetadataPillTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -147,8 +147,6 @@ class StudentGuideSkillMetadataPillTest {
     }
 
 }
-
-class StudentGuideSkillMetadataPillTestApp : Application()
 
 private const val PRIMARY_ONE_X_LABEL = "EX skill"
 private const val STATE_ONE_X_LABEL = "Normal"

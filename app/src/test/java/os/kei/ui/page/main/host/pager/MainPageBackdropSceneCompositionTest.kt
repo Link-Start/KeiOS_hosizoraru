@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = MainPageBackdropSceneCompositionTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class MainPageBackdropSceneCompositionTest {
@@ -103,5 +103,3 @@ class MainPageBackdropSceneCompositionTest {
         return requireNotNull(observed)
     }
 }
-
-class MainPageBackdropSceneCompositionTestApp : Application()

@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = McpNotificationOpenIntentTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class McpNotificationOpenIntentTest {
@@ -51,5 +51,3 @@ class McpNotificationOpenIntentTest {
         assertNull(intent.getStringExtra(McpAppIntentContract.EXTRA_BA_ACCOUNT_ID))
     }
 }
-
-class McpNotificationOpenIntentTestApp : Application()

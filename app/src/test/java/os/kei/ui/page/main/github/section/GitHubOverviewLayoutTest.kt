@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GitHubOverviewLayoutTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "zh-rCN-w411dp-h891dp-xxhdpi",
 )
@@ -48,7 +48,7 @@ class GitHubOverviewLayoutTest {
 
     @Test
     @Config(
-        application = GitHubOverviewLayoutTestApp::class,
+        application = Application::class,
         sdk = [35],
         qualifiers = "zh-rCN-w375dp-h817dp-520dpi",
     )
@@ -58,7 +58,7 @@ class GitHubOverviewLayoutTest {
 
     @Test
     @Config(
-        application = GitHubOverviewLayoutTestApp::class,
+        application = Application::class,
         sdk = [35],
         qualifiers = "zh-rCN-w375dp-h817dp-520dpi",
     )
@@ -192,5 +192,3 @@ class GitHubOverviewLayoutTest {
         )
     }
 }
-
-class GitHubOverviewLayoutTestApp : Application()

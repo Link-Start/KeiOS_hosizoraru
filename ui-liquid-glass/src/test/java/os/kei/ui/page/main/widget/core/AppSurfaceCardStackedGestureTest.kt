@@ -60,7 +60,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppSurfaceCardStackedGestureTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -149,5 +149,3 @@ private fun ComposeContentTestRule.clickAt(y: Dp) {
     val yPx = with(density) { y.toPx() }
     onRoot().performTouchInput { click(Offset(x = width / 2f, y = yPx)) }
 }
-
-class AppSurfaceCardStackedGestureTestApp : Application()

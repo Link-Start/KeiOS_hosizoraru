@@ -26,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = LiquidFiniteSemanticsTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -165,5 +165,3 @@ class LiquidFiniteSemanticsTest {
             .assertRangeInfoEquals(ProgressBarRangeInfo(0.70f, 0f..1f))
     }
 }
-
-class LiquidFiniteSemanticsTestApp : Application()

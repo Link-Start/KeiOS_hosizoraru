@@ -40,7 +40,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppTextInputContentTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -176,5 +176,3 @@ private fun inputStyle(): AppTextInputContentStyle =
 private const val ROOT_TAG = "app-text-input-content"
 private const val FIELD_TAG = "app-text-input-field"
 private const val LEADING_TAG = "app-text-input-leading"
-
-class AppTextInputContentTestApp : Application()

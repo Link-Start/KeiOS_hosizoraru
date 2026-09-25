@@ -33,7 +33,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = FeedbackStatusCardSupportingBlockTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -133,8 +133,6 @@ class FeedbackStatusCardSupportingBlockTest {
         }
     }
 }
-
-class FeedbackStatusCardSupportingBlockTestApp : Application()
 
 private const val CARD_HOST_TAG = "feedback-status-card-host"
 private const val STATUS_MESSAGE = "Ready for local review"

@@ -29,7 +29,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = GitHubActionsUpdateNotificationHelperTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class GitHubActionsUpdateNotificationHelperTest {
@@ -287,5 +287,3 @@ class GitHubActionsUpdateNotificationHelperTest {
         getParcelable<Icon>(key)
             ?: error("Missing focus picture: $key")
 }
-
-class GitHubActionsUpdateNotificationHelperTestApp : Application()

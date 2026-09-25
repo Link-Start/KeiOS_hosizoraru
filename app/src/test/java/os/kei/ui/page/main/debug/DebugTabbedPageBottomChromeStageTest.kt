@@ -46,7 +46,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = DebugTabbedPageBottomChromeStageTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -221,5 +221,3 @@ private fun assertInside(
     assertTrue(inner.right <= outer.right + tolerance, "Right edge escaped: outer=$outer, inner=$inner")
     assertTrue(inner.bottom <= outer.bottom + tolerance, "Bottom edge escaped: outer=$outer, inner=$inner")
 }
-
-class DebugTabbedPageBottomChromeStageTestApp : Application()

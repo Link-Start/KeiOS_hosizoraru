@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = LiquidSliderGestureTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -295,5 +295,3 @@ class LiquidSliderGestureTest {
         assertTrue(observedScrollValue > 0)
     }
 }
-
-class LiquidSliderGestureTestApp : Application()

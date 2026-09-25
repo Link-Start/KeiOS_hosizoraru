@@ -18,7 +18,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = GitHubShizukuPackageInstallerTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class GitHubShizukuPackageInstallerTest {
     @Test
     fun `installer fails before session when shizuku is unavailable`() = runBlocking {
@@ -139,5 +139,3 @@ class GitHubShizukuPackageInstallerTest {
         }
     }
 }
-
-class GitHubShizukuPackageInstallerTestApp : Application()

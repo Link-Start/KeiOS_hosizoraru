@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = DampedDragAnimationReducedMotionTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -116,5 +116,3 @@ class DampedDragAnimationReducedMotionTest {
         return animation
     }
 }
-
-class DampedDragAnimationReducedMotionTestApp : Application()

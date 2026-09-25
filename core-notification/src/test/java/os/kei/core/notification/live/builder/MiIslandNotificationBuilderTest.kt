@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = MiIslandNotificationBuilderTestApp::class,
+    application = Application::class,
     sdk = [35]
 )
 class MiIslandNotificationBuilderTest {
@@ -688,5 +688,3 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("\"highlightColor\":\"#22C55E\""))
     }
 }
-
-class MiIslandNotificationBuilderTestApp : Application()

@@ -41,7 +41,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = DebugLiquidActionMenuCardTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "zh-rCN-w360dp-h800dp-xxhdpi",
 )
@@ -125,5 +125,3 @@ class DebugLiquidActionMenuCardTest {
             SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox) and hasClickAction()
     }
 }
-
-class DebugLiquidActionMenuCardTestApp : Application()

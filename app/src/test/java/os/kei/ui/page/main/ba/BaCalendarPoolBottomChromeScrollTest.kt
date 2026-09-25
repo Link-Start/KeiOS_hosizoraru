@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = BaCalendarPoolBottomChromeScrollTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -147,5 +147,3 @@ class BaCalendarPoolBottomChromeScrollTest {
 private const val FLING_SETTLE_MS = 3_000L
 private const val HOUR_MS = 60L * 60L * 1000L
 private const val DAY_MS = 24L * HOUR_MS
-
-class BaCalendarPoolBottomChromeScrollTestApp : Application()

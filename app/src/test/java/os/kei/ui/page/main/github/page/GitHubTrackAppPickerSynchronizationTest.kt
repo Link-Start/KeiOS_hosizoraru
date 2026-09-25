@@ -32,7 +32,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
  */
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = GitHubTrackAppPickerSynchronizationTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -82,8 +82,6 @@ class GitHubTrackAppPickerSynchronizationTest {
         composeRule.onAllNodes(hasText(NEWLY_TRACKED.label)).assertCountEquals(1)
     }
 }
-
-class GitHubTrackAppPickerSynchronizationTestApp : Application()
 
 private val ALREADY_TRACKED = InstalledAppItem(label = "Backdrop", packageName = "io.github.kyant0.backdrop")
 private val NEWLY_TRACKED = InstalledAppItem(label = "Miuix", packageName = "top.yukonga.miuix")

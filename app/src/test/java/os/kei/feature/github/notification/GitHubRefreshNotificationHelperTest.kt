@@ -23,7 +23,7 @@ import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = GitHubRefreshNotificationHelperTestApp::class,
+    application = Application::class,
     sdk = [35]
 )
 class GitHubRefreshNotificationHelperTest {
@@ -665,5 +665,3 @@ class GitHubRefreshNotificationHelperTest {
             ?: error("Missing focus action: $key")
     }
 }
-
-class GitHubRefreshNotificationHelperTestApp : Application()

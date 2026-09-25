@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GuideErrorSupportingBlockTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w360dp-h800dp-xxhdpi",
 )
@@ -110,8 +110,6 @@ private fun SemanticsNodeInteraction.assertReadOnly() {
     assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
     assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
 }
-
-class GuideErrorSupportingBlockTestApp : Application()
 
 private const val ROOT_TAG = "guide-error-root"
 private const val BEFORE_TAG = "guide-error-before"

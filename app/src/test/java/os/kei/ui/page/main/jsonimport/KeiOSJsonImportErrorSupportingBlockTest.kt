@@ -31,7 +31,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = KeiOSJsonImportErrorSupportingBlockTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "en-rUS-w360dp-h800dp-xxhdpi",
 )
@@ -124,8 +124,6 @@ class KeiOSJsonImportErrorSupportingBlockTest {
         )
     }
 }
-
-class KeiOSJsonImportErrorSupportingBlockTestApp : Application()
 
 private const val ROOT_TAG = "json-import-error-layout-root"
 private const val BEFORE_TAG = "json-import-error-before"

@@ -33,7 +33,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = GuideLiquidCardInteractionTestApp::class,
+    application = Application::class,
     sdk = [35],
 )
 class GuideLiquidCardInteractionTest {
@@ -86,5 +86,3 @@ class GuideLiquidCardInteractionTest {
         composeRule.runOnIdle { assertEquals(1, actionClicks) }
     }
 }
-
-class GuideLiquidCardInteractionTestApp : Application()

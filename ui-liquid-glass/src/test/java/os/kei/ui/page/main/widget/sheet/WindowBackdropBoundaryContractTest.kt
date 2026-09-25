@@ -152,7 +152,7 @@ class WindowBackdropBoundaryContractTest {
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = WindowBackdropBoundaryContractTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -199,8 +199,6 @@ class WindowBackdropBoundaryRuntimeTest {
         }
     }
 }
-
-class WindowBackdropBoundaryContractTestApp : Application()
 
 private fun windowBoundarySource(relativePath: String): String {
     val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }

@@ -13,7 +13,7 @@ import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
 @Config(
-    application = GitHubTrackedItemsSectionTestApp::class,
+    application = Application::class,
     sdk = [35]
 )
 class GitHubTrackedItemsSectionTest {
@@ -47,5 +47,3 @@ class GitHubTrackedItemsSectionTest {
         )
     }
 }
-
-class GitHubTrackedItemsSectionTestApp : Application()

@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = TabbedPageCategoryBarWidthTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w420dp-h900dp-xhdpi",
 )
@@ -144,5 +144,3 @@ private enum class TestCategory(
     Calendar(LucideR.drawable.lucide_ic_calendar, os.kei.R.string.ba_calendar_tab),
     Banners(LucideR.drawable.lucide_ic_mail, os.kei.R.string.ba_pool_tab),
 }
-
-class TabbedPageCategoryBarWidthTestApp : Application()

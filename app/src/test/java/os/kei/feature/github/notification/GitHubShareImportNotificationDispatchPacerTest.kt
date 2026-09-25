@@ -42,7 +42,7 @@ class GitHubShareImportNotificationDispatchPacerTest {
 }
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = GitHubShareImportNotificationDispatchTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class GitHubShareImportNotificationPostSchedulerTest {
     @Test
     fun `latest terminal state replaces queued progress`() = runBlocking {
@@ -102,5 +102,3 @@ class GitHubShareImportNotificationPostSchedulerTest {
         )
     }
 }
-
-class GitHubShareImportNotificationDispatchTestApp : Application()

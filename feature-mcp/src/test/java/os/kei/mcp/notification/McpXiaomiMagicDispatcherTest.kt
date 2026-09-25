@@ -22,7 +22,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = McpXiaomiMagicDispatcherTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 @OptIn(ExperimentalCoroutinesApi::class)
 class McpXiaomiMagicDispatcherTest {
     @Test
@@ -284,5 +284,3 @@ class McpXiaomiMagicDispatcherTest {
         assertTrue(restored)
     }
 }
-
-class McpXiaomiMagicDispatcherTestApp : Application()

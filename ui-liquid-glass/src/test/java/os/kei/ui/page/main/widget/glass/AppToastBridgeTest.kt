@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = AppToastBridgeTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class AppToastBridgeTest {
     @Test
     fun backgroundLiquidToastDispatchesToTheMainThread() {
@@ -43,5 +43,3 @@ class AppToastBridgeTest {
         }
     }
 }
-
-class AppToastBridgeTestApp : Application()

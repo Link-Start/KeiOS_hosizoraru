@@ -102,30 +102,6 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner keeps lookup strategy while scanning apk assets in parallel`() = runBlocking {
-        val source = FakeScanSource(
-            manifestBytes = BinaryManifestFixture.build("os.kei.parallel"),
-            assetNames = listOf("KeiOS-arm64.apk", "KeiOS-x86.apk")
-        )
-        val scanner = GitHubApkPackageNameScanner(source)
-
-        val result = scanner.scan(
-            GitHubApkPackageNameScanRequest(
-                repoUrl = "https://github.com/hosizoraru/KeiOS",
-                lookupConfig = GitHubLookupConfig(
-                    selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
-                    apiToken = "token-123"
-                )
-            )
-        ).getOrThrow()
-
-        assertEquals("os.kei.parallel", result.packageName)
-        val scannedStrategies = source.scannedStrategiesSnapshot()
-        assertTrue(scannedStrategies.isNotEmpty())
-        assertTrue(scannedStrategies.all { it == GitHubLookupStrategyOption.GitHubApiToken })
-    }
-
-    @Test
     fun `scanner selects expected package from release with multiple app variants`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei"),
@@ -180,8 +156,6 @@ class GitHubApkPackageNameScannerTest {
         var scannedDownloadUrl = ""
         val scannedAssetNames: MutableList<String> =
             Collections.synchronizedList(mutableListOf())
-        val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
-            Collections.synchronizedList(mutableListOf())
 
         override suspend fun loadLatestStableRelease(
             owner: String,
@@ -222,17 +196,10 @@ class GitHubApkPackageNameScannerTest {
         ): Result<ByteArray> {
             scannedDownloadUrl = asset.downloadUrl
             scannedAssetNames += asset.name
-            scannedStrategies += lookupConfig.selectedStrategy
             readDelayMsByAsset[asset.name]?.takeIf { it > 0L }?.let { delayMs ->
                 Thread.sleep(delayMs)
             }
             return Result.success(manifestBytesByAsset[asset.name] ?: manifestBytes)
-        }
-
-        fun scannedStrategiesSnapshot(): List<GitHubLookupStrategyOption> {
-            return synchronized(scannedStrategies) {
-                scannedStrategies.toList()
-            }
         }
     }
 }

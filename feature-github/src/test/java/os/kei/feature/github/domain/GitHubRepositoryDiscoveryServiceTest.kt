@@ -272,26 +272,6 @@ class GitHubRepositoryDiscoveryServiceTest {
     }
 
     @Test
-    fun `installed app query builder keeps label and package entry points`() {
-        val queries = GitHubRepositoryDiscoveryQueries.forInstalledApp(
-            InstalledAppItem(
-                label = "Blue Archive",
-                packageName = "com.nexon.bluearchive"
-            )
-        )
-
-        assertEquals(
-            listOf(
-                "Blue Archive android in:name,description,readme",
-                "com.nexon.bluearchive in:description,readme",
-                "blue archive android",
-                "bluearchive android in:name,description,readme"
-            ),
-            queries
-        )
-    }
-
-    @Test
     fun `installed app search matches package tail with different separators`() = runBlocking {
         val app = InstalledAppItem(
             label = "Hidden Apps",

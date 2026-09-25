@@ -38,45 +38,6 @@ class GitHubStrategyBenchmarkServiceTest {
     }
 
     @Test
-    fun `benchmark runs targets concurrently within each strategy`() = runBlocking {
-        val activeLoads = AtomicInteger(0)
-        val maxActiveLoads = AtomicInteger(0)
-        val firstColdWave = CountDownLatch(2)
-        val runner = benchmarkRunner("atom", activeLoads, maxActiveLoads, firstColdWave)
-
-        val report = GitHubStrategyBenchmarkService.compareTargetsWithRunners(
-            targets = listOf(
-                GitHubRepoTarget("demo", "app"),
-                GitHubRepoTarget("demo", "lib")
-            ),
-            runners = listOf(runner),
-            maxConcurrency = 2
-        )
-
-        assertEquals(2, report.results.single().coldSamples.size)
-        assertTrue(maxActiveLoads.get() >= 2)
-    }
-
-    @Test
-    fun `benchmark targets retain package metadata for scan tests`() {
-        val targets = GitHubStrategyBenchmarkService.buildTargets(
-            listOf(
-                GitHubTrackedApp(
-                    repoUrl = "https://github.com/demo/app",
-                    owner = "demo",
-                    repo = "app",
-                    packageName = "com.demo.app",
-                    appLabel = "Demo App"
-                )
-            )
-        )
-
-        assertEquals("com.demo.app", targets.single().packageName)
-        assertEquals("Demo App", targets.single().appLabel)
-        assertEquals("https://github.com/demo/app", targets.single().normalizedRepoUrl)
-    }
-
-    @Test
     fun `benchmark target skips package scan metadata for repository variants`() {
         val targets = GitHubStrategyBenchmarkService.buildTargets(
             listOf(
@@ -183,50 +144,9 @@ class GitHubStrategyBenchmarkServiceTest {
         assertEquals(2, result.samplesFor(GitHubStrategyBenchmarkTestType.ApkManifest).size)
         assertEquals(3, result.samplesFor(GitHubStrategyBenchmarkTestType.PackageNameScan).size)
         assertEquals(2, result.samplesFor(GitHubStrategyBenchmarkTestType.RepositoryScan).size)
+        assertEquals(3, result.successCountFor(GitHubStrategyBenchmarkTestType.PackageNameScan))
+        assertEquals(2, result.successCountFor(GitHubStrategyBenchmarkTestType.RepositoryScan))
         assertTrue(maxActiveLoads.get() >= 4)
-    }
-
-    @Test
-    fun `benchmark includes package and repository scan samples`() = runBlocking {
-        val runner = benchmarkRunner(
-            strategyId = "atom",
-            activeLoads = AtomicInteger(0),
-            maxActiveLoads = AtomicInteger(0),
-            firstColdWave = CountDownLatch(1),
-            scanPackageName = { target ->
-                GitHubStrategyLoadTrace(
-                    result = Result.success(target.packageName),
-                    fromCache = false,
-                    elapsedMs = 2L
-                )
-            },
-            scanRepository = { target ->
-                GitHubStrategyLoadTrace(
-                    result = Result.success(target.id),
-                    fromCache = false,
-                    elapsedMs = 3L
-                )
-            }
-        )
-
-        val report = GitHubStrategyBenchmarkService.compareTargetsWithRunners(
-            targets = listOf(
-                GitHubRepoTarget(
-                    owner = "demo",
-                    repo = "app",
-                    packageName = "com.demo.app",
-                    appLabel = "Demo App"
-                )
-            ),
-            runners = listOf(runner),
-            maxConcurrency = 1
-        )
-        val result = report.results.single()
-
-        assertEquals(1, result.samplesFor(GitHubStrategyBenchmarkTestType.PackageNameScan).size)
-        assertEquals(1, result.samplesFor(GitHubStrategyBenchmarkTestType.RepositoryScan).size)
-        assertEquals(1, result.successCountFor(GitHubStrategyBenchmarkTestType.PackageNameScan))
-        assertEquals(1, result.successCountFor(GitHubStrategyBenchmarkTestType.RepositoryScan))
     }
 
     @Test

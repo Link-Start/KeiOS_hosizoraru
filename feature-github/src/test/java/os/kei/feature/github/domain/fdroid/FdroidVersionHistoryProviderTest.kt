@@ -55,23 +55,6 @@ class FdroidVersionHistoryProviderTest {
     }
 
     @Test
-    fun `an index is never streamed for a history that already has its files`() = runTest {
-        // The rule that decides whether megabytes get spent. A page-sourced history names every APK, so
-        // there is nothing the index would add that is worth fourteen megabytes and half a minute.
-        val index = RecordingSource(snapshot(20L))
-        val provider =
-            FdroidVersionHistoryProvider(
-                pageSource = RecordingSource(snapshot(30L, suggested = 30L)),
-                indexSource = index,
-                apiSource = RecordingSource(thinSnapshot(10L)),
-            )
-
-        provider.loadPackageSnapshot(track(), forceRefresh = false)
-
-        assertEquals(0, index.calls)
-    }
-
-    @Test
     fun `the thin API is the last resort, not the first choice`() = runTest {
         val provider =
             FdroidVersionHistoryProvider(

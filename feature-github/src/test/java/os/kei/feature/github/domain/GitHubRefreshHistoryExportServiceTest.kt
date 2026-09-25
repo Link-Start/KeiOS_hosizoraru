@@ -57,58 +57,24 @@ class GitHubRefreshHistoryExportServiceTest {
         assertEquals(1, root.optObject("summary")?.optInt("matchedCount"))
         assertEquals(3, root.optObject("summary")?.optInt("maxRequestedConcurrency"))
         assertEquals(0, root.optObject("summary")?.optInt("maxPeakConcurrentCalls"))
-        assertEquals("newer", root.optArray("records")?.optObject(0)?.optString("id"))
-        assertEquals(3, root.optArray("records")?.optObject(0)?.optInt("maxConcurrency"))
-        assertEquals(
-            "track-2",
-            root.optArray("records")
-                ?.optObject(0)
-                ?.optArray("slowItems")
-                ?.optObject(0)
-                ?.optString("trackId"),
-        )
-        assertEquals(
-            30L,
-            root.optArray("records")
-                ?.optObject(0)
-                ?.optArray("slowItems")
-                ?.optObject(0)
-                ?.optLong("snapshotElapsedMs"),
-        )
+        val recordJson = root.optArray("records")?.optObject(0)
+        assertEquals("newer", recordJson?.optString("id"))
+        assertEquals(3, recordJson?.optInt("maxConcurrency"))
         // This is the shape somebody pastes into a bug report, so the phase split is part of the
         // contract rather than an implementation detail: a stage duration alone cannot say whether
         // the phone was queued behind our own budget, shaking hands, or waiting on GitHub.
-        val slowItemJson = root.optArray("records")?.optObject(0)?.optArray("slowItems")?.optObject(0)
+        val slowItemJson = recordJson?.optArray("slowItems")?.optObject(0)
+        assertEquals("track-2", slowItemJson?.optString("trackId"))
+        assertEquals(30L, slowItemJson?.optLong("snapshotElapsedMs"))
         assertEquals(2, slowItemJson?.optInt("networkCallCount"))
         assertEquals(18L, slowItemJson?.optLong("networkWaitingMs"))
         assertEquals(21_504L, slowItemJson?.optLong("networkBytes"))
         assertEquals(1, slowItemJson?.optInt("networkReusedConnectionCalls"))
         assertEquals(NetworkPhase.WAITING, slowItemJson?.optString("networkDominantPhase"))
         assertEquals("h2", slowItemJson?.optString("networkProtocol"))
-        assertEquals(
-            3L,
-            root.optArray("records")
-                ?.optObject(0)
-                ?.optArray("slowItems")
-                ?.optObject(0)
-                ?.optLong("localVersionElapsedMs"),
-        )
-        assertEquals(
-            2L,
-            root.optArray("records")
-                ?.optObject(0)
-                ?.optArray("slowItems")
-                ?.optObject(0)
-                ?.optLong("comparisonElapsedMs"),
-        )
-        assertEquals(
-            7L,
-            root.optArray("records")
-                ?.optObject(0)
-                ?.optArray("slowItems")
-                ?.optObject(0)
-                ?.optLong("unclassifiedElapsedMs"),
-        )
+        assertEquals(3L, slowItemJson?.optLong("localVersionElapsedMs"))
+        assertEquals(2L, slowItemJson?.optLong("comparisonElapsedMs"))
+        assertEquals(7L, slowItemJson?.optLong("unclassifiedElapsedMs"))
     }
 
     @Test

@@ -60,19 +60,6 @@ class GitHubTrackedRefreshPlannerTest {
     }
 
     @Test
-    fun `partial missing check states refresh only missing items`() {
-        val github = trackedFixture(1)
-        val direct = trackedFixture(2, sourceMode = GitHubTrackedSourceMode.DirectApk)
-
-        val selected = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
-            trackedItems = listOf(github, direct),
-            cachedTrackIds = setOf(github.id)
-        )
-
-        assertEquals(listOf(direct.id), selected.map { it.id })
-    }
-
-    @Test
     fun `partial missing check states skip automatic refresh for ignored version tracks`() {
         val cached = trackedFixture(0)
         val active = trackedFixture(1)

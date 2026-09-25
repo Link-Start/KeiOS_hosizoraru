@@ -17,37 +17,42 @@ import os.kei.feature.github.model.GitHubReleaseChannel
  */
 class FdroidVersionChannelsTest {
     @Test
-    fun `a plain version is stable`() {
-        assertEquals(GitHubReleaseChannel.STABLE, channelOf(versionName = "1.4.0"))
-        assertFalse(channelOf(versionName = "1.4.0").isPreRelease)
-    }
-
-    @Test
-    fun `an index that declares a release channel is believed`() {
-        assertEquals(
-            GitHubReleaseChannel.BETA,
-            channelOf(releaseChannels = listOf("beta"), versionName = "1.4.0"),
+    fun `channel follows the declared channel, then the version name`() {
+        // (label, declared release channels, version name, expected channel)
+        val rows = listOf(
+            Row("a plain version is stable", emptyList(), "1.4.0", GitHubReleaseChannel.STABLE),
+            Row("nothing at all is stable, not unknown", emptyList(), "", GitHubReleaseChannel.STABLE),
+            Row("a declared channel is believed", listOf("beta"), "1.4.0", GitHubReleaseChannel.BETA),
+            Row("declared channel, any case", listOf("Beta"), "", GitHubReleaseChannel.BETA),
+            // The index declaring nothing is the common case, so the name is read.
+            Row("alpha in the name", emptyList(), "2.0.0-alpha3", GitHubReleaseChannel.ALPHA),
+            Row("beta in the name", emptyList(), "2.0.0-beta", GitHubReleaseChannel.BETA),
+            Row("name, any case", emptyList(), "1.4.0-BETA", GitHubReleaseChannel.BETA),
+            Row("preview in the name", emptyList(), "2.0.0-preview", GitHubReleaseChannel.PREVIEW),
+            Row("dev in the name", emptyList(), "2.0.0-dev", GitHubReleaseChannel.DEV),
+            Row("SNAPSHOT reads as dev", emptyList(), "2.0.0-SNAPSHOT", GitHubReleaseChannel.DEV),
+            // rc is matched as a whole word, so a version that merely contains the letters is not one.
+            Row("rc", emptyList(), "1.4.0-rc", GitHubReleaseChannel.RC),
+            Row("rc.2", emptyList(), "1.4.0-rc.2", GitHubReleaseChannel.RC),
+            Row("release candidate", emptyList(), "1.4.0 release candidate", GitHubReleaseChannel.RC),
+            Row("arch contains the letters", emptyList(), "1.4.0-arch", GitHubReleaseChannel.STABLE),
+            Row("source contains the letters", emptyList(), "1.4.0-source", GitHubReleaseChannel.STABLE),
         )
+
+        rows.forEach { row ->
+            assertEquals(row.expected, channelOf(row.releaseChannels, row.versionName), row.label)
+        }
+        // A build with no name and no declared channel: the checker counts it as stable, and the history
+        // page must not float it into the pre-release anchor.
+        assertFalse(channelOf().isPreRelease)
     }
 
-    @Test
-    fun `a version name is read when the index declares nothing, which is the common case`() {
-        assertEquals(GitHubReleaseChannel.ALPHA, channelOf(versionName = "2.0.0-alpha3"))
-        assertEquals(GitHubReleaseChannel.BETA, channelOf(versionName = "2.0.0-beta"))
-        assertEquals(GitHubReleaseChannel.PREVIEW, channelOf(versionName = "2.0.0-preview"))
-        assertEquals(GitHubReleaseChannel.DEV, channelOf(versionName = "2.0.0-dev"))
-        assertEquals(GitHubReleaseChannel.DEV, channelOf(versionName = "2.0.0-SNAPSHOT"))
-    }
-
-    @Test
-    fun `rc is matched as a whole word, so a version that merely contains those letters is not one`() {
-        assertEquals(GitHubReleaseChannel.RC, channelOf(versionName = "1.4.0-rc"))
-        assertEquals(GitHubReleaseChannel.RC, channelOf(versionName = "1.4.0-rc.2"))
-        assertEquals(GitHubReleaseChannel.RC, channelOf(versionName = "1.4.0 release candidate"))
-        // "arch" and "source" both contain the letters and are not release candidates.
-        assertEquals(GitHubReleaseChannel.STABLE, channelOf(versionName = "1.4.0-arch"))
-        assertEquals(GitHubReleaseChannel.STABLE, channelOf(versionName = "1.4.0-source"))
-    }
+    private data class Row(
+        val label: String,
+        val releaseChannels: List<String>,
+        val versionName: String,
+        val expected: GitHubReleaseChannel,
+    )
 
     @Test
     fun `an rc with the number run onto it is missed, which is the word boundary's cost`() {
@@ -66,12 +71,6 @@ class FdroidVersionChannelsTest {
     }
 
     @Test
-    fun `the check is case-insensitive, because repositories are inconsistent about it`() {
-        assertEquals(GitHubReleaseChannel.BETA, channelOf(versionName = "1.4.0-BETA"))
-        assertEquals(GitHubReleaseChannel.BETA, channelOf(releaseChannels = listOf("Beta")))
-    }
-
-    @Test
     fun `the earlier branch wins when a name carries two markers`() {
         // Ordering is behaviour the checker already had: dev is tested before alpha, so this is dev.
         // Pinned rather than asserted as ideal — the point is that both surfaces agree on the answer.
@@ -84,13 +83,6 @@ class FdroidVersionChannelsTest {
         listOf("1.0-dev", "1.0-alpha", "1.0-beta", "1.0-rc", "1.0-preview").forEach { name ->
             assertTrue(channelOf(versionName = name).isPreRelease, name)
         }
-    }
-
-    @Test
-    fun `nothing at all is stable rather than unknown`() {
-        // A build with no name and no declared channel: the checker counts it as stable, and the history
-        // page must not float it into the pre-release anchor.
-        assertEquals(GitHubReleaseChannel.STABLE, channelOf())
     }
 }
 

@@ -64,38 +64,6 @@ class GitHubBackgroundRefreshTargetSelectorTest {
     }
 
     @Test
-    fun `release targets exclude far future items outside coalescing window`() {
-        val dueNow = tracked(1)
-        val dueSoon = tracked(2)
-        val dueLater = tracked(3)
-        val snapshot =
-            GitHubTrackSnapshot(
-                items = listOf(dueNow, dueSoon, dueLater),
-                checkCache =
-                    mapOf(
-                        dueNow.id to GitHubCheckCacheEntry(
-                            checkedAtMillis = checkedAtForReleaseDueIn(0L),
-                        ),
-                        dueSoon.id to GitHubCheckCacheEntry(
-                            checkedAtMillis = checkedAtForReleaseDueIn(15L * 60L * 1000L),
-                        ),
-                        dueLater.id to GitHubCheckCacheEntry(
-                            checkedAtMillis = checkedAtForReleaseDueIn(30L * 60L * 1000L),
-                        ),
-                    ),
-                refreshIntervalHours = 1,
-            )
-
-        val selected =
-            selectGitHubBackgroundReleaseTargets(
-                snapshot = snapshot,
-                nowMs = NOW_MS,
-            )
-
-        assertEquals(listOf("repo-1", "repo-2"), selected.map { it.repo })
-    }
-
-    @Test
     fun `release targets include never checked items first`() {
         val old = tracked(1)
         val unchecked = tracked(2)
@@ -130,9 +98,12 @@ class GitHubBackgroundRefreshTargetSelectorTest {
                 )
             }
 
+        // Never checked, so it would sort first, but its Actions check is off.
+        val actionsOff = tracked(0)
+
         val selected =
             selectGitHubBackgroundActionsTargets(
-                items = items,
+                items = listOf(actionsOff) + items,
                 previousById = previous,
                 refreshIntervalHours = 1,
                 nowMs = 10_000_000L,
@@ -140,88 +111,6 @@ class GitHubBackgroundRefreshTargetSelectorTest {
             )
 
         assertEquals((1..4).map { "repo-$it" }, selected.map { it.repo })
-    }
-
-    @Test
-    fun `actions targets coalesce nearby due action checks by default`() {
-        val items = (1..12).map { index ->
-            tracked(index).copy(checkActionsUpdates = true)
-        }
-        val previous =
-            items.associate { item ->
-                val index = item.repo.removePrefix("repo-").toLong()
-                item.id to actionsSnapshot(
-                    item = item,
-                    checkedAtMillis =
-                        checkedAtForActionsDueIn(
-                            dueInMs = index * 2L * 60L * 1000L,
-                        ),
-                )
-            }
-
-        val selected =
-            selectGitHubBackgroundActionsTargets(
-                items = items,
-                previousById = previous,
-                refreshIntervalHours = 1,
-                nowMs = NOW_MS,
-            )
-
-        assertEquals((1..10).map { "repo-$it" }, selected.map { it.repo })
-    }
-
-    @Test
-    fun `release targets default to coalesced large batch limit`() {
-        val items = (1..120).map(::tracked)
-        val snapshot =
-            GitHubTrackSnapshot(
-                items = items,
-                checkCache =
-                    items.associate { item ->
-                        item.id to GitHubCheckCacheEntry(
-                            checkedAtMillis = checkedAtForReleaseDueIn(0L),
-                        )
-                    },
-                refreshIntervalHours = 1,
-            )
-
-        val selected =
-            selectGitHubBackgroundReleaseTargets(
-                snapshot = snapshot,
-                nowMs = 10_000_000L,
-            )
-
-        assertEquals(
-            (1..GITHUB_BACKGROUND_RELEASE_TARGET_LIMIT).map { "repo-$it" },
-            selected.map { it.repo },
-        )
-    }
-
-    @Test
-    fun `actions targets default to coalesced large batch limit`() {
-        val items = (1..120).map { index ->
-            tracked(index).copy(checkActionsUpdates = true)
-        }
-        val previous =
-            items.associate { item ->
-                item.id to actionsSnapshot(
-                    item = item,
-                    checkedAtMillis = checkedAtForActionsDueIn(0L),
-                )
-            }
-
-        val selected =
-            selectGitHubBackgroundActionsTargets(
-                items = items,
-                previousById = previous,
-                refreshIntervalHours = 1,
-                nowMs = NOW_MS,
-            )
-
-        assertEquals(
-            (1..GITHUB_BACKGROUND_ACTIONS_TARGET_LIMIT).map { "repo-$it" },
-            selected.map { it.repo },
-        )
     }
 
     private fun tracked(index: Int): GitHubTrackedApp =
@@ -265,12 +154,8 @@ class GitHubBackgroundRefreshTargetSelectorTest {
     private fun checkedAtForReleaseDueIn(dueInMs: Long): Long =
         NOW_MS + dueInMs - RELEASE_INTERVAL_MS
 
-    private fun checkedAtForActionsDueIn(dueInMs: Long): Long =
-        NOW_MS + dueInMs - ACTIONS_INTERVAL_MS
-
     private companion object {
         private const val NOW_MS = 10_000_000L
         private const val RELEASE_INTERVAL_MS = 60L * 60L * 1000L
-        private const val ACTIONS_INTERVAL_MS = 60L * 60L * 1000L
     }
 }

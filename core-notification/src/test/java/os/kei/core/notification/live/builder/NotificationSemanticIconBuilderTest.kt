@@ -23,31 +23,14 @@ import kotlin.test.assertNotNull
 )
 class NotificationSemanticIconBuilderTest {
     @Test
-    fun `modern live update expanded icon prefers semantic app icon`() {
+    fun `modern and legacy live updates prefer the semantic app icon as the large icon`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val appIconBitmap = Bitmap.createBitmap(3, 3, Bitmap.Config.ARGB_8888)
-        val notification = ModernNotificationBuilder(context).build(
-            payload = payload(
-                context = context,
-                semanticIconBitmap = appIconBitmap
-            )
-        )
+        listOf(ModernNotificationBuilder(context), LegacyNotificationBuilder(context)).forEach { builder ->
+            val notification = builder.build(payload(context = context, semanticIconBitmap = appIconBitmap))
 
-        assertLargeIconBitmap(appIconBitmap, notification.getLargeIcon())
-    }
-
-    @Test
-    fun `legacy live update expanded icon prefers semantic app icon`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val appIconBitmap = Bitmap.createBitmap(3, 3, Bitmap.Config.ARGB_8888)
-        val notification = LegacyNotificationBuilder(context).build(
-            payload = payload(
-                context = context,
-                semanticIconBitmap = appIconBitmap
-            )
-        )
-
-        assertLargeIconBitmap(appIconBitmap, notification.getLargeIcon())
+            assertLargeIconBitmap(appIconBitmap, notification.getLargeIcon())
+        }
     }
 
     @Test

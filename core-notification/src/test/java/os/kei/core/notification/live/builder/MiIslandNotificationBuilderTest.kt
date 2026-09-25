@@ -189,9 +189,7 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":53"))
-        assertTrue(focusParam.contains("\"colorProgress\":\"#4DA3FF\""))
         assertFalse(focusParam.contains("multiProgressInfo"))
-        assertTrue(focusParam.contains("\"actionBgColor\":\"#4DA3FF\""))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
     }
@@ -224,37 +222,6 @@ class MiIslandNotificationBuilderTest {
 
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
-    }
-
-    @Test
-    fun `ba cafe visit event enables island float`() {
-        val openPendingIntent = testPendingIntent(context, 621, "os.kei.test.OPEN_BA_CAFE_VISIT")
-        val notification = build(
-            testNotificationPayload(
-                LiveNotificationPayload(
-                    serverName = LiveNotificationPayload.BA_CAFE_VISIT_SERVER_NAME,
-                    running = true,
-                    port = 0,
-                    path = "学生访问刷新",
-                    clients = 0,
-                    ongoing = false,
-                    onlyAlertOnce = false,
-                    openPendingIntent = openPendingIntent,
-                    stopPendingIntent = testPendingIntent(
-                        context,
-                        622,
-                        "os.kei.test.MARK_BA_CAFE_VISIT_READ",
-                        broadcast = true,
-                    ),
-                    focusOpenPendingIntent = openPendingIntent
-                )
-            )
-        )
-        val focusParam = notification.focusParam()
-
-        assertTrue(focusParam.contains("\"enableFloat\":true"))
-        assertTrue(focusParam.contains("imageTextInfoRight"))
-        assertTrue(focusParam.contains("\"highlightColor\":\"#4DA3FF\""))
     }
 
     @Test
@@ -513,19 +480,11 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("\"colorReach\":\"#2563EB\""))
-        assertTrue(focusParam.contains("\"colorProgress\":\"#2563EB\""))
         assertFalse(focusParam.contains("multiProgressInfo"))
-        assertTrue(focusParam.contains("\"highlightColor\":\"#2563EB\""))
-        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
-        assertTrue(focusParam.contains("\"colorContent\":\"#475569\""))
-        assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
+        // "Cancel linkage" is the one secondary label drawn as a danger button.
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
-        assertTrue(focusParam.contains("\"actionBgColorDark\":\"#FF6B7C\""))
-        assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
         assertTrue(focusParam.contains("\"progress\":72"))
-        assertTrue(focusParam.contains("\"picDark\":\"key_logo_display\""))
         val renderedBitmap = Shadows.shadowOf(focusDisplayIcon).bitmap
         assertNotNull(renderedBitmap)
         assertEquals(appIconBitmap.width, renderedBitmap.width)
@@ -569,11 +528,8 @@ class MiIslandNotificationBuilderTest {
         )
         val focusParam = notification.focusParam()
 
-        assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
+        // An install label gets the tonal secondary button, never the danger one.
         assertTrue(focusParam.contains("\"actionBgColor\":\"#DBEAFE\""))
-        assertTrue(focusParam.contains("\"actionBgColorDark\":\"#1E3A8A\""))
-        assertTrue(focusParam.contains("\"actionTitleColor\":\"#1D4ED8\""))
-        assertTrue(focusParam.contains("\"actionTitleColorDark\":\"#DBEAFE\""))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
     }
 

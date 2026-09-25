@@ -2,121 +2,56 @@ package os.kei.core.notification.live
 
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import os.kei.core.notification.live.builder.NotificationRenderStyle
 
 class MiIslandRenderPolicyTest {
     @Test
-    fun `disabled user setting resolves to live update`() {
-        val decision = resolve(
-            preferSuperIsland = false,
-            bypassRestriction = true,
-            capability = capability(),
+    fun `render policy picks the island only when the device and the user allow it`() {
+        data class Case(
+            val label: String,
+            val preferSuperIsland: Boolean = true,
+            val bypass: Boolean = false,
+            val isHyperOS: Boolean = true,
+            val protocol: Int = 3,
+            val islandFeature: Boolean = true,
+            val focusPermission: Boolean = true,
+            val style: NotificationRenderStyle,
+            val magic: Boolean,
+            val reason: MiIslandRenderReason,
         )
+        val liveUpdate = NotificationRenderStyle.LIVE_UPDATE
+        val island = NotificationRenderStyle.MI_ISLAND
+        listOf(
+            Case("disabled by the user, even with bypass", preferSuperIsland = false, bypass = true,
+                style = liveUpdate, magic = false, reason = MiIslandRenderReason.DisabledByUser),
+            Case("not HyperOS", isHyperOS = false,
+                style = liveUpdate, magic = false, reason = MiIslandRenderReason.HyperOsUnavailable),
+            Case("focus protocol below 3", protocol = 2,
+                style = liveUpdate, magic = false, reason = MiIslandRenderReason.ProtocolUnavailable),
+            Case("missing focus permission without bypass", focusPermission = false,
+                style = liveUpdate, magic = false, reason = MiIslandRenderReason.FocusPermissionRequired),
+            Case("focus permission, no magic needed",
+                style = island, magic = false, reason = MiIslandRenderReason.Selected),
+            Case("bypass stands in for a missing permission", bypass = true, focusPermission = false,
+                style = island, magic = true, reason = MiIslandRenderReason.Selected),
+            Case("bypass tolerates a missing island property on compatible HyperOS", bypass = true,
+                islandFeature = false, focusPermission = false,
+                style = island, magic = true, reason = MiIslandRenderReason.Selected),
+        ).forEach { case ->
+            val decision = MiIslandRenderPolicy.resolve(
+                preferSuperIsland = case.preferSuperIsland,
+                bypassRestriction = case.bypass,
+                capability = MiIslandCapability(
+                    isHyperOS = case.isHyperOS,
+                    focusProtocolVersion = case.protocol,
+                    supportsIslandFeature = case.islandFeature,
+                    hasFocusPermission = case.focusPermission,
+                ),
+            )
 
-        assertEquals(NotificationRenderStyle.LIVE_UPDATE, decision.style)
-        assertFalse(decision.useXiaomiMagic)
-        assertEquals(MiIslandRenderReason.DisabledByUser, decision.reason)
+            assertEquals(case.style, decision.style, case.label)
+            assertEquals(case.magic, decision.useXiaomiMagic, case.label)
+            assertEquals(case.reason, decision.reason, case.label)
+        }
     }
-
-    @Test
-    fun `non hyper os resolves to live update`() {
-        val decision = resolve(capability = capability(isHyperOS = false))
-
-        assertEquals(NotificationRenderStyle.LIVE_UPDATE, decision.style)
-        assertEquals(MiIslandRenderReason.HyperOsUnavailable, decision.reason)
-    }
-
-    @Test
-    fun `unsupported focus protocol resolves to live update`() {
-        val decision = resolve(capability = capability(focusProtocolVersion = 2))
-
-        assertEquals(NotificationRenderStyle.LIVE_UPDATE, decision.style)
-        assertEquals(MiIslandRenderReason.ProtocolUnavailable, decision.reason)
-    }
-
-    @Test
-    fun `missing permission resolves to live update when magic bypass is off`() {
-        val decision = resolve(
-            bypassRestriction = false,
-            capability = capability(
-                supportsIslandFeature = true,
-                hasFocusPermission = false,
-            ),
-        )
-
-        assertEquals(NotificationRenderStyle.LIVE_UPDATE, decision.style)
-        assertFalse(decision.useXiaomiMagic)
-        assertEquals(MiIslandRenderReason.FocusPermissionRequired, decision.reason)
-    }
-
-    @Test
-    fun `focus permission resolves to mi island without magic`() {
-        val decision = resolve(
-            bypassRestriction = false,
-            capability = capability(
-                supportsIslandFeature = true,
-                hasFocusPermission = true,
-            ),
-        )
-
-        assertEquals(NotificationRenderStyle.MI_ISLAND, decision.style)
-        assertFalse(decision.useXiaomiMagic)
-        assertEquals(MiIslandRenderReason.Selected, decision.reason)
-    }
-
-    @Test
-    fun `magic bypass keeps mi island when permission is missing`() {
-        val decision = resolve(
-            bypassRestriction = true,
-            capability = capability(
-                supportsIslandFeature = true,
-                hasFocusPermission = false,
-            ),
-        )
-
-        assertEquals(NotificationRenderStyle.MI_ISLAND, decision.style)
-        assertTrue(decision.useXiaomiMagic)
-        assertEquals(MiIslandRenderReason.Selected, decision.reason)
-    }
-
-    @Test
-    fun `magic bypass tolerates missing island property on compatible hyper os`() {
-        val decision = resolve(
-            bypassRestriction = true,
-            capability = capability(
-                supportsIslandFeature = false,
-                hasFocusPermission = false,
-            ),
-        )
-
-        assertEquals(NotificationRenderStyle.MI_ISLAND, decision.style)
-        assertTrue(decision.useXiaomiMagic)
-        assertEquals(MiIslandRenderReason.Selected, decision.reason)
-    }
-
-    private fun resolve(
-        preferSuperIsland: Boolean = true,
-        bypassRestriction: Boolean = false,
-        capability: MiIslandCapability = capability(),
-    ): MiIslandRenderDecision =
-        MiIslandRenderPolicy.resolve(
-            preferSuperIsland = preferSuperIsland,
-            bypassRestriction = bypassRestriction,
-            capability = capability,
-        )
-
-    private fun capability(
-        isHyperOS: Boolean = true,
-        focusProtocolVersion: Int = 3,
-        supportsIslandFeature: Boolean = true,
-        hasFocusPermission: Boolean = true,
-    ): MiIslandCapability =
-        MiIslandCapability(
-            isHyperOS = isHyperOS,
-            focusProtocolVersion = focusProtocolVersion,
-            supportsIslandFeature = supportsIslandFeature,
-            hasFocusPermission = hasFocusPermission,
-        )
 }

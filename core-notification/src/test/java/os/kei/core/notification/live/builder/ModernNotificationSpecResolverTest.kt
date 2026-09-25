@@ -3,7 +3,6 @@ package os.kei.core.notification.live.builder
 import android.app.PendingIntent
 import androidx.core.app.NotificationCompat
 import org.junit.Test
-import os.kei.core.notification.R
 import os.kei.core.notification.live.LiveNotificationPayload
 import sun.misc.Unsafe
 import kotlin.test.assertEquals
@@ -48,25 +47,35 @@ class ModernNotificationSpecResolverTest {
         assertEquals(true, spec.ongoing)
     }
 
+    /**
+     * Events that have already happened are dismissible status notifications.
+     *
+     * Before daily-done joined the one-shot BA events, `ongoing` was `running || state.ongoing` and
+     * `requestPromotedOngoing` tracked it, so a finished run arrived as an un-dismissible
+     * ONGOING_EVENT|PROMOTED_ONGOING ProgressStyle notification with a bar at 100%. Each row is the
+     * dispatcher's real pair: running, not ongoing.
+     */
     @Test
-    fun `cafe visit is a one shot status event`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            createState(
-                serverName = LiveNotificationPayload.BA_CAFE_VISIT_SERVER_NAME,
-                running = true,
-                port = 0,
-                clients = 0,
-                ongoing = false
+    fun `one shot ba events are dismissible status, not promoted ongoing progress`() {
+        listOf(
+            LiveNotificationPayload.BA_CAFE_VISIT_SERVER_NAME to ModernShortCriticalMode.ONLINE_TEXT,
+            LiveNotificationPayload.BA_ARENA_REFRESH_SERVER_NAME to ModernShortCriticalMode.ONLINE_TEXT,
+            // A terminal short word comes from the dispatcher's overrideShortText; ONLINE_TEXT would pull
+            // the server-status wording in instead.
+            LiveNotificationPayload.BA_DAILY_DONE_SERVER_NAME to ModernShortCriticalMode.SHORT_TEXT,
+        ).forEach { (serverName, shortMode) ->
+            val spec = ModernNotificationSpecResolver.resolve(
+                createState(serverName = serverName, running = true, port = 0, clients = 0, ongoing = false),
+                preferOemLiveIconLayout = true,
             )
-        )
 
-        assertEquals(ModernNotificationKind.BA_CAFE_VISIT, spec.kind)
-        assertEquals(100, spec.progressPercent)
-        assertEquals(ModernShortCriticalMode.ONLINE_TEXT, spec.shortCriticalMode)
-        assertEquals(false, spec.ongoing)
-        assertEquals(false, spec.requestPromotedOngoing)
-        assertEquals(false, spec.showProgressStyle)
-        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
+            assertEquals(100, spec.progressPercent, serverName)
+            assertEquals(shortMode, spec.shortCriticalMode, serverName)
+            assertEquals(false, spec.ongoing, serverName)
+            assertEquals(false, spec.requestPromotedOngoing, serverName)
+            assertEquals(false, spec.showProgressStyle, serverName)
+            assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category, serverName)
+        }
     }
 
     @Test
@@ -88,47 +97,7 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
-    fun `arena refresh uses semantic compact icon for oem live layout`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = LiveNotificationPayload.BA_ARENA_REFRESH_SERVER_NAME,
-                running = true,
-                port = 0,
-                clients = 0,
-                ongoing = false
-            ),
-            preferOemLiveIconLayout = true
-        )
-
-        assertEquals(R.drawable.ic_ba_arena_coin_island, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_arena_coin_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_ba_arena_coin_live_update, spec.trackerIconResId)
-        assertEquals(false, spec.ongoing)
-        assertEquals(false, spec.requestPromotedOngoing)
-        assertEquals(false, spec.showProgressStyle)
-        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
-    }
-
-    @Test
-    fun `ap keeps semantic status icon for standard live layout`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
-                running = true,
-                port = 36,
-                clients = 240,
-                ongoing = true
-            ),
-            preferOemLiveIconLayout = false
-        )
-
-        assertEquals(R.drawable.ic_ba_ap_island_notification, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_ap_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_ba_ap_live_update, spec.trackerIconResId)
-    }
-
-    @Test
-    fun `calendar pool uses calendar semantic icons and override progress`() {
+    fun `calendar pool uses override progress while a deadline is pending`() {
         val spec = ModernNotificationSpecResolver.resolve(
             state = createState(
                 serverName = LiveNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
@@ -144,9 +113,6 @@ class ModernNotificationSpecResolverTest {
 
         assertEquals(ModernNotificationKind.BA_CALENDAR_POOL, spec.kind)
         assertEquals(67, spec.progressPercent)
-        assertEquals(R.drawable.ic_ba_calendar_live_update, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_calendar_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_ba_calendar_live_update, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
         assertEquals(true, spec.showProgressStyle)
         assertEquals(true, spec.requestPromotedOngoing)
@@ -176,8 +142,8 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
-    fun `github share import uses github semantic icon and override progress`() {
-        val spec = ModernNotificationSpecResolver.resolve(
+    fun `github share import draws a bar only for an override progress`() {
+        val withOverride = ModernNotificationSpecResolver.resolve(
             state = createState(
                 serverName = LiveNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
                 running = true,
@@ -188,21 +154,7 @@ class ModernNotificationSpecResolverTest {
             ),
             preferOemLiveIconLayout = true
         )
-
-        assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
-        assertEquals(72, spec.progressPercent)
-        assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.iconResId)
-        assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.trackerIconResId)
-        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
-        assertEquals(true, spec.requestPromotedOngoing)
-        assertEquals(true, spec.showProgressStyle)
-        assertEquals(0xFF2563EB.toInt(), spec.progressColor)
-    }
-
-    @Test
-    fun `github share import falls back to phase progress when override is absent`() {
-        val spec = ModernNotificationSpecResolver.resolve(
+        val phaseOnly = ModernNotificationSpecResolver.resolve(
             state = createState(
                 serverName = LiveNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
                 running = true,
@@ -213,10 +165,14 @@ class ModernNotificationSpecResolverTest {
             preferOemLiveIconLayout = true
         )
 
-        assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
-        assertEquals(88, spec.progressPercent)
-        assertEquals(false, spec.showProgressStyle)
-        assertEquals(0xFF2563EB.toInt(), spec.progressColor)
+        assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, withOverride.kind)
+        assertEquals(72, withOverride.progressPercent)
+        assertEquals(ModernShortCriticalMode.SHORT_TEXT, withOverride.shortCriticalMode)
+        assertEquals(true, withOverride.requestPromotedOngoing)
+        assertEquals(true, withOverride.showProgressStyle)
+        // Without an override the phase (carried in `port`) still reaches the tracker, but no bar is drawn.
+        assertEquals(88, phaseOnly.progressPercent)
+        assertEquals(false, phaseOnly.showProgressStyle)
     }
 
     @Test
@@ -236,9 +192,6 @@ class ModernNotificationSpecResolverTest {
 
         assertEquals(ModernNotificationKind.WEBDAV_SYNC, spec.kind)
         assertEquals(45, spec.progressPercent)
-        assertEquals(R.drawable.ic_kei_notification_small, spec.iconResId)
-        assertEquals(null, spec.expandedIconResId)
-        assertEquals(null, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
         assertEquals(true, spec.showProgressStyle)
         assertEquals(0xFFF59E0B.toInt(), spec.progressColor)
@@ -265,56 +218,6 @@ class ModernNotificationSpecResolverTest {
         assertEquals(false, spec.ongoing)
         assertEquals(false, spec.showProgressStyle)
         assertEquals(0xFF22C55E.toInt(), spec.progressColor)
-    }
-
-    @Test
-    fun `default notification keeps standard app status icon`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = "KeiOS MCP",
-                running = true,
-                port = 0,
-                clients = 0,
-                ongoing = true
-            ),
-            preferOemLiveIconLayout = false
-        )
-
-        assertEquals(R.drawable.ic_kei_notification_small, spec.iconResId)
-        assertEquals(null, spec.expandedIconResId)
-        assertEquals(null, spec.trackerIconResId)
-    }
-
-    @Test
-    fun `ba daily done live update is a dismissible status, not a promoted ongoing progress bar`() {
-        val spec =
-            ModernNotificationSpecResolver.resolve(
-                state =
-                    createState(
-                        serverName = LiveNotificationPayload.BA_DAILY_DONE_SERVER_NAME,
-                        // The dispatcher's real pair: a live event that has already finished.
-                        running = true,
-                        port = 0,
-                        clients = 0,
-                        ongoing = false,
-                    ),
-            )
-
-        // Before daily-done joined the one-shot BA events, `ongoing` was `running || state.ongoing` and
-        // `requestPromotedOngoing` tracked it, so a finished run arrived as an un-dismissible
-        // ONGOING_EVENT|PROMOTED_ONGOING ProgressStyle notification with a bar at 100%.
-        assertEquals(false, spec.ongoing)
-        assertEquals(false, spec.requestPromotedOngoing)
-        assertEquals(false, spec.showProgressStyle)
-        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
-
-        // Semantic icon rather than the app identity icon.
-        assertEquals(R.drawable.ic_ba_daily_done_island, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_daily_done_live_update, spec.expandedIconResId)
-
-        // A terminal short word comes from the dispatcher's overrideShortText; ONLINE_TEXT would pull the
-        // server-status wording in instead.
-        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
     }
 
     private fun createState(

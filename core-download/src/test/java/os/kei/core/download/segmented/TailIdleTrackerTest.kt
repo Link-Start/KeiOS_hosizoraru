@@ -1,6 +1,5 @@
 package os.kei.core.download.segmented
 
-import java.io.IOException
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -22,13 +21,5 @@ class TailIdleTrackerTest {
         assertEquals(1L, tracker.millisUntilExpiration())
         now = 6_999L
         assertEquals(0L, tracker.millisUntilExpiration())
-    }
-
-    @Test
-    fun `tail idle timeout is retryable as a timeout`() {
-        assertEquals(
-            RangeFailureKind.Timeout,
-            TailIdleTimeoutException(IOException("cancelled")).rangeFailureKindOrNull(),
-        )
     }
 }

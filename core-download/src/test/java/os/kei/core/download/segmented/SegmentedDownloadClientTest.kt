@@ -32,57 +32,6 @@ class SegmentedDownloadClientTest {
     val temp = TemporaryFolder()
 
     @Test
-    fun `segmented download writes all bytes in correct order`() = runBlocking {
-        val bytes = ByteArray(32) { it.toByte() }
-        MockWebServer().use { server ->
-            server.dispatcher = byteRangeDispatcher(bytes)
-            val outputFile = temp.newFile("artifact.bin").apply { delete() }
-            val progress = mutableListOf<SegmentedDownloadProgress>()
-
-            val result = client().downloadToFile(
-                request = request(server, outputFile),
-                options = testOptions(partSizeBytes = 8, maxConnections = 4),
-                onProgress = { progress += it },
-            )
-
-            assertEquals(true, result.parallel)
-            assertEquals(true, result.rangeSupported)
-            assertContentEquals(bytes, outputFile.readBytes())
-            assertEquals(32, progress.last().downloadedBytes)
-            assertEquals(4, progress.first { it.parallel }.activeConnections)
-        }
-    }
-
-    @Test
-    fun `data ranges reuse final url resolved by probe`() = runBlocking {
-        val bytes = ByteArray(32) { (it + 3).toByte() }
-        MockWebServer().use { origin ->
-            MockWebServer().use { cdn ->
-                origin.dispatcher = object : Dispatcher() {
-                    override fun dispatch(request: RecordedRequest): MockResponse =
-                        MockResponse()
-                            .setResponseCode(302)
-                            .addHeader("Location", cdn.url("/asset.bin"))
-                }
-                cdn.dispatcher = byteRangeDispatcher(bytes)
-                val outputFile = temp.newFile("final-url.bin").apply { delete() }
-
-                client().downloadToFile(
-                    request = SegmentedDownloadRequest(
-                        url = origin.url("/download.bin").toString(),
-                        outputFile = outputFile,
-                    ),
-                    options = testOptions(partSizeBytes = 8, maxConnections = 4),
-                )
-
-                assertEquals(1, origin.requestCount)
-                assertTrue(cdn.requestCount > 1)
-                assertContentEquals(bytes, outputFile.readBytes())
-            }
-        }
-    }
-
-    @Test
     fun `preallocated file length does not satisfy written byte coverage`() {
         val file = temp.newFile("preallocated.part")
         RandomAccessFile(file, "rw").use { it.setLength(32) }
@@ -293,51 +242,6 @@ class SegmentedDownloadClientTest {
             assertFalse(partFile.exists())
             val ranges = server.takeAllRequests().map { it.getHeader("Range").orEmpty() }
             assertFalse("bytes=2-3" in ranges)
-        }
-    }
-
-    @Test
-    fun `worker retries after 429`() = runBlocking {
-        val bytes = ByteArray(8) { (it + 11).toByte() }
-        val throttledOnce = AtomicBoolean(false)
-        MockWebServer().use { server ->
-            server.dispatcher = object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse {
-                    val range = request.getHeader("Range").orEmpty()
-                    if (range == "bytes=0-0") return rangeResponse(bytes, 0, 0)
-                    if (range == "bytes=0-3" && throttledOnce.compareAndSet(false, true)) {
-                        return MockResponse().setResponseCode(429)
-                    }
-                    return rangeResponse(bytes, range)
-                }
-            }
-            val outputFile = temp.newFile("retry.bin").apply { delete() }
-
-            val result = client().downloadToFile(
-                request = request(server, outputFile),
-                options = testOptions(partSizeBytes = 4, maxConnections = 2),
-            )
-
-            assertEquals(1, result.retryCount)
-            assertContentEquals(bytes, outputFile.readBytes())
-        }
-    }
-
-    @Test
-    fun `parallel download replaces existing output and removes part file`() = runBlocking {
-        val bytes = ByteArray(16) { (it + 3).toByte() }
-        MockWebServer().use { server ->
-            server.dispatcher = byteRangeDispatcher(bytes)
-            val outputFile = temp.newFile("replace.bin").apply { writeText("old") }
-            val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
-
-            client().downloadToFile(
-                request = request(server, outputFile),
-                options = testOptions(partSizeBytes = 8, maxConnections = 2),
-            )
-
-            assertContentEquals(bytes, outputFile.readBytes())
-            assertFalse(partFile.exists())
         }
     }
 

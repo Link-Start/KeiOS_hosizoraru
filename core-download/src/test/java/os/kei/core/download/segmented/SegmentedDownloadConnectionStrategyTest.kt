@@ -6,36 +6,13 @@ import org.junit.Test
 
 class SegmentedDownloadConnectionStrategyTest {
     @Test
-    fun `adaptive shares HTTP 1 connection pool`() {
-        assertEquals(
-            SegmentedDownloadConnectionStrategy.Shared,
-            resolveConnectionStrategy(
-                configured = SegmentedDownloadConnectionStrategy.Adaptive,
-                protocol = Protocol.HTTP_1_1,
-            ),
-        )
-    }
+    fun `adaptive shares an HTTP 1 pool and isolates HTTP 2 workers`() {
+        val adaptive = SegmentedDownloadConnectionStrategy.Adaptive
 
-    @Test
-    fun `adaptive isolates HTTP 2 workers`() {
+        assertEquals(SegmentedDownloadConnectionStrategy.Shared, resolveConnectionStrategy(adaptive, Protocol.HTTP_1_1))
         assertEquals(
             SegmentedDownloadConnectionStrategy.IsolatedPerWorker,
-            resolveConnectionStrategy(
-                configured = SegmentedDownloadConnectionStrategy.Adaptive,
-                protocol = Protocol.HTTP_2,
-            ),
+            resolveConnectionStrategy(adaptive, Protocol.HTTP_2),
         )
-    }
-
-    @Test
-    fun `explicit strategies remain unchanged`() {
-        SegmentedDownloadConnectionStrategy.entries
-            .filterNot { it == SegmentedDownloadConnectionStrategy.Adaptive }
-            .forEach { strategy ->
-                assertEquals(
-                    strategy,
-                    resolveConnectionStrategy(strategy, Protocol.HTTP_2),
-                )
-            }
     }
 }

@@ -52,8 +52,10 @@ class SegmentedDownloadSecurityAndIdentityTest {
                     options = testOptions(),
                 )
 
+                // Only the probe hits the origin; every data range reuses the final URL it resolved.
+                assertEquals(1, origin.requestCount)
                 val cdnRequests = cdn.takeAllRequests()
-                assertTrue(cdnRequests.isNotEmpty())
+                assertTrue(cdnRequests.size > 1)
                 cdnRequests.forEach { request ->
                     assertNull(request.getHeader("Authorization"))
                     assertNull(request.getHeader("Cookie"))

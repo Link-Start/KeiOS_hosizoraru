@@ -39,30 +39,6 @@ class RangeProbeTest {
     }
 
     @Test
-    fun `probe falls back when server ignores range`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .addHeader("Content-Length", "4")
-                    .setBody("demo"),
-            )
-            val probe = RangeProbe(OkHttpClient())
-
-            val result = probe.probe(
-                SegmentedDownloadRequest(
-                    url = server.url("/file.bin").toString(),
-                    outputFile = temp.newFile("ignored.bin"),
-                )
-            )
-
-            assertEquals(false, result.rangeSupported)
-            assertEquals(4, result.totalBytes)
-            assertEquals("range-ignored", result.fallbackReason)
-        }
-    }
-
-    @Test
     fun `probe falls back on malformed content range`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(

@@ -5,39 +5,23 @@ import kotlin.test.assertEquals
 
 class RangeLeaseTest {
     @Test
-    fun `fresh large part has no lease`() {
-        assertEquals(
-            0L,
-            rangeLeaseMs(
-                remainingBytes = 2L * 1024L * 1024L + 1L,
-                retryCount = 0,
-                minExpectedBytesPerSecond = 64L * 1024L,
-            ),
-        )
-    }
-
-    @Test
-    fun `lease derives from remaining bytes and minimum expected speed`() {
-        assertEquals(
-            8_000L,
-            rangeLeaseMs(
-                remainingBytes = 512L * 1024L,
-                retryCount = 0,
-                minExpectedBytesPerSecond = 64L * 1024L,
-            ),
-        )
-    }
-
-    @Test
-    fun `retried small part keeps a bounded minimum lease`() {
-        assertEquals(
-            4_000L,
-            rangeLeaseMs(
-                remainingBytes = 128L * 1024L,
-                retryCount = 1,
-                minExpectedBytesPerSecond = 64L * 1024L,
-            ),
-        )
+    fun `lease follows remaining bytes, minimum speed and retries`() {
+        data class Case(val label: String, val remainingBytes: Long, val retryCount: Int, val expectedMs: Long)
+        listOf(
+            Case("fresh large part has no lease", 2L * 1024L * 1024L + 1L, retryCount = 0, expectedMs = 0L),
+            Case("lease derives from remaining bytes / min speed", 512L * 1024L, retryCount = 0, expectedMs = 8_000L),
+            Case("retried small part keeps a bounded minimum", 128L * 1024L, retryCount = 1, expectedMs = 4_000L),
+        ).forEach { case ->
+            assertEquals(
+                case.expectedMs,
+                rangeLeaseMs(
+                    remainingBytes = case.remainingBytes,
+                    retryCount = case.retryCount,
+                    minExpectedBytesPerSecond = 64L * 1024L,
+                ),
+                case.label,
+            )
+        }
     }
 
     @Test

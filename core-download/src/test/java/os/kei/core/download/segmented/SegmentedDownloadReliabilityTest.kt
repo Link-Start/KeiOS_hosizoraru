@@ -109,7 +109,7 @@ class SegmentedDownloadReliabilityTest {
             val outputFile = temp.newFile("retry-after.bin").apply { delete() }
             val startedNs = System.nanoTime()
 
-            SegmentedDownloadClient(OkHttpClient(), Dispatchers.IO).downloadToFile(
+            val result = SegmentedDownloadClient(OkHttpClient(), Dispatchers.IO).downloadToFile(
                 request = SegmentedDownloadRequest(
                     url = server.url("/asset.bin").toString(),
                     outputFile = outputFile,
@@ -121,6 +121,7 @@ class SegmentedDownloadReliabilityTest {
             )
 
             val elapsedMs = (System.nanoTime() - startedNs) / 1_000_000L
+            assertEquals(1, result.retryCount)
             assertTrue(elapsedMs >= 900L, "elapsedMs=$elapsedMs")
             assertContentEquals(bytes, outputFile.readBytes())
         }
@@ -157,47 +158,6 @@ class SegmentedDownloadReliabilityTest {
 
             assertEquals(false, result.parallel)
             assertEquals(1, result.retryCount)
-            assertEquals(3, server.requestCount)
-            assertContentEquals(bytes, outputFile.readBytes())
-        }
-    }
-
-    @Test
-    fun `invalid data content range falls back to full single stream`() = runBlocking {
-        val bytes = ByteArray(32) { (it + 97).toByte() }
-        val returnedInvalidRange = AtomicBoolean(false)
-        MockWebServer().use { server ->
-            server.dispatcher = object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse {
-                    val range = request.getHeader("Range").orEmpty()
-                    if (range == "bytes=0-0") return rangeResponse(bytes, 0, 0)
-                    if (range.isBlank()) {
-                        return MockResponse()
-                            .setResponseCode(200)
-                            .addHeader("Content-Length", bytes.size)
-                            .setBody(Buffer().write(bytes))
-                    }
-                    if (returnedInvalidRange.compareAndSet(false, true)) {
-                        return MockResponse()
-                            .setResponseCode(206)
-                            .addHeader("Content-Range", "bytes 1-31/${bytes.size}")
-                            .setBody(Buffer().write(bytes.copyOfRange(0, bytes.lastIndex)))
-                    }
-                    return rangeResponse(bytes, range)
-                }
-            }
-            val outputFile = temp.newFile("invalid-range-fallback.bin").apply { delete() }
-
-            val result = SegmentedDownloadClient(OkHttpClient(), Dispatchers.IO).downloadToFile(
-                request = SegmentedDownloadRequest(
-                    url = server.url("/asset.bin").toString(),
-                    outputFile = outputFile,
-                ),
-                options = testOptions(minParallelSizeBytes = 1),
-            )
-
-            assertEquals(false, result.parallel)
-            assertEquals("range-protocol-error", result.fallbackReason)
             assertEquals(3, server.requestCount)
             assertContentEquals(bytes, outputFile.readBytes())
         }

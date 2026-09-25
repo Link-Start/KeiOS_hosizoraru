@@ -11,6 +11,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import org.junit.Test
+import os.kei.core.download.segmented.rangeResponse
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -144,14 +145,6 @@ class RemoteByteRangeClientTest {
 
 private fun byteRangeDispatcher(bytes: ByteArray): Dispatcher =
     object : Dispatcher() {
-        override fun dispatch(request: RecordedRequest): MockResponse {
-            val range = request.getHeader("Range").orEmpty().removePrefix("bytes=").split("-")
-            val start = range[0].toInt()
-            val end = range[1].toInt()
-            return MockResponse()
-                .setResponseCode(206)
-                .addHeader("Content-Range", "bytes $start-$end/${bytes.size}")
-                .addHeader("ETag", "\"asset-v1\"")
-                .setBody(Buffer().write(bytes.copyOfRange(start, end + 1)))
-        }
+        override fun dispatch(request: RecordedRequest): MockResponse =
+            rangeResponse(bytes, request.getHeader("Range")).addHeader("ETag", "\"asset-v1\"")
     }

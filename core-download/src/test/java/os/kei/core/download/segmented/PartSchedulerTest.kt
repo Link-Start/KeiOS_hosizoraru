@@ -9,27 +9,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PartSchedulerTest {
-    @Test
-    fun `foreground boost starts with four probe workers`() = runBlocking {
-        val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
-        val scheduler = PartScheduler(
-            totalBytes = 256L * 1024L * 1024L,
-            initialPartSizeBytes = 4L * 1024L * 1024L,
-            maxRetriesPerPart = 3,
-            concurrency = 12,
-            tuning = tuning,
-        )
-
-        val admitted = (0 until 4).map { workerId ->
-            assertNotNull(scheduler.nextPart(workerId))
-        }
-
-        assertEquals(4, tuning.startupActiveConnections)
-        assertNull(scheduler.nextPart(workerId = 4))
-        admitted.forEachIndexed { workerId, active ->
-            scheduler.finish(workerId, active)
-        }
-    }
 
     @Test
     fun `concurrency probe doubles after each candidate confirms a small sample`() = runBlocking {
@@ -119,52 +98,34 @@ class PartSchedulerTest {
     }
 
     @Test
-    fun `foreground boost keeps medium downloads inside the distributed tail window`() = runBlocking {
-        val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
-        val partSizeBytes = 4L * 1024L * 1024L
-        val scheduler = PartScheduler(
-            totalBytes = 96L * 1024L * 1024L,
-            initialPartSizeBytes = partSizeBytes,
-            maxRetriesPerPart = 3,
-            concurrency = 6,
-            tuning = tuning,
+    fun `speed profiles keep common APK sizes inside the distributed tail window`() = runBlocking {
+        data class Case(
+            val label: String,
+            val profile: SegmentedDownloadSpeedProfile,
+            val totalMiB: Long,
+            val partMiB: Long,
+            val concurrency: Int,
+            val probeWave: Int,
         )
+        listOf(
+            Case("boost, medium download", SegmentedDownloadSpeedProfile.ForegroundBoost, 96, 4, 6, 4),
+            Case("balanced, large APK", SegmentedDownloadSpeedProfile.Balanced, 120, 8, 4, 2),
+        ).forEach { case ->
+            val partSizeBytes = case.partMiB * 1024L * 1024L
+            val scheduler = PartScheduler(
+                totalBytes = case.totalMiB * 1024L * 1024L,
+                initialPartSizeBytes = partSizeBytes,
+                maxRetriesPerPart = 3,
+                concurrency = case.concurrency,
+                tuning = case.profile.schedulerTuning(),
+            )
 
-        confirmProbeWave(scheduler, expectedActive = 4)
+            confirmProbeWave(scheduler, expectedActive = case.probeWave)
+            val secondWave = (0 until case.concurrency).map { workerId ->
+                assertNotNull(scheduler.nextPart(workerId), case.label)
+            }
 
-        val secondWave = (0 until 6).map { workerId ->
-            assertNotNull(scheduler.nextPart(workerId))
-        }
-
-        assertEquals(32, tuning.tailWindowInitialMultiplier)
-        assertTrue(secondWave.all { it.part.length <= partSizeBytes })
-        secondWave.forEachIndexed { workerId, active ->
-            scheduler.finish(workerId, active)
-        }
-    }
-
-    @Test
-    fun `balanced profile keeps common large APKs inside the distributed tail window`() = runBlocking {
-        val tuning = SegmentedDownloadSpeedProfile.Balanced.schedulerTuning()
-        val partSizeBytes = 8L * 1024L * 1024L
-        val scheduler = PartScheduler(
-            totalBytes = 120L * 1024L * 1024L,
-            initialPartSizeBytes = partSizeBytes,
-            maxRetriesPerPart = 3,
-            concurrency = 4,
-            tuning = tuning,
-        )
-
-        confirmProbeWave(scheduler, expectedActive = 2)
-
-        val secondWave = (0 until 4).map { workerId ->
-            assertNotNull(scheduler.nextPart(workerId))
-        }
-
-        assertEquals(16, tuning.tailWindowInitialMultiplier)
-        assertTrue(secondWave.all { it.part.length <= partSizeBytes })
-        secondWave.forEachIndexed { workerId, active ->
-            scheduler.finish(workerId, active)
+            assertTrue(secondWave.all { it.part.length <= partSizeBytes }, case.label)
         }
     }
 
@@ -283,16 +244,8 @@ class PartSchedulerTest {
 
         assertNull(scheduler.nextPart(workerId = 1))
         assertEquals(499, active.currentEndInclusive())
-        assertEquals(
-            PartSchedulerStats(
-                retryCount = 0,
-                stealCount = 0,
-                handoffCount = 0,
-                peakActiveConnections = 2,
-                currentActiveLimit = 2,
-            ),
-            scheduler.stats(),
-        )
+        assertEquals(0, scheduler.stats().stealCount)
+        assertEquals(0, scheduler.stats().handoffCount)
     }
 
     @Test

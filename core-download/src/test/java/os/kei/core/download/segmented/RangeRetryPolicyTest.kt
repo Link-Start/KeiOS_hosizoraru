@@ -3,15 +3,44 @@ package os.kei.core.download.segmented
 import java.io.IOException
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class RangeRetryPolicyTest {
     @Test
-    fun `file writer failure is fatal`() {
-        val error = BoundedAsyncFileWriterException(IOException("disk full"))
-
-        assertNull(error.rangeFailureKindOrNull())
+    fun `failures map to their retry budget`() {
+        val cancelled = IOException("cancelled")
+        data class Case(val label: String, val actual: RangeFailureKind?, val expected: RangeFailureKind?)
+        listOf(
+            Case(
+                "file writer failure is fatal",
+                BoundedAsyncFileWriterException(IOException("disk full")).rangeFailureKindOrNull(),
+                null,
+            ),
+            Case(
+                "429 is rate limited",
+                SegmentedDownloadHttpException(code = 429, retryable = true).rangeFailureKindOrNull(),
+                RangeFailureKind.RateLimited,
+            ),
+            Case(
+                "503 is rate limited",
+                SegmentedDownloadHttpException(code = 503, retryable = true).rangeFailureKindOrNull(),
+                RangeFailureKind.RateLimited,
+            ),
+            Case(
+                "509 is rate limited on the single stream too",
+                SegmentedDownloadHttpException(code = 509, retryable = true).singleStreamFailureKindOrNull(),
+                RangeFailureKind.RateLimited,
+            ),
+            Case(
+                "rate probe idle timeout is rate limited",
+                RateProbeIdleTimeoutException(cancelled).rangeFailureKindOrNull(),
+                RangeFailureKind.RateLimited,
+            ),
+            Case(
+                "tail idle timeout retries as a timeout",
+                TailIdleTimeoutException(cancelled).rangeFailureKindOrNull(),
+                RangeFailureKind.Timeout,
+            ),
+        ).forEach { case -> assertEquals(case.expected, case.actual, case.label) }
     }
 
     @Test
@@ -27,21 +56,6 @@ class RangeRetryPolicyTest {
                 value = "Thu, 01 Jan 1970 00:00:10 GMT",
                 nowEpochMs = 5_000L,
             ),
-        )
-    }
-
-    @Test
-    fun `bandwidth related server responses use rate limit recovery`() {
-        assertTrue(isServerRateLimitedStatus(429))
-        assertTrue(isServerRateLimitedStatus(503))
-        assertTrue(isServerRateLimitedStatus(509))
-        assertEquals(
-            RangeFailureKind.RateLimited,
-            SegmentedDownloadHttpException(code = 503, retryable = true).rangeFailureKindOrNull(),
-        )
-        assertEquals(
-            RangeFailureKind.RateLimited,
-            SegmentedDownloadHttpException(code = 509, retryable = true).singleStreamFailureKindOrNull(),
         )
     }
 }

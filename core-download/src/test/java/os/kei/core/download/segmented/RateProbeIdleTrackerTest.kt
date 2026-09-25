@@ -1,6 +1,5 @@
 package os.kei.core.download.segmented
 
-import java.io.IOException
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -21,13 +20,5 @@ class RateProbeIdleTrackerTest {
         assertEquals(1L, tracker.millisUntilExpiration())
         now = 1_999L
         assertEquals(0L, tracker.millisUntilExpiration())
-    }
-
-    @Test
-    fun `probe idle timeout is classified as rate limited`() {
-        assertEquals(
-            RangeFailureKind.RateLimited,
-            RateProbeIdleTimeoutException(IOException("cancelled")).rangeFailureKindOrNull(),
-        )
     }
 }

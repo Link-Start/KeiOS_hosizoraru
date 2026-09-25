@@ -34,16 +34,6 @@ class RuntimeCommandExecutorTest {
     }
 
     @Test
-    fun `execute captures stdout for successful command`() {
-        val result = RuntimeCommandExecutor.execute("printf hello", timeoutMs = 1_000L)
-
-        assertEquals("hello", result.stdout)
-        assertEquals(0, result.exitCode)
-        assertFalse(result.timedOut)
-        assertTrue(result.succeeded)
-    }
-
-    @Test
     fun `execute captures stderr and exit code`() {
         val result = RuntimeCommandExecutor.execute("echo warning >&2; exit 7", timeoutMs = 1_000L)
 

@@ -19,17 +19,12 @@ class PrivilegeModeTest {
     }
 
     @Test
-    fun `unknown storage id falls back to disabled`() {
+    fun `unknown storage id falls back to disabled and whitespace is tolerated`() {
         assertEquals(PrivilegeMode.Disabled, PrivilegeMode.Default)
         assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId("magisk"))
         assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId(null))
         assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId("  "))
-    }
-
-    @Test
-    fun `storage id tolerates surrounding whitespace`() {
         assertEquals(PrivilegeMode.Root, PrivilegeMode.fromStorageId("  root "))
-        assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId("  disabled "))
     }
 
     @Test

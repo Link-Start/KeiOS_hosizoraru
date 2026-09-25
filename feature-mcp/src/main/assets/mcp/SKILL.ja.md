@@ -96,9 +96,10 @@ a task fires.
 - WebDAV tools are read-only and omit usernames, app passwords, and authorization headers.
 - `keios.privilege.status` reports disabled, Shizuku, or Root mode.
 - `repoFilter` accepts owner/repo, package name, or app label.
-- `sourceMode` accepts `github_repository`, `git_repository`, `direct_apk`, or blank for all tracked sources.
-- `filterMode` accepts `all`, `github_repository`, `git_repository`, `direct_apk`, `pre_release_tracked`,
-  `update_available`, `installed`, `failed_checks`, or `actions_check_enabled`.
+- `sourceMode` accepts `github_repository`, `git_repository`, `direct_apk`, `fdroid_repository`, or blank for all
+  tracked sources.
+- `filterMode` accepts `all`, `github_repository`, `git_repository`, `direct_apk`, `fdroid_repository`,
+  `pre_release_tracked`, `update_available`, `installed`, `failed_checks`, or `actions_check_enabled`.
 - GitHub tracking `sortMode` accepts `update`, `name`, `pre_release`, `changed`, or `added`;
   `sortDirection` accepts `forward` or `reverse`.
 - GitHub tracked export uses `keios.github.tracked/v4`.

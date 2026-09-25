@@ -90,9 +90,9 @@
 - WebDAV 工具保持只读，输出会排除用户名、应用密码与认证头。
 - `keios.privilege.status` 的 mode 支持关闭特权、Shizuku 与 Root 三种状态。
 - `repoFilter` 支持 owner/repo、包名或应用名。
-- `sourceMode` 支持 `github_repository`、`git_repository`、`direct_apk`，留空表示全部追踪来源。
-- `filterMode` 支持 `all`、`github_repository`、`git_repository`、`direct_apk`、`pre_release_tracked`、`update_available`、
-  `installed`、`failed_checks`、`actions_check_enabled`。
+- `sourceMode` 支持 `github_repository`、`git_repository`、`direct_apk`、`fdroid_repository`，留空表示全部追踪来源。
+- `filterMode` 支持 `all`、`github_repository`、`git_repository`、`direct_apk`、`fdroid_repository`、`pre_release_tracked`、
+  `update_available`、`installed`、`failed_checks`、`actions_check_enabled`。
 - GitHub 追踪工具的 `sortMode` 支持 `update`、`name`、`pre_release`、`changed`、`added`；`sortDirection`
   支持 `forward`、`reverse`。
 - GitHub 追踪导出格式为 `keios.github.tracked/v4`。

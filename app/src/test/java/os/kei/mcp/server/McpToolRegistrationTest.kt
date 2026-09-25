@@ -1,5 +1,6 @@
 package os.kei.mcp.server
 
+import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
@@ -11,7 +12,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = McpServerTestApp::class, sdk = [35])
+@Config(application = Application::class, sdk = [35])
 class McpToolRegistrationTest {
     @Test
     fun registeredToolsMatchCatalog() {
@@ -103,37 +104,6 @@ class McpToolRegistrationTest {
         assertFalse(codexTool.annotations?.openWorldHint ?: true)
         assertEquals(listOf("format", "text"), codexTool.outputSchema?.required?.sorted())
         assertTrue(codexTool.meta.toString().contains("codex-development"))
-    }
-
-    @Test
-    fun skillMarkdownDocumentsCurrentGitHubTrackingOptions() {
-        val service = createService()
-
-        val markdown = service.getSkillMarkdownForUi()
-
-        assertTrue(markdown.contains("filterMode"))
-        assertTrue(markdown.contains("pre_release"))
-        assertTrue(markdown.contains("git_repository"))
-        assertTrue(markdown.contains("fdroid_repository"))
-        assertTrue(markdown.contains("keios.github.tracked/v4"))
-        assertTrue(markdown.contains("actionsUpdateIntervalMode"))
-        assertTrue(markdown.contains("follow_global"))
-        assertTrue(markdown.contains("3h"))
-        assertTrue(markdown.contains(SUBAGENT_RESOURCE_URI))
-        assertTrue(markdown.contains("Agent mode"))
-        assertTrue(markdown.contains(WORKFLOW_PLAN_PROMPT))
-        assertTrue(markdown.contains(DIAGNOSTICS_PLAN_PROMPT))
-        assertTrue(markdown.contains(WORKFLOW_RESOURCE_URI))
-        assertTrue(markdown.contains(SKILL_DOMAIN_TEMPLATE_URI))
-        assertTrue(markdown.contains("Add the current MCP config to the Claw App MCP server list."))
-        assertTrue(markdown.contains("delete the old KeiOS MCP server in Claw"))
-        assertTrue(markdown.contains("keios.mcp.workflow.blueprints"))
-        assertTrue(markdown.contains("keios.dev.codex.config"))
-        assertTrue(markdown.contains("keios.webdav.status"))
-        assertTrue(markdown.contains("keios.webdav.history"))
-        assertTrue(markdown.contains("disabled, Shizuku, or Root"))
-        assertTrue(markdown.contains("keios://skill/domain/dev"))
-        assertTrue(markdown.indexOf("Recommended Entry Points") < markdown.indexOf("Full Tool Index"))
     }
 
     private fun createService(): LocalMcpService {

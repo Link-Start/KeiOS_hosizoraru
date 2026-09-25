@@ -3,6 +3,7 @@ package os.kei.ui.page.main.widget.sheet
 import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.assertWidthIsAtLeast
@@ -43,7 +45,7 @@ import kotlin.test.assertSame
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = SheetLiquidChoiceIndicatorTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
@@ -155,6 +157,44 @@ class SheetLiquidChoiceIndicatorTest {
             .assertIsNotEnabled()
             .performClick()
         composeRule.runOnIdle { assertEquals(0, clickCount) }
+    }
+
+    @Test
+    fun actionGroupExposesOneGroupAndOneRadioActionPerCard() {
+        var firstClickCount = 0
+        var secondClickCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                SheetActionGroup(modifier = Modifier.selectableGroup()) {
+                    SheetChoiceCard(
+                        title = "First choice",
+                        summary = "Selected option",
+                        selected = true,
+                        onSelect = { firstClickCount++ },
+                    )
+                    SheetChoiceCard(
+                        title = "Second choice",
+                        summary = "Available option",
+                        selected = false,
+                        onSelect = { secondClickCount++ },
+                    )
+                }
+            }
+        }
+
+        val selectableGroup = SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup)
+        val radioButton = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+        composeRule.onAllNodes(selectableGroup).assertCountEquals(1)
+        composeRule.onAllNodes(selectableGroup, useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodes(radioButton).assertCountEquals(2)
+        composeRule.onAllNodes(radioButton, useUnmergedTree = true).assertCountEquals(2)
+        composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(2)
+        composeRule.onNodeWithText("First choice").assertIsSelected()
+        composeRule.onNodeWithText("Second choice").assertIsNotSelected().performClick()
+        composeRule.runOnIdle {
+            assertEquals(0, firstClickCount)
+            assertEquals(1, secondClickCount)
+        }
     }
 
     @Test
@@ -291,5 +331,3 @@ class SheetLiquidChoiceIndicatorTest {
         }
     }
 }
-
-class SheetLiquidChoiceIndicatorTestApp : Application()

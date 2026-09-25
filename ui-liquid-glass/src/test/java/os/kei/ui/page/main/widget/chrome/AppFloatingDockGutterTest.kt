@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
-    application = AppFloatingDockGutterTestApp::class,
+    application = Application::class,
     sdk = [35],
     qualifiers = "w1280dp-h800dp-xhdpi",
 )
@@ -146,5 +146,3 @@ class AppFloatingDockGutterTest {
 
 private const val DOCK_TAG = "floating-dock"
 private val DOCK_SIZE = 56.dp
-
-class AppFloatingDockGutterTestApp : Application()

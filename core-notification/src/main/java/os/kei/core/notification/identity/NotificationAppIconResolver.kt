@@ -22,11 +22,7 @@ object NotificationAppIconResolver {
     private var runtimeDesign: LauncherIconDesign? = null
 
     @DrawableRes
-    fun smallIconResId(): Int = smallIconResId(currentDesign())
-
-    @Suppress("UNUSED_PARAMETER")
-    @DrawableRes
-    fun smallIconResId(design: LauncherIconDesign): Int = R.drawable.ic_kei_notification_small
+    fun smallIconResId(): Int = R.drawable.ic_kei_notification_small
 
     fun largeIconBitmap(context: Context): Bitmap? {
         val design = currentDesign()

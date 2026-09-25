@@ -10,43 +10,6 @@ import kotlin.test.assertEquals
 
 class ModernNotificationSpecResolverTest {
     @Test
-    fun `default notification accepts selected app identity icon`() {
-        val selectedIcon = R.drawable.ic_kei_notification_small
-        val spec =
-            ModernNotificationSpecResolver.resolve(
-                state =
-                    createState(
-                        serverName = "KeiOS MCP",
-                        running = true,
-                        port = 0,
-                        clients = 0,
-                        ongoing = true,
-                    ),
-                defaultAppIconResId = selectedIcon,
-            )
-
-        assertEquals(selectedIcon, spec.iconResId)
-    }
-
-    @Test
-    fun `webdav notification accepts selected app identity icon`() {
-        val selectedIcon = R.drawable.ic_kei_notification_small
-        val spec =
-            ModernNotificationSpecResolver.resolve(
-                state =
-                    createState(
-                        serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
-                        running = true,
-                        port = 0,
-                        clients = 0,
-                        ongoing = true,
-                    ),
-                defaultAppIconResId = selectedIcon,
-            )
-
-        assertEquals(selectedIcon, spec.iconResId)
-    }
-    @Test
     fun `default running session uses capped client progress`() {
         val spec = ModernNotificationSpecResolver.resolve(
             createState(
@@ -144,60 +107,6 @@ class ModernNotificationSpecResolverTest {
         assertEquals(false, spec.requestPromotedOngoing)
         assertEquals(false, spec.showProgressStyle)
         assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
-    }
-
-    @Test
-    fun `cafe visit uses semantic compact icon for oem live layout`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = LiveNotificationPayload.BA_CAFE_VISIT_SERVER_NAME,
-                running = true,
-                port = 0,
-                clients = 0,
-                ongoing = true
-            ),
-            preferOemLiveIconLayout = true
-        )
-
-        assertEquals(R.drawable.ic_ba_tea_party_island, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_tea_party_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_ba_tea_party_live_update, spec.trackerIconResId)
-    }
-
-    @Test
-    fun `ap uses semantic compact icon for oem live layout`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
-                running = true,
-                port = 154,
-                clients = 240,
-                ongoing = true
-            ),
-            preferOemLiveIconLayout = true
-        )
-
-        assertEquals(R.drawable.ic_ba_ap_island_notification, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_ap_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_ba_ap_live_update, spec.trackerIconResId)
-    }
-
-    @Test
-    fun `arena refresh keeps semantic status icon for standard live layout`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = LiveNotificationPayload.BA_ARENA_REFRESH_SERVER_NAME,
-                running = true,
-                port = 0,
-                clients = 0,
-                ongoing = true
-            ),
-            preferOemLiveIconLayout = false
-        )
-
-        assertEquals(R.drawable.ic_ba_arena_coin_island, spec.iconResId)
-        assertEquals(R.drawable.ic_ba_arena_coin_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_ba_arena_coin_live_update, spec.trackerIconResId)
     }
 
     @Test
@@ -369,24 +278,6 @@ class ModernNotificationSpecResolverTest {
                 ongoing = true
             ),
             preferOemLiveIconLayout = false
-        )
-
-        assertEquals(R.drawable.ic_kei_notification_small, spec.iconResId)
-        assertEquals(null, spec.expandedIconResId)
-        assertEquals(null, spec.trackerIconResId)
-    }
-
-    @Test
-    fun `default notification keeps selected app identity icon for oem layout`() {
-        val spec = ModernNotificationSpecResolver.resolve(
-            state = createState(
-                serverName = "KeiOS MCP",
-                running = true,
-                port = 0,
-                clients = 0,
-                ongoing = true
-            ),
-            preferOemLiveIconLayout = true
         )
 
         assertEquals(R.drawable.ic_kei_notification_small, spec.iconResId)

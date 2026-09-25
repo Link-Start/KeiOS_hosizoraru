@@ -3,7 +3,6 @@ package os.kei.core.notification.live.builder
 import android.app.Application
 import android.app.Notification
 import android.app.PendingIntent
-import android.content.Intent
 import android.graphics.Bitmap
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
@@ -57,8 +56,8 @@ class NotificationSemanticIconBuilderTest {
         val openPendingIntent = openPendingIntent(context, 9601)
         val stopPendingIntent = openPendingIntent(context, 9602)
         val notification = ModernNotificationBuilder(context).build(
-            payload = NotificationPayload(
-                state = LiveNotificationPayload(
+            payload = testNotificationPayload(
+                LiveNotificationPayload(
                     serverName = LiveNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
                     running = true,
                     port = 0,
@@ -77,10 +76,8 @@ class NotificationSemanticIconBuilderTest {
                     deadlineAtMs = null
                 ),
                 settings = UserSettings(miIslandOuterGlow = false),
-                environment = EnvironmentContext(
-                    channelId = "test_live_update_channel",
-                    isHyperOS = false
-                )
+                channelId = "test_live_update_channel",
+                isHyperOS = false,
             )
         )
 
@@ -97,8 +94,8 @@ class NotificationSemanticIconBuilderTest {
     private fun payload(
         context: Application,
         semanticIconBitmap: Bitmap
-    ) = NotificationPayload(
-        state = LiveNotificationPayload(
+    ) = testNotificationPayload(
+        LiveNotificationPayload(
             serverName = LiveNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = true,
             port = 72,
@@ -116,21 +113,12 @@ class NotificationSemanticIconBuilderTest {
             overrideProgressPercent = 72
         ),
         settings = UserSettings(miIslandOuterGlow = false),
-        environment = EnvironmentContext(
-            channelId = "test_live_update_channel",
-            isHyperOS = true
-        ),
-        semanticIconBitmap = semanticIconBitmap
+        semanticIconBitmap = semanticIconBitmap,
+        channelId = "test_live_update_channel",
     )
 
-    private fun openPendingIntent(context: Application, requestCode: Int): PendingIntent {
-        return PendingIntent.getActivity(
-            context,
-            requestCode,
-            Intent("os.kei.core.notification.test.OPEN").setPackage(context.packageName),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-    }
+    private fun openPendingIntent(context: Application, requestCode: Int): PendingIntent =
+        testPendingIntent(context, requestCode, "os.kei.core.notification.test.OPEN")
 
     private fun assertLargeIconBitmap(
         expected: Bitmap,

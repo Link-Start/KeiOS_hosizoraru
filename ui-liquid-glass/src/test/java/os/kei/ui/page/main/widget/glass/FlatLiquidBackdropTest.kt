@@ -80,7 +80,9 @@ class FlatLiquidBackdropTest {
         composeRule.waitForIdle()
         val library = composeRule.onNodeWithTag("library").captureToImage().toPixelMap()
         val flat = composeRule.onNodeWithTag("flat").captureToImage().toPixelMap()
-        assertClose(library, flat)
+        // Robolectric rounds this rim one step further on Linux than on macOS: CI measured 2/255 where
+        // macOS gives 1/255 (D#209, 2026-09-25). Two steps is the limit the shadow case below uses.
+        assertClose(library, flat, tolerance = 2f / 255f)
     }
 
     @Test

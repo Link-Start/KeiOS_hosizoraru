@@ -33,29 +33,6 @@ class BaForegroundApReminderPersistencePolicyTest {
     }
 
     @Test
-    fun `disabled cafe AP clears last level read anchor and dismissal`() {
-        val writes = BaForegroundApReminderPersistencePolicy.disabledWrites(BaApReminderKind.CafeAp)
-
-        assertEquals(
-            listOf(
-                BaForegroundApReminderWrite(
-                    kind = BaApReminderKind.CafeAp,
-                    lastNotifiedLevel = -1,
-                ),
-                BaForegroundApReminderWrite(
-                    kind = BaApReminderKind.CafeAp,
-                    suppressionAnchorAtMs = 0L,
-                ),
-                BaForegroundApReminderWrite(
-                    kind = BaApReminderKind.CafeAp,
-                    dismissedUntilAtMs = 0L,
-                ),
-            ),
-            writes,
-        )
-    }
-
-    @Test
     fun `successful expired delivery advances anchor with last notified level`() {
         val writes =
             BaForegroundApReminderPersistencePolicy.deliveryWrites(

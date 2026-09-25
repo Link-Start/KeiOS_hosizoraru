@@ -1,14 +1,14 @@
 package os.kei.core.ui.debug
 
 import org.junit.Test
-import java.io.File
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoSource
 
 class DebugFpsOverlayBackdropContractTest {
     @Test
     fun debugTelemetryStaysOutsideTheSceneBackdropProducer() {
-        val source = sourceFile(MAIN_ACTIVITY_SOURCE)
+        val source = repoSource(MAIN_ACTIVITY_SOURCE)
         val sceneBackdropBlock = source.trailingLambdaBlock("SceneBackdropHost")
 
         assertTrue(
@@ -43,17 +43,6 @@ private fun String.trailingLambdaBlock(functionName: String): String {
     }
     require(depth == 0) { "Unable to locate the closing brace for $functionName" }
     return substring(blockStart, index)
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 private const val MAIN_ACTIVITY_SOURCE = "app/src/main/java/os/kei/MainActivity.kt"

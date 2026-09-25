@@ -1,15 +1,15 @@
 package os.kei.release
 
 import org.junit.Test
-import java.io.File
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoRoot
 
 class ReleaseVersionContractTest {
     @Test
     fun releaseTargetStaysAlignedAcrossBuildCiAndDocs() {
-        val projectRoot = locateProjectRoot()
+        val projectRoot = repoRoot()
         val buildScript = projectRoot.resolve("app/build.gradle.kts").readText()
         val releaseTargetMatch =
             requireNotNull(
@@ -41,15 +41,5 @@ class ReleaseVersionContractTest {
             "# KeiOS v$releaseVersion Release Notes",
             message = "Release notes must identify the current release target",
         )
-    }
-}
-
-private fun locateProjectRoot(): File {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    return requireNotNull(
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .firstOrNull { directory -> File(directory, "settings.gradle.kts").isFile },
-    ) {
-        "Unable to locate the KeiOS project root from $workingDirectory"
     }
 }

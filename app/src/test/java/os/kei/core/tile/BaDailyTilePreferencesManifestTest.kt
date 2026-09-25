@@ -4,10 +4,10 @@ import android.service.quicksettings.TileService
 import org.junit.Test
 import org.w3c.dom.Element
 import os.kei.ui.page.main.ba.support.BA_DAILY_TILE_SLOTS
-import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoFile
 
 /**
  * The manifest half of the tile long-press, which nothing else can assert.
@@ -89,16 +89,7 @@ class BaDailyTilePreferencesManifestTest {
             .newInstance()
             .apply { isNamespaceAware = true }
             .newDocumentBuilder()
-            .parse(projectFile("app/src/main/AndroidManifest.xml"))
-
-    private fun projectFile(path: String): File = File(projectRoot(), path)
-
-    private fun projectRoot(): File {
-        val start = File(checkNotNull(System.getProperty("user.dir"))).absoluteFile
-        return generateSequence(start) { it.parentFile }
-            .firstOrNull { File(it, "settings.gradle.kts").isFile }
-            ?: error("Cannot locate project root from ${start.path}")
-    }
+            .parse(repoFile("app/src/main/AndroidManifest.xml"))
 
     private companion object {
         const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"

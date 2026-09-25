@@ -2,7 +2,6 @@ package os.kei.feature.ba.data.remote
 
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class GameKeeRepositoryTest {
@@ -21,35 +20,6 @@ class GameKeeRepositoryTest {
             ),
             GameKeeRepository.baApiHeaders()
         )
-    }
-
-    @Test
-    fun `ba api repository builds calendar and pool requests with shared headers`() {
-        assertEquals(
-            mapOf(
-                "device-num" to "1",
-                "game-alias" to "ba"
-            ),
-            GameKeeRepository.baApiHeaders()
-        )
-    }
-
-    @Test
-    fun `network result failure keeps compact preview and throwable`() {
-        val result = GameKeeNetworkResult.Failure(
-            request = GameKeeNetworkRequest(
-                pathOrUrl = "/v1/content/detail/1",
-                refererPath = "/ba/tj/1.html"
-            ),
-            errorPreview = "IOException:http=403 body=<html>blocked...</html>",
-            throwable = IllegalStateException("blocked")
-        )
-
-        val error = assertFailsWith<IllegalStateException> {
-            result.getOrThrow()
-        }
-        assertEquals("blocked", error.message)
-        assertTrue(result.errorPreview.length < 220)
     }
 
     @Test

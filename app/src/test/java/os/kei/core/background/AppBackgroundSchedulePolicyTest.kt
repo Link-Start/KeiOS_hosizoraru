@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BaApReminderKind
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
@@ -127,25 +128,8 @@ class AppBackgroundSchedulePolicyTest {
     @Test
     fun `github scheduler uses actions cache timestamp when actions tracking is enabled`() {
         val item = trackedApp(checkActionsUpdates = true)
-        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
-            scheduleSnapshot =
-                GitHubBackgroundScheduleSnapshot(
-                    trackSnapshot =
-                        GitHubTrackSnapshot(
-                            items = listOf(item),
-                            lastRefreshMs = NOW_MS,
-                            refreshIntervalHours = 12,
-                        ),
-                    actionsRecommendedRunsByTrackId =
-                        mapOf(
-                            item.id to actionsRecommendedRun(
-                                trackId = item.id,
-                                checkedAtMillis = NOW_MS - 30L * 60L * 1000L,
-                            ),
-                        ),
-                ),
-            nowMs = NOW_MS,
-        )
+        val schedule =
+            githubSchedule(item, refreshIntervalHours = 12, actionsCheckedAtMillis = NOW_MS - 30L * 60L * 1000L)
 
         assertNotNull(schedule)
         assertEquals(NOW_MS + 30L * 60L * 1000L, schedule.triggerAtMillis)
@@ -156,25 +140,8 @@ class AppBackgroundSchedulePolicyTest {
     @Test
     fun `github scheduler ignores actions cache when actions tracking is disabled`() {
         val item = trackedApp(checkActionsUpdates = false)
-        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
-            scheduleSnapshot =
-                GitHubBackgroundScheduleSnapshot(
-                    trackSnapshot =
-                        GitHubTrackSnapshot(
-                            items = listOf(item),
-                            lastRefreshMs = NOW_MS,
-                            refreshIntervalHours = 12,
-                        ),
-                    actionsRecommendedRunsByTrackId =
-                        mapOf(
-                            item.id to actionsRecommendedRun(
-                                trackId = item.id,
-                                checkedAtMillis = NOW_MS - 30L * 60L * 1000L,
-                            ),
-                        ),
-                ),
-            nowMs = NOW_MS,
-        )
+        val schedule =
+            githubSchedule(item, refreshIntervalHours = 12, actionsCheckedAtMillis = NOW_MS - 30L * 60L * 1000L)
 
         assertNotNull(schedule)
         assertEquals(NOW_MS + 12L * 60L * 60L * 1000L, schedule.triggerAtMillis)
@@ -187,19 +154,7 @@ class AppBackgroundSchedulePolicyTest {
         val item = trackedApp(checkActionsUpdates = false).copy(
             ignoreMode = GitHubTrackedIgnoreMode.AllVersions,
         )
-        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
-            scheduleSnapshot =
-                GitHubBackgroundScheduleSnapshot(
-                    trackSnapshot =
-                        GitHubTrackSnapshot(
-                            items = listOf(item),
-                            lastRefreshMs = NOW_MS,
-                            refreshIntervalHours = 1,
-                        ),
-                    actionsRecommendedRunsByTrackId = emptyMap(),
-                ),
-            nowMs = NOW_MS,
-        )
+        val schedule = githubSchedule(item, refreshIntervalHours = 1)
 
         assertNull(schedule)
     }
@@ -209,25 +164,8 @@ class AppBackgroundSchedulePolicyTest {
         val item = trackedApp(checkActionsUpdates = true).copy(
             ignoreMode = GitHubTrackedIgnoreMode.AllVersions,
         )
-        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
-            scheduleSnapshot =
-                GitHubBackgroundScheduleSnapshot(
-                    trackSnapshot =
-                        GitHubTrackSnapshot(
-                            items = listOf(item),
-                            lastRefreshMs = NOW_MS,
-                            refreshIntervalHours = 12,
-                        ),
-                    actionsRecommendedRunsByTrackId =
-                        mapOf(
-                            item.id to actionsRecommendedRun(
-                                trackId = item.id,
-                                checkedAtMillis = NOW_MS - 30L * 60L * 1000L,
-                            ),
-                        ),
-                ),
-            nowMs = NOW_MS,
-        )
+        val schedule =
+            githubSchedule(item, refreshIntervalHours = 12, actionsCheckedAtMillis = NOW_MS - 30L * 60L * 1000L)
 
         assertNotNull(schedule)
         assertEquals(NOW_MS + 30L * 60L * 1000L, schedule.triggerAtMillis)
@@ -262,19 +200,7 @@ class AppBackgroundSchedulePolicyTest {
             appLabel = "F-Droid",
             sourceMode = GitHubTrackedSourceMode.FdroidRepository,
         )
-        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
-            scheduleSnapshot =
-                GitHubBackgroundScheduleSnapshot(
-                    trackSnapshot =
-                        GitHubTrackSnapshot(
-                            items = listOf(item),
-                            lastRefreshMs = NOW_MS,
-                            refreshIntervalHours = 3,
-                        ),
-                    actionsRecommendedRunsByTrackId = emptyMap(),
-                ),
-            nowMs = NOW_MS,
-        )
+        val schedule = githubSchedule(item, refreshIntervalHours = 3)
 
         assertNotNull(schedule)
         assertEquals(NOW_MS + 12L * 60L * 60L * 1000L, schedule.triggerAtMillis)
@@ -322,44 +248,6 @@ class AppBackgroundSchedulePolicyTest {
     }
 
     @Test
-    fun `ba ap persistent read contributes no alarm candidate`() {
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = BaPageSnapshot(
-                apNotifyEnabled = true,
-                apCurrent = 130.0,
-                apRegenBaseMs = NOW_MS,
-                apNotifyThreshold = 120,
-                apLimit = 240,
-                keepApRemindersReadUntilBelowThreshold = true,
-                apSuppressionAnchorAtMs = NOW_MS - 10_000L,
-                apLastNotifiedLevel = -1,
-            ),
-            nowMs = NOW_MS
-        )
-
-        assertNull(schedule)
-    }
-
-    @Test
-    fun `ba cafe ap persistent read contributes no alarm candidate`() {
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = BaPageSnapshot(
-                cafeApNotifyEnabled = true,
-                cafeStoredAp = 130.0,
-                cafeLastHourMs = floorToHourMs(NOW_MS),
-                cafeApNotifyThreshold = 120,
-                cafeApLastNotifiedLevel = -1,
-                cafeLevel = 10,
-                keepApRemindersReadUntilBelowThreshold = true,
-                cafeApSuppressionAnchorAtMs = NOW_MS - 10_000L,
-            ),
-            nowMs = NOW_MS
-        )
-
-        assertNull(schedule)
-    }
-
-    @Test
     fun `ba ap persistent read leaves other reminder candidates`() {
         val currentSlot = currentCafeStudentRefreshSlotMs(
             nowMs = NOW_MS,
@@ -386,131 +274,79 @@ class AppBackgroundSchedulePolicyTest {
     }
 
     @Test
-    fun `ba ap hourly read schedules exact repeat boundary`() {
-        val anchor = NOW_MS - 30L * 60L * 1000L
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = BaPageSnapshot(
-                apNotifyEnabled = true,
-                apCurrent = 130.0,
-                apRegenBaseMs = NOW_MS,
-                apNotifyThreshold = 120,
-                apLimit = 240,
-                keepApRemindersReadUntilBelowThreshold = false,
-                apSuppressionAnchorAtMs = anchor,
-                apLastNotifiedLevel = -1,
-            ),
-            nowMs = NOW_MS
-        )
-
-        assertNotNull(schedule)
-        assertEquals(anchor + BA_AP_READ_REPEAT_INTERVAL_MS, schedule.triggerAtMillis)
-    }
-
-    @Test
-    fun `ba cafe ap hourly read schedules exact repeat boundary`() {
-        val anchor = NOW_MS - 30L * 60L * 1000L
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = BaPageSnapshot(
-                cafeApNotifyEnabled = true,
-                cafeStoredAp = 130.0,
-                cafeLastHourMs = floorToHourMs(NOW_MS),
-                cafeApNotifyThreshold = 120,
-                cafeApLastNotifiedLevel = -1,
-                cafeLevel = 10,
-                keepApRemindersReadUntilBelowThreshold = false,
-                cafeApSuppressionAnchorAtMs = anchor,
-            ),
-            nowMs = NOW_MS
-        )
-
-        assertNotNull(schedule)
-        assertEquals(anchor + BA_AP_READ_REPEAT_INTERVAL_MS, schedule.triggerAtMillis)
-    }
-
-    @Test
-    fun `ba ap dismissal schedules exact snooze boundary despite AP growth`() {
-        val dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS
-        val schedule =
-            assertNotNull(
-                AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-                    snapshot =
-                        BaPageSnapshot(
-                            apNotifyEnabled = true,
-                            apCurrent = 131.0,
-                            apRegenBaseMs = NOW_MS,
-                            apNotifyThreshold = 120,
-                            apLimit = 240,
-                            apLastNotifiedLevel = 130,
-                            apDismissedUntilAtMs = dismissedUntilAtMs,
-                        ),
-                    nowMs = NOW_MS,
+    fun `ba ap and cafe ap persistent read contribute no alarm candidate`() {
+        BA_AP_KINDS.forEach { kind ->
+            val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                snapshot = apSnapshot(
+                    kind = kind,
+                    current = 130.0,
+                    lastNotifiedLevel = -1,
+                    keepReadUntilBelowThreshold = true,
+                    suppressionAnchorAtMs = NOW_MS - 10_000L,
                 ),
+                nowMs = NOW_MS
             )
 
-        assertEquals(dismissedUntilAtMs, schedule.triggerAtMillis)
+            assertNull(schedule, "kind=$kind")
+        }
     }
 
     @Test
-    fun `ba cafe ap dismissal schedules exact snooze boundary`() {
-        val dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS
-        val schedule =
-            assertNotNull(
-                AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-                    snapshot =
-                        BaPageSnapshot(
-                            cafeApNotifyEnabled = true,
-                            cafeStoredAp = 131.0,
-                            cafeLastHourMs = NOW_MS,
-                            cafeApNotifyThreshold = 120,
-                            cafeApLastNotifiedLevel = 130,
-                            cafeLevel = 10,
-                            cafeApDismissedUntilAtMs = dismissedUntilAtMs,
-                        ),
-                    nowMs = NOW_MS,
+    fun `ba ap and cafe ap hourly read schedule exact repeat boundary`() {
+        val anchor = NOW_MS - 30L * 60L * 1000L
+        BA_AP_KINDS.forEach { kind ->
+            val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                snapshot = apSnapshot(
+                    kind = kind,
+                    current = 130.0,
+                    lastNotifiedLevel = -1,
+                    keepReadUntilBelowThreshold = false,
+                    suppressionAnchorAtMs = anchor,
                 ),
+                nowMs = NOW_MS
             )
 
-        assertEquals(dismissedUntilAtMs, schedule.triggerAtMillis)
+            assertNotNull(schedule, "kind=$kind")
+            assertEquals(anchor + BA_AP_READ_REPEAT_INTERVAL_MS, schedule.triggerAtMillis, "kind=$kind")
+        }
     }
 
     @Test
-    fun `ba ap expired hourly read prompts immediately`() {
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = BaPageSnapshot(
-                apNotifyEnabled = true,
-                apCurrent = 130.0,
-                apRegenBaseMs = NOW_MS,
-                apNotifyThreshold = 120,
-                apLimit = 240,
-                keepApRemindersReadUntilBelowThreshold = false,
-                apSuppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
-                apLastNotifiedLevel = 130,
-            ),
-            nowMs = NOW_MS
-        )
+    fun `ba ap and cafe ap dismissal schedule exact snooze boundary despite AP growth`() {
+        val dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS
+        BA_AP_KINDS.forEach { kind ->
+            val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                snapshot = apSnapshot(
+                    kind = kind,
+                    current = 131.0,
+                    lastNotifiedLevel = 130,
+                    dismissedUntilAtMs = dismissedUntilAtMs,
+                ),
+                nowMs = NOW_MS,
+            )
 
-        assertNotNull(schedule)
-        assertEquals(NOW_MS, schedule.triggerAtMillis)
+            assertNotNull(schedule, "kind=$kind")
+            assertEquals(dismissedUntilAtMs, schedule.triggerAtMillis, "kind=$kind")
+        }
     }
 
     @Test
-    fun `ba cafe ap expired hourly read prompts immediately`() {
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = BaPageSnapshot(
-                cafeApNotifyEnabled = true,
-                cafeStoredAp = 130.0,
-                cafeLastHourMs = floorToHourMs(NOW_MS),
-                cafeApNotifyThreshold = 120,
-                cafeApLastNotifiedLevel = 130,
-                cafeLevel = 10,
-                keepApRemindersReadUntilBelowThreshold = false,
-                cafeApSuppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
-            ),
-            nowMs = NOW_MS
-        )
+    fun `ba ap and cafe ap expired hourly read prompt immediately`() {
+        BA_AP_KINDS.forEach { kind ->
+            val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                snapshot = apSnapshot(
+                    kind = kind,
+                    current = 130.0,
+                    lastNotifiedLevel = 130,
+                    keepReadUntilBelowThreshold = false,
+                    suppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
+                ),
+                nowMs = NOW_MS
+            )
 
-        assertNotNull(schedule)
-        assertEquals(NOW_MS, schedule.triggerAtMillis)
+            assertNotNull(schedule, "kind=$kind")
+            assertEquals(NOW_MS, schedule.triggerAtMillis, "kind=$kind")
+        }
     }
 
     @Test
@@ -597,6 +433,65 @@ class AppBackgroundSchedulePolicyTest {
 
     private companion object {
         private const val NOW_MS = 1_777_392_000_000L
+        private val BA_AP_KINDS = listOf(BaApReminderKind.Ap, BaApReminderKind.CafeAp)
+
+        /** One AP reminder at the 120 threshold, carried on the ordinary-AP or the cafe-AP fields. */
+        private fun apSnapshot(
+            kind: BaApReminderKind,
+            current: Double,
+            lastNotifiedLevel: Int,
+            keepReadUntilBelowThreshold: Boolean = true,
+            suppressionAnchorAtMs: Long = 0L,
+            dismissedUntilAtMs: Long = 0L,
+        ): BaPageSnapshot =
+            when (kind) {
+                BaApReminderKind.Ap ->
+                    BaPageSnapshot(
+                        apNotifyEnabled = true,
+                        apCurrent = current,
+                        apRegenBaseMs = NOW_MS,
+                        apNotifyThreshold = 120,
+                        apLimit = 240,
+                        apLastNotifiedLevel = lastNotifiedLevel,
+                        keepApRemindersReadUntilBelowThreshold = keepReadUntilBelowThreshold,
+                        apSuppressionAnchorAtMs = suppressionAnchorAtMs,
+                        apDismissedUntilAtMs = dismissedUntilAtMs,
+                    )
+                BaApReminderKind.CafeAp ->
+                    BaPageSnapshot(
+                        cafeApNotifyEnabled = true,
+                        cafeStoredAp = current,
+                        cafeLastHourMs = floorToHourMs(NOW_MS),
+                        cafeApNotifyThreshold = 120,
+                        cafeApLastNotifiedLevel = lastNotifiedLevel,
+                        cafeLevel = 10,
+                        keepApRemindersReadUntilBelowThreshold = keepReadUntilBelowThreshold,
+                        cafeApSuppressionAnchorAtMs = suppressionAnchorAtMs,
+                        cafeApDismissedUntilAtMs = dismissedUntilAtMs,
+                    )
+            }
+
+        private fun githubSchedule(
+            item: GitHubTrackedApp,
+            refreshIntervalHours: Int,
+            actionsCheckedAtMillis: Long? = null,
+        ): BackgroundAlarmSchedule? =
+            AppBackgroundScheduler.buildGitHubRefreshSchedule(
+                scheduleSnapshot =
+                    GitHubBackgroundScheduleSnapshot(
+                        trackSnapshot =
+                            GitHubTrackSnapshot(
+                                items = listOf(item),
+                                lastRefreshMs = NOW_MS,
+                                refreshIntervalHours = refreshIntervalHours,
+                            ),
+                        actionsRecommendedRunsByTrackId =
+                            actionsCheckedAtMillis?.let { checkedAt ->
+                                mapOf(item.id to actionsRecommendedRun(trackId = item.id, checkedAtMillis = checkedAt))
+                            }.orEmpty(),
+                    ),
+                nowMs = NOW_MS,
+            )
 
         private fun trackedApp(checkActionsUpdates: Boolean): GitHubTrackedApp =
             GitHubTrackedApp(

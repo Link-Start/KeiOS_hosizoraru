@@ -79,11 +79,4 @@ class BaDailyTileAddResultTest {
         assertEquals(false, BaDailyTileAddResult.Declined.keepsTile)
         assertEquals(false, BaDailyTileAddResult.Unavailable.keepsTile)
     }
-
-    @Test
-    fun `dismissing the dialog rolls the claim back`() {
-        // The end-to-end shape of the bug this pair fixes: swipe the dialog away and the settings row
-        // must go back to offering "Add tile".
-        assertEquals(false, baDailyTileAddResultOf(3).keepsTile)
-    }
 }

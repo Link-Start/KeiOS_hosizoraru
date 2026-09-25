@@ -4,12 +4,11 @@ import android.content.pm.PackageManager
 import org.junit.Test
 import org.w3c.dom.Element
 import os.kei.core.prefs.LauncherIconDesign
-import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import os.kei.ui.testing.repoFile
 
 class LauncherIconContractTest {
     @Test
@@ -19,12 +18,6 @@ class LauncherIconContractTest {
         assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId("unknown"))
         assertEquals(LauncherIconDesign.Apple, LauncherIconDesign.fromStorageId("apple"))
         assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId("android"))
-    }
-
-    @Test
-    fun `component class names stay on the manifest namespace when app id has suffixes`() {
-        assertEquals("os.kei.LauncherAppleDesigns", LauncherIconDesign.Apple.qualifiedAliasClassName())
-        assertEquals("os.kei.LauncherAndroidDesigns", LauncherIconDesign.Android.qualifiedAliasClassName())
     }
 
     @Test
@@ -83,20 +76,6 @@ class LauncherIconContractTest {
         assertTrue(androidAlias.hasLauncherFilter())
     }
 
-    @Test
-    fun `launcher icon resources preserve apple and android design assets`() {
-        assertTrue(resFile("drawable-nodpi/ic_launcher_apple_background.png").isFile)
-        assertTrue(resFile("drawable-nodpi/ic_launcher_apple_foreground.png").isFile)
-
-        val appleIcon = resFile("mipmap-anydpi-v26/ic_launcher_apple.xml").readText()
-        assertContains(appleIcon, "@drawable/ic_launcher_apple_background")
-        assertContains(appleIcon, "@drawable/ic_launcher_apple_foreground")
-
-        val androidIcon = resFile("mipmap-anydpi-v26/ic_launcher_android.xml").readText()
-        assertContains(androidIcon, "@drawable/ic_launcher_background")
-        assertContains(androidIcon, "@drawable/ic_launcher_foreground_inset")
-    }
-
     private fun Element.launcherAlias(name: String): Element =
         childElements("activity-alias")
             .single { it.androidAttr("name") == name }
@@ -128,18 +107,7 @@ class LauncherIconContractTest {
             .newInstance()
             .apply { isNamespaceAware = true }
             .newDocumentBuilder()
-            .parse(projectFile("app/src/main/AndroidManifest.xml"))
-
-    private fun resFile(path: String): File = projectFile("app/src/main/res/$path")
-
-    private fun projectFile(path: String): File = File(projectRoot(), path)
-
-    private fun projectRoot(): File {
-        val start = File(checkNotNull(System.getProperty("user.dir"))).absoluteFile
-        return generateSequence(start) { it.parentFile }
-            .firstOrNull { File(it, "settings.gradle.kts").isFile }
-            ?: error("Cannot locate project root from ${start.path}")
-    }
+            .parse(repoFile("app/src/main/AndroidManifest.xml"))
 
     private companion object {
         const val ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"

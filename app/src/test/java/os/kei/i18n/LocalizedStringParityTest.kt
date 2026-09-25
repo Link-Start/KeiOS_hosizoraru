@@ -5,11 +5,12 @@ import org.w3c.dom.Element
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.test.assertEquals
+import os.kei.ui.testing.repoRoot
 
 class LocalizedStringParityTest {
     @Test
     fun everyNonBaStringHasAllSupportedLocalesAndMatchingFormatArguments() {
-        val projectRoot = locateProjectRoot()
+        val projectRoot = repoRoot()
 
         translatableModules(projectRoot).forEach { module ->
             val contractsByLocale = SUPPORTED_RESOURCE_DIRECTORIES.associateWith { directory ->
@@ -119,16 +120,6 @@ private fun keyMismatchMessage(
     val extra = (localizedKeys - baselineKeys).sorted()
     if (missing.isNotEmpty()) append("\nMissing: ${missing.joinToString()}")
     if (extra.isNotEmpty()) append("\nExtra: ${extra.joinToString()}")
-}
-
-private fun locateProjectRoot(): File {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    return requireNotNull(
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .firstOrNull { directory -> File(directory, "settings.gradle.kts").isFile },
-    ) {
-        "Unable to locate the KeiOS project root from $workingDirectory"
-    }
 }
 
 private val DOCUMENT_BUILDER_FACTORY = DocumentBuilderFactory.newInstance().apply {

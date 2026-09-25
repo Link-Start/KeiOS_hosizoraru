@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import kotlin.math.abs
 import kotlin.test.assertTrue
 import org.junit.Rule
@@ -170,17 +169,6 @@ private val largeFontHistoryEntry =
                 previousStopReason = "background execution window expired before synchronization completed",
             ),
     )
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private const val ROOT_TAG = "webdav-history-large-font-root"
 private const val LONG_PENDING_REASON =

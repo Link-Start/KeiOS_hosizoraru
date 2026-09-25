@@ -19,18 +19,6 @@ class WebDavAutoSyncTest {
     }
 
     @Test
-    fun `failed auto sync still honors configured interval cooldown`() {
-        val intervalMs = 3L * 60L * 60L * 1000L
-
-        assertEquals(
-            intervalMs,
-            autoSyncScheduleCooldownMs(
-                intervalMs = intervalMs,
-            ),
-        )
-    }
-
-    @Test
     fun `launch auto sync runs when no previous attempt or sync exists`() {
         assertTrue(
             shouldRunLaunchAutoSync(

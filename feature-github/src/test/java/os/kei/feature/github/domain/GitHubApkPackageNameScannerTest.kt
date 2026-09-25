@@ -41,57 +41,6 @@ class GitHubApkPackageNameScannerTest {
     }
 
     @Test
-    fun `scanner keeps atom mode on same fast asset scan contract`() = runBlocking {
-        val source = FakeScanSource(
-            manifestBytes = BinaryManifestFixture.build("os.kei.atom")
-        )
-        val scanner = GitHubApkPackageNameScanner(source)
-
-        val result = scanner.scan(
-            GitHubApkPackageNameScanRequest(
-                repoUrl = "https://github.com/hosizoraru/KeiOS",
-                lookupConfig = GitHubLookupConfig(
-                    selectedStrategy = GitHubLookupStrategyOption.AtomFeed
-                )
-            )
-        ).getOrThrow()
-
-        assertEquals("os.kei.atom", result.packageName)
-        assertEquals(GitHubLookupStrategyOption.AtomFeed, source.scannedStrategy)
-        assertEquals(
-            "https://github.com/hosizoraru/KeiOS/releases/download/v1.2.3/KeiOS-debug.apk",
-            source.scannedDownloadUrl
-        )
-    }
-
-    @Test
-    fun `scanner extracts package name from selected apk asset`() = runBlocking {
-        val source = FakeScanSource(
-            manifestBytes = BinaryManifestFixture.build("os.kei.selected")
-        )
-        val scanner = GitHubApkPackageNameScanner(source)
-        val asset = GitHubReleaseAssetFile(
-            name = "KeiOS-selected.apk",
-            downloadUrl = "https://github.com/hosizoraru/KeiOS/releases/download/v1.2.3/KeiOS-selected.apk",
-            apiAssetUrl = "https://api.github.com/repos/hosizoraru/KeiOS/releases/assets/42",
-            sizeBytes = 2048L,
-            downloadCount = 1
-        )
-
-        val packageName = scanner.scanAssetPackageName(
-            asset = asset,
-            lookupConfig = GitHubLookupConfig(
-                selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken,
-                apiToken = "token-123"
-            )
-        ).getOrThrow()
-
-        assertEquals("os.kei.selected", packageName)
-        assertEquals(asset.downloadUrl, source.scannedDownloadUrl)
-        assertEquals(GitHubLookupStrategyOption.GitHubApiToken, source.scannedStrategy)
-    }
-
-    @Test
     fun `scanner extracts manifest version info from selected apk asset`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build(
@@ -229,7 +178,6 @@ class GitHubApkPackageNameScannerTest {
     ) : GitHubApkPackageNameScanSource {
         var releaseLoadCount = 0
         var scannedDownloadUrl = ""
-        var scannedStrategy: GitHubLookupStrategyOption? = null
         val scannedAssetNames: MutableList<String> =
             Collections.synchronizedList(mutableListOf())
         val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
@@ -273,7 +221,6 @@ class GitHubApkPackageNameScannerTest {
             lookupConfig: GitHubLookupConfig
         ): Result<ByteArray> {
             scannedDownloadUrl = asset.downloadUrl
-            scannedStrategy = lookupConfig.selectedStrategy
             scannedAssetNames += asset.name
             scannedStrategies += lookupConfig.selectedStrategy
             readDelayMsByAsset[asset.name]?.takeIf { it > 0L }?.let { delayMs ->

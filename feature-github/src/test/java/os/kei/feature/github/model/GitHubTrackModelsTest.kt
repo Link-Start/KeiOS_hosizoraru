@@ -48,39 +48,45 @@ class GitHubTrackModelsTest {
     }
 
     @Test
-    fun `direct apk track id keeps repository ids stable`() {
-        val direct = GitHubTrackedApp(
-            repoUrl = "https://telegram.org/dl/android/apk",
-            owner = "telegram.org",
-            repo = "dl-android-apk",
-            packageName = "org.telegram.messenger",
-            appLabel = "Telegram",
-            sourceMode = GitHubTrackedSourceMode.DirectApk
-        )
-        val repository = GitHubTrackedApp(
-            repoUrl = "https://github.com/telegram/telegram-android",
-            owner = "telegram",
-            repo = "telegram-android",
-            packageName = "org.telegram.messenger",
-            appLabel = "Telegram"
+    fun `track ids are stable per source mode`() {
+        val cases = listOf(
+            "GitHubRepository" to GitHubTrackedApp(
+                repoUrl = "https://github.com/telegram/telegram-android",
+                owner = "telegram",
+                repo = "telegram-android",
+                packageName = "org.telegram.messenger",
+                appLabel = "Telegram"
+            ) to "telegram/telegram-android|org.telegram.messenger",
+            "DirectApk" to GitHubTrackedApp(
+                repoUrl = "https://telegram.org/dl/android/apk",
+                owner = "telegram.org",
+                repo = "dl-android-apk",
+                packageName = "org.telegram.messenger",
+                appLabel = "Telegram",
+                sourceMode = GitHubTrackedSourceMode.DirectApk
+            ) to "direct_apk|telegram.org/dl-android-apk|org.telegram.messenger",
+            "GitRepository host scoped owner" to GitHubTrackedApp(
+                repoUrl = "https://gitee.com/demo/app",
+                owner = "gitee.com/demo",
+                repo = "app",
+                packageName = "com.demo.app",
+                appLabel = "Demo",
+                sourceMode = GitHubTrackedSourceMode.GitRepository
+            ) to "git_repository|gitee.com/demo/app|com.demo.app",
+            "FdroidRepository normalized url and package" to GitHubTrackedApp(
+                repoUrl = "https://f-droid.org/repo",
+                owner = "f-droid.org",
+                repo = "repo",
+                packageName = "org.fdroid.fdroid",
+                appLabel = "F-Droid",
+                sourceMode = GitHubTrackedSourceMode.FdroidRepository
+            ) to "fdroid_repository|https://f-droid.org/repo|org.fdroid.fdroid",
         )
 
-        assertEquals("direct_apk|telegram.org/dl-android-apk|org.telegram.messenger", direct.id)
-        assertEquals("telegram/telegram-android|org.telegram.messenger", repository.id)
-    }
-
-    @Test
-    fun `git repository track id includes host scoped owner`() {
-        val git = GitHubTrackedApp(
-            repoUrl = "https://gitee.com/demo/app",
-            owner = "gitee.com/demo",
-            repo = "app",
-            packageName = "com.demo.app",
-            appLabel = "Demo",
-            sourceMode = GitHubTrackedSourceMode.GitRepository
-        )
-
-        assertEquals("git_repository|gitee.com/demo/app|com.demo.app", git.id)
+        cases.forEach { (labelled, expectedId) ->
+            val (label, item) = labelled
+            assertEquals(expectedId, item.id, label)
+        }
     }
 
     @Test
@@ -107,33 +113,30 @@ class GitHubTrackModelsTest {
     }
 
     @Test
-    fun `fdroid track id uses normalized repository url and package`() {
-        val item = GitHubTrackedApp(
-            repoUrl = "https://f-droid.org/repo",
-            owner = "f-droid.org",
-            repo = "repo",
-            packageName = "org.fdroid.fdroid",
-            appLabel = "F-Droid",
-            sourceMode = GitHubTrackedSourceMode.FdroidRepository
+    fun `persisted aliases parse`() {
+        val sourceMode: (String?) -> Enum<*> = { GitHubTrackedSourceMode.fromStorageId(it) }
+        val ignoreMode: (String?) -> Enum<*> = { GitHubTrackedIgnoreMode.fromStorageId(it) }
+        val cases = listOf<Triple<(String?) -> Enum<*>, String?, Enum<*>>>(
+            Triple(sourceMode, "git", GitHubTrackedSourceMode.GitRepository),
+            Triple(sourceMode, "gitee", GitHubTrackedSourceMode.GitRepository),
+            Triple(sourceMode, "gitlab", GitHubTrackedSourceMode.GitRepository),
+            Triple(sourceMode, "subscription", GitHubTrackedSourceMode.DirectApk),
+            Triple(sourceMode, "fdroid", GitHubTrackedSourceMode.FdroidRepository),
+            Triple(sourceMode, "izzyondroid", GitHubTrackedSourceMode.FdroidRepository),
+            Triple(ignoreMode, null, GitHubTrackedIgnoreMode.None),
+            Triple(ignoreMode, "paused", GitHubTrackedIgnoreMode.Temporary),
+            Triple(ignoreMode, "all", GitHubTrackedIgnoreMode.AllVersions),
+            Triple(ignoreMode, "stable", GitHubTrackedIgnoreMode.CurrentStable),
+            Triple(ignoreMode, "pre_release", GitHubTrackedIgnoreMode.CurrentPreRelease),
         )
 
-        assertEquals(
-            "fdroid_repository|https://f-droid.org/repo|org.fdroid.fdroid",
-            item.id
-        )
-    }
-
-    @Test
-    fun `source mode aliases parse git platforms`() {
-        assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("git"))
-        assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("gitee"))
-        assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("gitlab"))
-        assertEquals(GitHubTrackedSourceMode.DirectApk, GitHubTrackedSourceMode.fromStorageId("subscription"))
-        assertEquals(GitHubTrackedSourceMode.FdroidRepository, GitHubTrackedSourceMode.fromStorageId("fdroid"))
-        assertEquals(
-            GitHubTrackedSourceMode.FdroidRepository,
-            GitHubTrackedSourceMode.fromStorageId("izzyondroid")
-        )
+        cases.forEach { (parse, alias, expected) ->
+            assertEquals(
+                expected,
+                parse(alias),
+                "${expected::class.simpleName}.fromStorageId(${alias?.let { "\"$it\"" }})",
+            )
+        }
     }
 
     @Test
@@ -196,18 +199,6 @@ class GitHubTrackModelsTest {
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode
-        )
-    }
-
-    @Test
-    fun `ignore mode aliases parse safely`() {
-        assertEquals(GitHubTrackedIgnoreMode.None, GitHubTrackedIgnoreMode.fromStorageId(null))
-        assertEquals(GitHubTrackedIgnoreMode.Temporary, GitHubTrackedIgnoreMode.fromStorageId("paused"))
-        assertEquals(GitHubTrackedIgnoreMode.AllVersions, GitHubTrackedIgnoreMode.fromStorageId("all"))
-        assertEquals(GitHubTrackedIgnoreMode.CurrentStable, GitHubTrackedIgnoreMode.fromStorageId("stable"))
-        assertEquals(
-            GitHubTrackedIgnoreMode.CurrentPreRelease,
-            GitHubTrackedIgnoreMode.fromStorageId("pre_release")
         )
     }
 

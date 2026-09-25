@@ -7,7 +7,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
-import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.FdroidIndexFormat
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -18,61 +17,13 @@ import kotlin.test.assertTrue
 
 class FdroidBatchPackageSnapshotProviderTest {
     @Test
-    fun `loadPackageSnapshot fans out same repo packages from one repository snapshot`() = runBlocking {
-        val repositoryLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
-            trackedItems = listOf(
-                fdroidItem("demo.one"),
-                fdroidItem("demo.two")
-            ),
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
-            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _, _ ->
-                repositoryLoads.incrementAndGet()
-                delay(30)
-                Result.success(
-                    repositorySnapshot(
-                        repoUrl = repoUrl,
-                        packages = packageNames.toList()
-                    )
-                )
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
-            }
-        )
-
-        val results = listOf(
-            async { provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = true) },
-            async { provider.loadPackageSnapshot(fdroidItem("demo.two"), forceRefresh = true) }
-        ).awaitAll()
-
-        assertEquals(1, repositoryLoads.get())
-        assertEquals(
-            listOf("demo.one", "demo.two"),
-            results.map { result -> result.getOrThrow().packageName }
-        )
-    }
-
-    @Test
     fun `loadPackageSnapshot falls to the package api when neither page nor index answers`() = runBlocking {
         val packageLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(fdroidItem("demo.one")),
             packageProvider = FdroidPackageSnapshotProvider { item, _ ->
                 packageLoads.incrementAndGet()
                 Result.success(packageSnapshot(item.packageName))
-            },
-            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _, _ ->
-                Result.failure(IllegalStateException("repository index should not be used"))
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
             }
         )
 
@@ -86,7 +37,7 @@ class FdroidBatchPackageSnapshotProviderTest {
     fun `loadPackageSnapshot falls back to repository index when package api fails`() = runBlocking {
         val packageLoads = AtomicInteger(0)
         val repositoryLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(fdroidItem("demo.one")),
             packageProvider = FdroidPackageSnapshotProvider { _, _ ->
                 packageLoads.incrementAndGet()
@@ -100,11 +51,6 @@ class FdroidBatchPackageSnapshotProviderTest {
                         packages = packageNames.toList()
                     )
                 )
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
             }
         )
 
@@ -118,20 +64,12 @@ class FdroidBatchPackageSnapshotProviderTest {
     @Test
     fun `loadPackageSnapshot shares concurrent package api requests for the same package`() = runBlocking {
         val packageLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(fdroidItem("demo.one")),
             packageProvider = FdroidPackageSnapshotProvider { item, _ ->
                 packageLoads.incrementAndGet()
                 delay(30)
                 Result.success(packageSnapshot(item.packageName))
-            },
-            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _, _ ->
-                Result.failure(IllegalStateException("repository index should not be used"))
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
             }
         )
 
@@ -151,14 +89,11 @@ class FdroidBatchPackageSnapshotProviderTest {
     @Test
     fun `loadPackageSnapshot shares concurrent repository index requests for same repo`() = runBlocking {
         val repositoryLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(
                 fdroidItem("demo.one"),
                 fdroidItem("demo.two")
             ),
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
             repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _, _ ->
                 repositoryLoads.incrementAndGet()
                 delay(30)
@@ -168,11 +103,6 @@ class FdroidBatchPackageSnapshotProviderTest {
                         packages = packageNames.toList()
                     )
                 )
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
             }
         )
 
@@ -191,19 +121,11 @@ class FdroidBatchPackageSnapshotProviderTest {
     @Test
     fun `loadPackageSnapshot force refresh bypasses completed package cache`() = runBlocking {
         val packageLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(fdroidItem("demo.one")),
             packageProvider = FdroidPackageSnapshotProvider { item, _ ->
                 val load = packageLoads.incrementAndGet()
                 Result.success(packageSnapshot(item.packageName, versionName = "1.$load"))
-            },
-            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _, _ ->
-                Result.failure(IllegalStateException("repository index should not be used"))
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
             }
         )
 
@@ -220,14 +142,11 @@ class FdroidBatchPackageSnapshotProviderTest {
     @Test
     fun `loadPackageSnapshot force refresh bypasses completed repository cache`() = runBlocking {
         val repositoryLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(
                 fdroidItem("demo.one"),
                 fdroidItem("demo.two")
             ),
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
             repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _, _ ->
                 val load = repositoryLoads.incrementAndGet()
                 Result.success(
@@ -237,11 +156,6 @@ class FdroidBatchPackageSnapshotProviderTest {
                         versionName = "1.$load"
                     )
                 )
-            },
-            // These exercise the index and API paths, so the page -- which f-droid.org does have -- is
-            // stubbed out rather than reached. The routing itself is covered separately below.
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("page should not be used"))
             }
         )
 
@@ -262,11 +176,8 @@ class FdroidBatchPackageSnapshotProviderTest {
         // refresh cycle. Four pages is about 150 KB, and a page carries the size, date, ABIs and minSdk
         // the thin API does not.
         val pageLoads = AtomicInteger(0)
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = (1..4).map { index -> fdroidItem("demo.$index") },
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
             repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _, _ ->
                 Result.failure(IllegalStateException("index should not be downloaded for a paged repo"))
             },
@@ -290,11 +201,8 @@ class FdroidBatchPackageSnapshotProviderTest {
         val hashRequired = fdroidItem("demo.one").let { item ->
             item.copy(fdroidConfig = item.fdroidConfig.copy(trustPolicy = FdroidTrustPolicy.RequireApkHash))
         }
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(hashRequired),
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
             repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _, _ ->
                 repositoryLoads.incrementAndGet()
                 Result.success(repositorySnapshot(repoUrl = repoUrl, packages = packageNames.toList()))
@@ -321,11 +229,8 @@ class FdroidBatchPackageSnapshotProviderTest {
             owner = "apt.izzysoft.de",
             repo = "fdroid-repo"
         )
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = listOf(izzy),
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
             repositoryPackagesProvider =
                 FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _, maxIndexBytes ->
                     budgets += maxIndexBytes
@@ -356,24 +261,44 @@ class FdroidBatchPackageSnapshotProviderTest {
                 repo = "fdroid-repo"
             )
         }
-        val provider = FdroidBatchPackageSnapshotProvider(
+        val provider = provider(
             trackedItems = izzyItems,
-            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("package api should not be used"))
-            },
             repositoryPackagesProvider =
                 FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _, _ ->
                     requested += packageNames
                     Result.success(repositorySnapshot(repoUrl = repoUrl, packages = packageNames.toList()))
-                },
-            pageProvider = FdroidPackagePageSnapshotProvider { _, _ ->
-                Result.failure(IllegalStateException("no page"))
-            }
+                }
         )
 
         provider.loadPackageSnapshot(izzyItems.first(), forceRefresh = true)
 
         assertEquals(setOf("demo.1", "demo.2", "demo.3"), requested.single())
+    }
+
+    /**
+     * Every source a test does not name fails loudly if it is reached. Most tests exercise the index and
+     * API paths, so the page -- which f-droid.org does have -- is stubbed out rather than reached; the
+     * routing itself is covered by the page and trust-policy tests.
+     */
+    private fun provider(
+        trackedItems: List<GitHubTrackedApp>,
+        packageProvider: FdroidPackageSnapshotProvider = FdroidPackageSnapshotProvider { _, _ ->
+            Result.failure(IllegalStateException("package api should not be used"))
+        },
+        repositoryPackagesProvider: FdroidRepositoryPackagesSnapshotProvider =
+            FdroidRepositoryPackagesSnapshotProvider { _, _, _, _ ->
+                Result.failure(IllegalStateException("repository index should not be used"))
+            },
+        pageProvider: FdroidPackagePageSnapshotProvider = FdroidPackagePageSnapshotProvider { _, _ ->
+            Result.failure(IllegalStateException("page should not be used"))
+        }
+    ): FdroidBatchPackageSnapshotProvider {
+        return FdroidBatchPackageSnapshotProvider(
+            trackedItems = trackedItems,
+            packageProvider = packageProvider,
+            repositoryPackagesProvider = repositoryPackagesProvider,
+            pageProvider = pageProvider
+        )
     }
 
     private fun fdroidItem(packageName: String): GitHubTrackedApp {
@@ -413,29 +338,9 @@ class FdroidBatchPackageSnapshotProviderTest {
             repoUrl = "https://f-droid.org/repo",
             packageName = packageName,
             suggestedVersionCode = 1L,
-            versions = listOf(version(packageName, versionName))
-        )
-    }
-
-    private fun version(
-        packageName: String,
-        versionName: String
-    ): FdroidVersionSnapshot {
-        return FdroidVersionSnapshot(
-            versionName = versionName,
-            versionCode = 1L,
-            apkName = "$packageName.apk",
-            apkPath = "/repo/$packageName.apk",
-            apkSha256 = "sha256",
-            apkSizeBytes = 1L,
-            addedAtMillis = null,
-            minSdk = 23,
-            targetSdk = 37,
-            nativeAbis = emptyList(),
-            signerSha256 = emptyList(),
-            releaseChannels = emptyList(),
-            whatsNew = "",
-            antiFeatures = emptyList()
+            versions = listOf(
+                fdroidVersionFixture(versionCode = 1L, versionName = versionName, apkName = "$packageName.apk")
+            )
         )
     }
 }

@@ -133,24 +133,6 @@ class FdroidCandidateSelectorTest {
         versionCode: Long,
         versionName: String = versionCode.toString(),
         apkName: String = "demo-$versionCode.apk",
-        minSdk: Int = 21,
-        targetSdk: Int = 35
-    ): FdroidVersionSnapshot {
-        return FdroidVersionSnapshot(
-            versionName = versionName,
-            versionCode = versionCode,
-            apkName = apkName,
-            apkPath = apkName,
-            apkSha256 = "",
-            apkSizeBytes = 0L,
-            addedAtMillis = null,
-            minSdk = minSdk,
-            targetSdk = targetSdk,
-            nativeAbis = emptyList(),
-            signerSha256 = emptyList(),
-            releaseChannels = emptyList(),
-            whatsNew = "",
-            antiFeatures = emptyList()
-        )
-    }
+        minSdk: Int = 21
+    ) = fdroidVersionFixture(versionCode, versionName, apkName = apkName, minSdk = minSdk)
 }

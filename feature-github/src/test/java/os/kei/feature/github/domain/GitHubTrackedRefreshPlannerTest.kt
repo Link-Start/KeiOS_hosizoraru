@@ -2,7 +2,6 @@ package os.kei.feature.github.domain
 
 import org.junit.Test
 import os.kei.core.io.SharedHttpClient
-import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
@@ -39,6 +38,7 @@ class GitHubTrackedRefreshPlannerTest {
         val medium = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16)
         val large = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(75)
 
+        assertEquals(1, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(1), "a batch of one needs one worker")
         assertEquals(4, small, "never more workers than there are items to work on")
         assertTrue(medium > small && large > medium, "$small -> $medium -> $large")
     }
@@ -61,8 +61,8 @@ class GitHubTrackedRefreshPlannerTest {
 
     @Test
     fun `partial missing check states refresh only missing items`() {
-        val github = tracked(1)
-        val direct = tracked(2, sourceMode = GitHubTrackedSourceMode.DirectApk)
+        val github = trackedFixture(1)
+        val direct = trackedFixture(2, sourceMode = GitHubTrackedSourceMode.DirectApk)
 
         val selected = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
             trackedItems = listOf(github, direct),
@@ -74,12 +74,12 @@ class GitHubTrackedRefreshPlannerTest {
 
     @Test
     fun `partial missing check states skip automatic refresh for ignored version tracks`() {
-        val cached = tracked(0)
-        val active = tracked(1)
-        val temporaryIgnored = tracked(2).copy(
+        val cached = trackedFixture(0)
+        val active = trackedFixture(1)
+        val temporaryIgnored = trackedFixture(2).copy(
             ignoreMode = GitHubTrackedIgnoreMode.Temporary
         )
-        val allVersionsIgnored = tracked(3).copy(
+        val allVersionsIgnored = trackedFixture(3).copy(
             ignoreMode = GitHubTrackedIgnoreMode.AllVersions
         )
 
@@ -93,8 +93,8 @@ class GitHubTrackedRefreshPlannerTest {
 
     @Test
     fun `all missing check states are left to full refresh path`() {
-        val github = tracked(1)
-        val direct = tracked(2, sourceMode = GitHubTrackedSourceMode.DirectApk)
+        val github = trackedFixture(1)
+        val direct = trackedFixture(2, sourceMode = GitHubTrackedSourceMode.DirectApk)
 
         val selected = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
             trackedItems = listOf(github, direct),
@@ -106,10 +106,10 @@ class GitHubTrackedRefreshPlannerTest {
 
     @Test
     fun `partial missing check states keep fair source ordering`() {
-        val cached = tracked(0)
-        val directOne = tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk)
-        val githubTwo = tracked(2)
-        val directThree = tracked(3, sourceMode = GitHubTrackedSourceMode.DirectApk)
+        val cached = trackedFixture(0)
+        val directOne = trackedFixture(1, sourceMode = GitHubTrackedSourceMode.DirectApk)
+        val githubTwo = trackedFixture(2)
+        val directThree = trackedFixture(3, sourceMode = GitHubTrackedSourceMode.DirectApk)
 
         val selected = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
             trackedItems = listOf(cached, directOne, githubTwo, directThree),
@@ -119,25 +119,6 @@ class GitHubTrackedRefreshPlannerTest {
         assertEquals(
             listOf(githubTwo.id, directOne.id, directThree.id),
             selected.map { it.id }
-        )
-    }
-
-    private fun tracked(
-        index: Int,
-        sourceMode: GitHubTrackedSourceMode = GitHubTrackedSourceMode.GitHubRepository
-    ): GitHubTrackedApp {
-        return GitHubTrackedApp(
-            repoUrl = when (sourceMode) {
-                GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo-$index"
-                GitHubTrackedSourceMode.GitRepository -> "https://gitee.com/demo/repo-$index"
-                GitHubTrackedSourceMode.DirectApk -> "https://example.com/download/repo-$index.apk"
-                GitHubTrackedSourceMode.FdroidRepository -> "https://f-droid.org/repo"
-            },
-            owner = "demo",
-            repo = "repo-$index",
-            packageName = "demo.repo$index",
-            appLabel = "Repo $index",
-            sourceMode = sourceMode
         )
     }
 }

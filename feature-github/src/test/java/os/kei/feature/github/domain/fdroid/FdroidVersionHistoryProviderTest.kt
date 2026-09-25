@@ -5,7 +5,6 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
-import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.FdroidTrackedAppConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -217,25 +216,7 @@ private fun snapshot(
         repoUrl = "https://f-droid.org/repo",
         packageName = "com.example.app",
         suggestedVersionCode = suggested,
-        versions =
-            listOf(
-                FdroidVersionSnapshot(
-                    versionName = "1.$versionCode",
-                    versionCode = versionCode,
-                    apkName = "app_$versionCode.apk",
-                    apkPath = "app_$versionCode.apk",
-                    apkSha256 = "",
-                    apkSizeBytes = 0L,
-                    addedAtMillis = null,
-                    minSdk = null,
-                    targetSdk = null,
-                    nativeAbis = emptyList(),
-                    signerSha256 = emptyList(),
-                    releaseChannels = emptyList(),
-                    whatsNew = "",
-                    antiFeatures = emptyList(),
-                ),
-            ),
+        versions = listOf(fdroidVersionFixture(versionCode, apkSha256 = "", minSdk = null)),
     )
 
 private fun track(repoUrl: String = "https://f-droid.org/repo"): GitHubTrackedApp =

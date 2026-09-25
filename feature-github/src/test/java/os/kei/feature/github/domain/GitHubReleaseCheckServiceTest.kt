@@ -510,42 +510,45 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
-    fun `remote tag using local versionName and versionCode is treated as installed Karing release`() {
-        val item = trackedApp(preferPreRelease = false)
-        val stable = signal(tag = "v1.2.18.2102", title = "v1.2.18.2102")
-
-        val result = GitHubReleaseCheckService.evaluateSnapshot(
-            item = item,
-            localVersion = "1.2.18",
-            localVersionCode = 2102L,
-            snapshot = snapshot(
-                stable = stable,
-                entries = listOf(entry(tag = "v1.2.18.2102", title = "v1.2.18.2102"))
-            )
+    fun `Karing tag carrying versionName and versionCode compares against local versionCode`() {
+        data class Case(
+            val label: String,
+            val localVersionCode: Long,
+            val expectedStatus: GitHubTrackedReleaseStatus,
+            val expectedHasUpdate: Boolean,
+        )
+        val cases = listOf(
+            Case(
+                label = "local versionCode matches tag suffix -> installed",
+                localVersionCode = 2102L,
+                expectedStatus = GitHubTrackedReleaseStatus.UpToDate,
+                expectedHasUpdate = false,
+            ),
+            Case(
+                label = "local versionCode differs from tag suffix -> update",
+                localVersionCode = 2101L,
+                expectedStatus = GitHubTrackedReleaseStatus.UpdateAvailable,
+                expectedHasUpdate = true,
+            ),
         )
 
-        assertEquals(GitHubTrackedReleaseStatus.UpToDate, result.status)
-        assertEquals(false, result.hasUpdate)
-        assertEquals("v1.2.18.2102", result.stableRelease?.rawTag)
-    }
-
-    @Test
-    fun `remote tag using different versionCode still reports Karing release update`() {
-        val item = trackedApp(preferPreRelease = false)
-        val stable = signal(tag = "v1.2.18.2102", title = "v1.2.18.2102")
-
-        val result = GitHubReleaseCheckService.evaluateSnapshot(
-            item = item,
-            localVersion = "1.2.18",
-            localVersionCode = 2101L,
-            snapshot = snapshot(
-                stable = stable,
-                entries = listOf(entry(tag = "v1.2.18.2102", title = "v1.2.18.2102"))
+        cases.forEach { case ->
+            val result = GitHubReleaseCheckService.evaluateSnapshot(
+                item = trackedApp(preferPreRelease = false),
+                localVersion = "1.2.18",
+                localVersionCode = case.localVersionCode,
+                snapshot = snapshot(
+                    stable = signal(tag = "v1.2.18.2102", title = "v1.2.18.2102"),
+                    entries = listOf(entry(tag = "v1.2.18.2102", title = "v1.2.18.2102"))
+                )
             )
-        )
 
-        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
-        assertEquals(true, result.hasUpdate)
+            assertEquals(case.expectedStatus, result.status, case.label)
+            assertEquals(case.expectedHasUpdate, result.hasUpdate, case.label)
+            if (case.expectedStatus == GitHubTrackedReleaseStatus.UpToDate) {
+                assertEquals("v1.2.18.2102", result.stableRelease?.rawTag, case.label)
+            }
+        }
     }
 
     @Test
@@ -606,46 +609,52 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
-    fun `direct apk manifest with newer version code reports update`() {
-        val item = directApkTrackedApp()
-
-        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
-            item = item,
-            localVersion = "10.0.0",
-            localVersionCode = 100L,
-            manifest = GitHubApkManifestInfo(
-                assetName = "apk.apk",
-                packageName = "org.telegram.messenger",
-                versionName = "10.1.0",
-                versionCode = "101"
-            )
+    fun `direct apk manifest compares its versionCode against local versionCode`() {
+        data class Case(
+            val label: String,
+            val manifestVersionName: String,
+            val manifestVersionCode: String,
+            val expectedStatus: GitHubTrackedReleaseStatus,
+            val expectedHasUpdate: Boolean,
+        )
+        val cases = listOf(
+            Case(
+                label = "newer versionCode 101 -> update",
+                manifestVersionName = "10.1.0",
+                manifestVersionCode = "101",
+                expectedStatus = GitHubTrackedReleaseStatus.UpdateAvailable,
+                expectedHasUpdate = true,
+            ),
+            Case(
+                label = "same versionCode 100 with different versionName -> up to date",
+                manifestVersionName = "10.0.1",
+                manifestVersionCode = "100",
+                expectedStatus = GitHubTrackedReleaseStatus.UpToDate,
+                expectedHasUpdate = false,
+            ),
         )
 
-        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
-        assertEquals(true, result.hasUpdate)
-        assertEquals("10.1.0", result.preciseStableApkVersion?.versionName)
-        assertEquals("101", result.preciseStableApkVersion?.versionCode)
-        assertEquals("https://telegram.org/dl/android/apk", result.stableRelease?.link)
-    }
-
-    @Test
-    fun `direct apk manifest with same version code reports up to date`() {
-        val item = directApkTrackedApp()
-
-        val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
-            item = item,
-            localVersion = "10.0.0",
-            localVersionCode = 100L,
-            manifest = GitHubApkManifestInfo(
-                assetName = "apk.apk",
-                packageName = "org.telegram.messenger",
-                versionName = "10.0.1",
-                versionCode = "100"
+        cases.forEach { case ->
+            val result = GitHubDirectApkReleaseCheckSource.evaluateManifest(
+                item = directApkTrackedApp(),
+                localVersion = "10.0.0",
+                localVersionCode = 100L,
+                manifest = GitHubApkManifestInfo(
+                    assetName = "apk.apk",
+                    packageName = "org.telegram.messenger",
+                    versionName = case.manifestVersionName,
+                    versionCode = case.manifestVersionCode
+                )
             )
-        )
 
-        assertEquals(GitHubTrackedReleaseStatus.UpToDate, result.status)
-        assertEquals(false, result.hasUpdate)
+            assertEquals(case.expectedStatus, result.status, case.label)
+            assertEquals(case.expectedHasUpdate, result.hasUpdate, case.label)
+            if (case.expectedHasUpdate) {
+                assertEquals("10.1.0", result.preciseStableApkVersion?.versionName, case.label)
+                assertEquals("101", result.preciseStableApkVersion?.versionCode, case.label)
+                assertEquals("https://telegram.org/dl/android/apk", result.stableRelease?.link, case.label)
+            }
+        }
     }
 
     @Test

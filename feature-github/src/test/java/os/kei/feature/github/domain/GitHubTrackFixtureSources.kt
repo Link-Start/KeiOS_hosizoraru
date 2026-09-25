@@ -2,22 +2,12 @@ package os.kei.feature.github.domain
 
 import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.data.remote.GitHubVersionUtils
-import os.kei.feature.github.model.GitHubActionsArtifact
-import os.kei.feature.github.model.GitHubAtomFeed
-import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubReleaseChannel
-import os.kei.feature.github.model.GitHubReleaseSignalSource
-import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
-import os.kei.feature.github.model.GitHubRepositoryImportCandidate
-import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.GitHubVersionCandidateSource
 
 internal object GitHubTrackFixtureSources {
     fun discoverySource(items: List<GitHubTrackedApp>): GitHubRepositoryDiscoverySource {
@@ -26,17 +16,6 @@ internal object GitHubTrackFixtureSources {
 
     fun packageScanSource(items: List<GitHubTrackedApp>): GitHubApkPackageNameScanSource {
         return ExportTrackPackageScanSource(items)
-    }
-
-    fun importCandidates(items: List<GitHubTrackedApp>): List<GitHubRepositoryImportCandidate> {
-        return items.mapIndexed { index, item ->
-            GitHubRepositoryImportCandidate(
-                repository = repositoryCandidate(item, index),
-                trackedApp = item,
-                alreadyTracked = false,
-                score = 100
-            )
-        }
     }
 
     fun repositoryCandidate(
@@ -65,56 +44,6 @@ internal object GitHubTrackFixtureSources {
         )
     }
 
-    fun localVersion(index: Int): String {
-        return "v${index + 1}.0.0"
-    }
-
-    fun releaseSnapshot(
-        item: GitHubTrackedApp,
-        index: Int
-    ): GitHubRepositoryReleaseSnapshot {
-        val stableTag = "v${index + 2}.0.0"
-        val preTag = "v${index + 2}.1.0-beta1"
-        val stable = releaseSignal(
-            tag = stableTag,
-            title = "${item.appLabel} $stableTag",
-            updatedAtMillis = 1_700_000_000_000L + index * 2L
-        )
-        val preRelease = if (item.preferPreRelease) {
-            releaseSignal(
-                tag = preTag,
-                title = "${item.appLabel} $preTag",
-                updatedAtMillis = 1_700_000_100_000L + index * 2L,
-                channel = GitHubReleaseChannel.BETA
-            )
-        } else {
-            null
-        }
-        val entries = buildList {
-            add(releaseEntry(stableTag, "${item.appLabel} $stableTag"))
-            if (preRelease != null) {
-                add(
-                    releaseEntry(
-                        tag = preTag,
-                        title = "${item.appLabel} $preTag",
-                        channel = GitHubReleaseChannel.BETA,
-                        isLikelyPreRelease = true
-                    )
-                )
-            }
-        }
-        return GitHubRepositoryReleaseSnapshot(
-            strategyId = "fixture",
-            feed = GitHubAtomFeed(
-                title = "${item.owner}/${item.repo}",
-                feedUrl = "${item.repoUrl}/releases.atom",
-                entries = entries
-            ),
-            latestStable = stable,
-            latestPreRelease = preRelease
-        )
-    }
-
     fun releaseAsset(item: GitHubTrackedApp): GitHubReleaseAssetFile {
         val assetName = releaseAssetName(item)
         return GitHubReleaseAssetFile(
@@ -132,20 +61,6 @@ internal object GitHubTrackFixtureSources {
         val repoName = item.repo.replace(Regex("""[^A-Za-z0-9_.-]+"""), "-")
         val packageName = item.packageName.replace(Regex("""[^A-Za-z0-9_.-]+"""), "-")
         return "$repoName-$packageName.apk"
-    }
-
-    fun actionsArtifacts(items: List<GitHubTrackedApp>): List<GitHubActionsArtifact> {
-        return items.mapIndexed { index, item ->
-            GitHubActionsArtifact(
-                id = index.toLong() + 1L,
-                name = actionArtifactEntryName(
-                    index = index,
-                    item = item,
-                    selectedItem = items.first()
-                ).substringAfterLast('/'),
-                sizeBytes = 10_000_000L + index
-            )
-        }
     }
 
     fun actionArtifactEntryNames(
@@ -174,46 +89,6 @@ internal object GitHubTrackFixtureSources {
             "arm64-debug"
         }
         return "outputs/$prefix-$repoName-$variant.apk"
-    }
-
-    private fun releaseSignal(
-        tag: String,
-        title: String,
-        updatedAtMillis: Long,
-        channel: GitHubReleaseChannel = GitHubReleaseChannel.STABLE
-    ): GitHubReleaseVersionSignals {
-        return GitHubReleaseVersionSignals(
-            displayVersion = tag,
-            rawTag = tag,
-            rawName = title,
-            link = "https://github.com/fixture/repo/releases/tag/$tag",
-            updatedAtMillis = updatedAtMillis,
-            versionCandidates = GitHubVersionUtils.buildVersionCandidates(
-                GitHubVersionCandidateSource.Tag to tag,
-                GitHubVersionCandidateSource.Title to title
-            ),
-            source = GitHubReleaseSignalSource.AtomEntry,
-            channel = channel
-        )
-    }
-
-    private fun releaseEntry(
-        tag: String,
-        title: String,
-        channel: GitHubReleaseChannel = GitHubReleaseChannel.STABLE,
-        isLikelyPreRelease: Boolean = false
-    ): GitHubAtomReleaseEntry {
-        return GitHubAtomReleaseEntry(
-            tag = tag,
-            title = title,
-            link = "https://github.com/fixture/repo/releases/tag/$tag",
-            versionCandidates = GitHubVersionUtils.buildVersionCandidates(
-                GitHubVersionCandidateSource.Tag to tag,
-                GitHubVersionCandidateSource.Title to title
-            ),
-            channel = channel,
-            isLikelyPreRelease = isLikelyPreRelease
-        )
     }
 
     private class ExportTrackDiscoverySource(

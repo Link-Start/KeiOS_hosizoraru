@@ -3,57 +3,67 @@ package os.kei.feature.github.model
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class GitHubLookupModelsTest {
     @Test
-    fun `share import flow mode resolves storage ids`() {
-        assertEquals(
-            GitHubShareImportFlowMode.SheetAssisted,
-            GitHubShareImportFlowMode.fromStorageId("sheet_assisted")
+    fun `persisted storage ids resolve and unknown ids fall back`() {
+        val shareFlow: (String) -> Enum<*> = { GitHubShareImportFlowMode.fromStorageId(it) }
+        val profileDepth: (String) -> Enum<*> = { GitHubProfileDepth.fromStorageId(it) }
+        val actionsInterval: (String) -> Enum<*> = {
+            GitHubTrackedActionsUpdateIntervalMode.fromStorageId(it)
+        }
+        val updateInterval: (String) -> Enum<*> = { GitHubTrackedUpdateIntervalMode.fromStorageId(it) }
+        val cases = listOf<Triple<(String) -> Enum<*>, String, Enum<*>>>(
+            Triple(shareFlow, "sheet_assisted", GitHubShareImportFlowMode.SheetAssisted),
+            Triple(shareFlow, "notification_first", GitHubShareImportFlowMode.NotificationFirst),
+            Triple(shareFlow, "missing", GitHubShareImportFlowMode.SheetAssisted),
+            Triple(profileDepth, "basic", GitHubProfileDepth.Basic),
+            Triple(profileDepth, "deep", GitHubProfileDepth.Deep),
+            Triple(profileDepth, "missing", GitHubProfileDepth.Basic),
+            Triple(actionsInterval, "follow_global", GitHubTrackedActionsUpdateIntervalMode.FollowGlobal),
+            Triple(actionsInterval, "15m", GitHubTrackedActionsUpdateIntervalMode.Minutes15),
+            Triple(actionsInterval, "2h", GitHubTrackedActionsUpdateIntervalMode.Hours2),
+            Triple(actionsInterval, "3h", GitHubTrackedActionsUpdateIntervalMode.Hours3),
+            Triple(actionsInterval, "missing", GitHubTrackedActionsUpdateIntervalMode.FollowGlobal),
+            Triple(updateInterval, "follow_global", GitHubTrackedUpdateIntervalMode.FollowGlobal),
+            Triple(updateInterval, "1h", GitHubTrackedUpdateIntervalMode.Hour1),
+            Triple(updateInterval, "6h", GitHubTrackedUpdateIntervalMode.Hours6),
+            Triple(updateInterval, "24h", GitHubTrackedUpdateIntervalMode.Hours24),
+            Triple(updateInterval, "missing", GitHubTrackedUpdateIntervalMode.FollowGlobal),
         )
-        assertEquals(
-            GitHubShareImportFlowMode.NotificationFirst,
-            GitHubShareImportFlowMode.fromStorageId("notification_first")
+
+        cases.forEach { (parse, id, expected) ->
+            assertEquals(
+                expected,
+                parse(id),
+                "${expected::class.simpleName}.fromStorageId(\"$id\")",
+            )
+        }
+    }
+
+    @Test
+    fun `each check-signature input changes the signature`() {
+        val cases = listOf(
+            Triple(
+                "profileDepth Basic/Deep",
+                GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic),
+                GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
+            ),
+            Triple(
+                "scanSystemAppsByDefault false/true",
+                GitHubLookupConfig(scanSystemAppsByDefault = false),
+                GitHubLookupConfig(scanSystemAppsByDefault = true),
+            ),
         )
-    }
 
-    @Test
-    fun `unknown share import flow mode falls back to sheet assisted`() {
-        assertEquals(
-            GitHubShareImportFlowMode.SheetAssisted,
-            GitHubShareImportFlowMode.fromStorageId("missing")
-        )
-    }
-
-    @Test
-    fun `profile depth resolves storage ids`() {
-        assertEquals(GitHubProfileDepth.Basic, GitHubProfileDepth.fromStorageId("basic"))
-        assertEquals(GitHubProfileDepth.Deep, GitHubProfileDepth.fromStorageId("deep"))
-        assertEquals(GitHubProfileDepth.Basic, GitHubProfileDepth.fromStorageId("missing"))
-    }
-
-    @Test
-    fun `profile depth participates in check source signature`() {
-        val basic = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Basic)
-        val deep = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep)
-
-        assertEquals(false, basic.githubCheckSourceSignature() == deep.githubCheckSourceSignature())
-    }
-
-    @Test
-    fun `system app scanning is disabled by default`() {
-        assertEquals(false, GitHubLookupConfig().scanSystemAppsByDefault)
-    }
-
-    @Test
-    fun `system app scanning participates in check source signature`() {
-        val disabled = GitHubLookupConfig(scanSystemAppsByDefault = false)
-        val enabled = GitHubLookupConfig(scanSystemAppsByDefault = true)
-
-        assertEquals(
-            false,
-            disabled.githubCheckSourceSignature() == enabled.githubCheckSourceSignature()
-        )
+        cases.forEach { (label, first, second) ->
+            assertNotEquals(
+                first.githubCheckSourceSignature(),
+                second.githubCheckSourceSignature(),
+                label,
+            )
+        }
     }
 
     @Test
@@ -137,54 +147,6 @@ class GitHubLookupModelsTest {
 
         assertEquals(true, resolved.checkAllTrackedPreReleases)
         assertEquals(true, resolved.preciseApkVersionEnabled)
-    }
-
-    @Test
-    fun `tracked actions update interval mode resolves storage ids`() {
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("follow_global")
-        )
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.Minutes15,
-            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("15m")
-        )
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.Hours2,
-            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("2h")
-        )
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.Hours3,
-            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("3h")
-        )
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-            GitHubTrackedActionsUpdateIntervalMode.fromStorageId("missing")
-        )
-    }
-
-    @Test
-    fun `tracked update interval mode resolves storage ids`() {
-        assertEquals(
-            GitHubTrackedUpdateIntervalMode.FollowGlobal,
-            GitHubTrackedUpdateIntervalMode.fromStorageId("follow_global")
-        )
-        assertEquals(
-            GitHubTrackedUpdateIntervalMode.Hour1,
-            GitHubTrackedUpdateIntervalMode.fromStorageId("1h")
-        )
-        assertEquals(
-            GitHubTrackedUpdateIntervalMode.Hours6,
-            GitHubTrackedUpdateIntervalMode.fromStorageId("6h")
-        )
-        assertEquals(
-            GitHubTrackedUpdateIntervalMode.Hours24,
-            GitHubTrackedUpdateIntervalMode.fromStorageId("24h")
-        )
-        assertEquals(
-            GitHubTrackedUpdateIntervalMode.FollowGlobal,
-            GitHubTrackedUpdateIntervalMode.fromStorageId("missing")
-        )
     }
 
     @Test

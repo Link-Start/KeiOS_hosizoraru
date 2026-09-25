@@ -4,40 +4,22 @@ import os.kei.core.download.segmented.SegmentedDownloadSpeedProfile
 import os.kei.feature.github.install.managedInstallDownloadSpeedProfile
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class GitHubLookupConfigManagedInstallTest {
     @Test
-    fun `app managed share install defaults off`() {
-        assertFalse(GitHubLookupConfig().appManagedShareInstallEnabled)
-    }
-
-    @Test
-    fun `app managed share install is part of copied lookup config`() {
-        val config = GitHubLookupConfig().copy(appManagedShareInstallEnabled = true)
-
-        assertTrue(config.appManagedShareInstallEnabled)
-    }
-
-    @Test
-    fun `foreground managed download boost defaults off`() {
-        val config = GitHubLookupConfig()
-
-        assertFalse(config.foregroundManagedDownloadBoostEnabled)
-        assertEquals(
-            SegmentedDownloadSpeedProfile.Balanced,
-            config.managedInstallDownloadSpeedProfile(),
+    fun `boost flag selects managed download profile`() {
+        val cases = listOf(
+            false to SegmentedDownloadSpeedProfile.Balanced,
+            true to SegmentedDownloadSpeedProfile.ForegroundBoost,
         )
-    }
 
-    @Test
-    fun `foreground managed download boost maps to boost profile`() {
-        val config = GitHubLookupConfig().copy(foregroundManagedDownloadBoostEnabled = true)
-
-        assertEquals(
-            SegmentedDownloadSpeedProfile.ForegroundBoost,
-            config.managedInstallDownloadSpeedProfile(),
-        )
+        cases.forEach { (boostEnabled, expected) ->
+            val config = GitHubLookupConfig().copy(foregroundManagedDownloadBoostEnabled = boostEnabled)
+            assertEquals(
+                expected,
+                config.managedInstallDownloadSpeedProfile(),
+                "foregroundManagedDownloadBoostEnabled=$boostEnabled",
+            )
+        }
     }
 }

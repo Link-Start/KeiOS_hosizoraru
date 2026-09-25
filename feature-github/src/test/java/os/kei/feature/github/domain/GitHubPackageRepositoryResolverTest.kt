@@ -170,7 +170,7 @@ class GitHubPackageRepositoryResolverTest {
             description = "LibChecker android docs",
             stars = 1
         )
-        val discovery = FakeDiscoverySource(listOf(target, mismatch, failed, target))
+        val discovery = QueryAwareDiscoverySource { listOf(target, mismatch, failed, target) }
         val scanSource = FakePackageScanSource(
             packagesByRepo = mapOf(
                 "absinthe/libchecker" to "com.absinthe.libchecker",
@@ -233,7 +233,7 @@ class GitHubPackageRepositoryResolverTest {
             description = "LibChecker fork for com.absinthe.libchecker",
             stars = 240
         ).copy(fork = true)
-        val discovery = FakeDiscoverySource(listOf(fork, official))
+        val discovery = QueryAwareDiscoverySource { listOf(fork, official) }
         val scanSource = FakePackageScanSource(
             packagesByRepo = mapOf(
                 "absinthe/libchecker" to "com.absinthe.libchecker",
@@ -271,7 +271,7 @@ class GitHubPackageRepositoryResolverTest {
             description = "KeiOS android os.kei",
             stars = 100
         )
-        val discovery = FakeDiscoverySource(listOf(project))
+        val discovery = QueryAwareDiscoverySource { listOf(project) }
         val scanSource = FakePackageScanSource(
             packagesByRepo = emptyMap(),
             packageVariantsByRepo = mapOf(
@@ -305,7 +305,7 @@ class GitHubPackageRepositoryResolverTest {
 
     @Test
     fun `resolver rejects invalid package name before repository search`() = runBlocking {
-        val discovery = FakeDiscoverySource(emptyList())
+        val discovery = QueryAwareDiscoverySource { emptyList() }
         val resolver = GitHubPackageRepositoryResolver(
             discoverySource = discovery,
             packageNameScanner = GitHubApkPackageNameScanner(FakePackageScanSource(emptyMap()))
@@ -324,42 +324,8 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `resolver keeps atom lookup config while scanning package candidates`() = runBlocking {
-        val discovery = FakeDiscoverySource(
-            listOf(
-                candidate(
-                    owner = "owner",
-                    repo = "app",
-                    description = "com.example.app android",
-                    stars = 10
-                )
-            )
-        )
-        val scanSource = FakePackageScanSource(
-            packagesByRepo = mapOf("owner/app" to "com.example.app")
-        )
-        val resolver = GitHubPackageRepositoryResolver(
-            discoverySource = discovery,
-            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
-        )
-
-        val result = resolver.scanRepositoriesForPackage(
-            GitHubPackageRepositoryScanRequest(
-                packageName = "com.example.app",
-                lookupConfig = GitHubLookupConfig(
-                    selectedStrategy = GitHubLookupStrategyOption.AtomFeed
-                ),
-                verificationLimit = 1
-            )
-        ).getOrThrow()
-
-        assertEquals(1, result.matchedCandidates.size)
-        assertEquals(GitHubLookupStrategyOption.AtomFeed, scanSource.scannedStrategies.single())
-    }
-
-    @Test
     fun `resolver verifies preferred repository before live search`() = runBlocking {
-        val discovery = FakeDiscoverySource(emptyList())
+        val discovery = QueryAwareDiscoverySource { emptyList() }
         val scanSource = FakePackageScanSource(
             packagesByRepo = mapOf("yukonga/updater-kmp" to "top.yukonga.updater.kmp")
         )
@@ -432,92 +398,6 @@ class GitHubPackageRepositoryResolverTest {
         assertEquals(1, result.mismatchedCandidateCount)
         assertEquals("example", result.matchedCandidates.single().repository.owner)
         assertEquals("RealApp", result.matchedCandidates.single().repository.repo)
-    }
-
-    @Test
-    fun `resolver expands to fallback queries when exact package candidates do not match`() = runBlocking {
-        val mismatch = candidate(
-            owner = "demo",
-            repo = "package-name-docs",
-            description = "Mentions com.example.realapp",
-            stars = 50
-        )
-        val target = candidate(
-            owner = "example",
-            repo = "RealApp",
-            description = "RealApp android client",
-            stars = 200
-        )
-        val discovery = QueryAwareDiscoverySource { query ->
-            when {
-                query.contains("com.example.realapp") -> listOf(mismatch)
-                query.contains("RealApp") && query.contains("realapp") -> listOf(target)
-                else -> emptyList()
-            }
-        }
-        val scanSource = FakePackageScanSource(
-            packagesByRepo = mapOf(
-                "demo/package-name-docs" to "com.other.app",
-                "example/realapp" to "com.example.realapp"
-            )
-        )
-        val resolver = GitHubPackageRepositoryResolver(
-            discoverySource = discovery,
-            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
-        )
-
-        val result = resolver.scanRepositoriesForPackage(
-            GitHubPackageRepositoryScanRequest(
-                packageName = "com.example.realapp",
-                appLabel = "RealApp",
-                lookupConfig = GitHubLookupConfig()
-            )
-        ).getOrThrow()
-
-        assertEquals(2, result.queryCount)
-        assertEquals(2, result.scannedCandidateCount)
-        assertEquals("example", result.matchedCandidates.single().repository.owner)
-        assertEquals("RealApp", result.matchedCandidates.single().repository.repo)
-    }
-
-    @Test
-    fun `resolver matches package tail when repository uses hyphen instead of underscore`() = runBlocking {
-        val target = candidate(
-            owner = "frknkrc44",
-            repo = "HMA-OSS",
-            description = "A ROOT REQUIRED LSPosed/Zygisk module to hide your app list.",
-            stars = 1_821
-        )
-        val discovery = QueryAwareDiscoverySource { query ->
-            when (query) {
-                "hma oss in:name,description,readme" -> listOf(target)
-                else -> emptyList()
-            }
-        }
-        val scanSource = FakePackageScanSource(
-            packagesByRepo = mapOf("frknkrc44/hma-oss" to "org.frknkrc44.hma_oss")
-        )
-        val resolver = GitHubPackageRepositoryResolver(
-            discoverySource = discovery,
-            packageNameScanner = GitHubApkPackageNameScanner(scanSource)
-        )
-
-        val result = resolver.scanRepositoriesForPackage(
-            GitHubPackageRepositoryScanRequest(
-                packageName = "org.frknkrc44.hma_oss",
-                appLabel = "HMA",
-                lookupConfig = GitHubLookupConfig(),
-                candidateLimit = 10,
-                verificationLimit = 3
-            )
-        ).getOrThrow()
-
-        assertEquals("frknkrc44", result.matchedCandidates.single().repository.owner)
-        assertEquals("HMA-OSS", result.matchedCandidates.single().repository.repo)
-        assertEquals(
-            "org.frknkrc44.hma_oss",
-            result.matchedCandidates.single().trackedApp.packageName
-        )
     }
 
     @Test
@@ -630,8 +510,21 @@ class GitHubPackageRepositoryResolverTest {
         assertEquals(queries.distinct(), queries)
     }
 
-    private class FakeDiscoverySource(
-        private val candidates: List<GitHubRepositoryCandidate>
+    private data class RepositoryDiscoveryCorpusCase(
+        val name: String,
+        val packageName: String,
+        val appLabel: String,
+        val preferredRepoUrl: String = "",
+        val expectedRepoKey: String,
+        val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>,
+        val packagesByRepo: Map<String, String>,
+        val maxQueryCount: Int,
+        val expectedMismatchCount: Int = 0,
+    )
+
+    private class QueryAwareDiscoverySource(
+        private val failureForQuery: (String) -> Throwable? = { null },
+        private val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>
     ) : GitHubRepositoryDiscoverySource {
         val queries = mutableListOf<String>()
 
@@ -653,50 +546,6 @@ class GitHubPackageRepositoryResolverTest {
             limit: Int
         ): Result<List<GitHubRepositoryCandidate>> {
             queries += query
-            return Result.success(candidates.take(limit))
-        }
-
-        override fun fetchStarListRepositories(
-            starListUrl: String,
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(emptyList())
-        }
-    }
-
-    private data class RepositoryDiscoveryCorpusCase(
-        val name: String,
-        val packageName: String,
-        val appLabel: String,
-        val preferredRepoUrl: String = "",
-        val expectedRepoKey: String,
-        val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>,
-        val packagesByRepo: Map<String, String>,
-        val maxQueryCount: Int,
-        val expectedMismatchCount: Int = 0,
-    )
-
-    private class QueryAwareDiscoverySource(
-        private val failureForQuery: (String) -> Throwable? = { null },
-        private val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>
-    ) : GitHubRepositoryDiscoverySource {
-        override fun fetchAuthenticatedStarredRepositories(
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(emptyList())
-        }
-
-        override fun fetchUserStarredRepositories(
-            username: String,
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
-            return Result.success(emptyList())
-        }
-
-        override fun searchRepositories(
-            query: String,
-            limit: Int
-        ): Result<List<GitHubRepositoryCandidate>> {
             failureForQuery(query)?.let { error ->
                 return Result.failure(error)
             }

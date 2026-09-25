@@ -7,7 +7,6 @@ import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidSearchApiApp
 import os.kei.feature.github.data.remote.fdroid.FdroidSearchApiClient
-import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.FdroidAppSearchRequest
 import os.kei.feature.github.model.FdroidAppSearchSource
 import os.kei.feature.github.model.FdroidIndexFormat
@@ -429,22 +428,7 @@ class FdroidAppSearchServiceTest {
             summary = summary,
             categories = listOf("Internet"),
             versions = listOf(
-                FdroidVersionSnapshot(
-                    versionName = "1.0",
-                    versionCode = 100,
-                    apkName = "${packageName}_100.apk",
-                    apkPath = "${packageName}_100.apk",
-                    apkSha256 = "sha256",
-                    apkSizeBytes = 1024,
-                    addedAtMillis = 1780000000000,
-                    minSdk = 23,
-                    targetSdk = 35,
-                    nativeAbis = emptyList(),
-                    signerSha256 = emptyList(),
-                    releaseChannels = emptyList(),
-                    whatsNew = "",
-                    antiFeatures = emptyList()
-                )
+                fdroidVersionFixture(versionCode = 100, versionName = "1.0", apkName = "${packageName}_100.apk")
             )
         )
     }

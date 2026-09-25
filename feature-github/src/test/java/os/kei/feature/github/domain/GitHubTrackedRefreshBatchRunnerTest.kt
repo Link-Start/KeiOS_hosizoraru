@@ -9,11 +9,9 @@ import org.junit.Test
 import os.kei.core.io.BoundedContentReadLimitStage
 import os.kei.core.io.BoundedContentTextReadTooLargeException
 import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
-import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
-import os.kei.feature.github.model.isFdroidRepositoryTrack
 import java.net.UnknownHostException
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
@@ -23,7 +21,7 @@ import kotlin.test.assertTrue
 class GitHubTrackedRefreshBatchRunnerTest {
     @Test
     fun `all DNS failures are classified as a shared transient network failure`() = runBlocking {
-        val items = (1..4).map(::tracked)
+        val items = (1..4).map(::trackedFixture)
 
         val result =
             GitHubTrackedRefreshBatchRunner.run(
@@ -42,7 +40,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
     @Test
     fun `background network breaker stops assigning remaining items`() = runBlocking {
         val evaluated = AtomicInteger(0)
-        val items = (1..12).map(::tracked)
+        val items = (1..12).map(::trackedFixture)
 
         val result =
             GitHubTrackedRefreshBatchRunner.run(
@@ -64,7 +62,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `background persistence excludes failed cache entries`() = runBlocking {
-        val items = (1..3).map(::tracked)
+        val items = (1..3).map(::trackedFixture)
         val result =
             GitHubTrackedRefreshBatchRunner.run(
                 trackedItems = items,
@@ -87,7 +85,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
     fun `run checks tracked items with bounded concurrency and aggregates counts`() = runBlocking {
         val active = AtomicInteger(0)
         val maxActive = AtomicInteger(0)
-        val items = (1..6).map { index -> tracked(index) }
+        val items = (1..6).map { index -> trackedFixture(index) }
 
         val result = GitHubTrackedRefreshBatchRunner.run(
             trackedItems = items,
@@ -125,7 +123,9 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(1, result.failedCount)
         assertEquals("demo/repo-3|demo.repo3", result.failures.single().trackId)
         assertTrue(result.performance.elapsedMs > 0L)
+        assertTrue(result.performance.p50ItemMs > 0L)
         assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
+        assertTrue(result.performance.maxItemMs >= result.performance.p95ItemMs)
         assertEquals(2, result.performance.maxConcurrency)
         assertEquals(6, result.performance.repositoryItemCount)
         assertEquals(0, result.performance.directApkItemCount)
@@ -135,7 +135,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `run converts thrown evaluator failures into failed cache entries`() = runBlocking {
-        val item = tracked(1)
+        val item = trackedFixture(1)
 
         val result = GitHubTrackedRefreshBatchRunner.run(
             trackedItems = listOf(item),
@@ -158,7 +158,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `run records structured oversized response diagnostics`() = runBlocking {
-        val item = tracked(1)
+        val item = trackedFixture(1)
 
         val result = GitHubTrackedRefreshBatchRunner.run(
             trackedItems = listOf(item),
@@ -186,7 +186,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `run emits progress as each item finishes`() = runBlocking {
-        val items = (1..4).map { index -> tracked(index) }
+        val items = (1..4).map { index -> trackedFixture(index) }
         val progressEvents = Collections.synchronizedList(
             mutableListOf<GitHubTrackedRefreshBatchProgress>()
         )
@@ -226,7 +226,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
     @Test
     fun `run converts timed out evaluator into failed item and completes batch`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val items = (1..3).map { index -> tracked(index) }
+        val items = (1..3).map { index -> trackedFixture(index) }
         val progressEvents = mutableListOf<GitHubTrackedRefreshBatchProgress>()
 
         val result = GitHubTrackedRefreshBatchRunner.run(
@@ -255,7 +255,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
     @Test
     fun `run retries transient timed out item and keeps completed batch`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val item = tracked(1)
+        val item = trackedFixture(1)
         val attempts = AtomicInteger(0)
 
         val result = GitHubTrackedRefreshBatchRunner.run(
@@ -280,7 +280,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `run stops batch after timeout and returns failed unresolved items`() = runBlocking {
-        val items = (1..5).map { index -> tracked(index) }
+        val items = (1..5).map { index -> trackedFixture(index) }
         val started = Collections.synchronizedList(mutableListOf<String>())
         val itemResults = Collections.synchronizedList(mutableListOf<String>())
         val progressEvents = Collections.synchronizedList(
@@ -315,7 +315,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `run keeps non retryable failure message without attempt suffix`() = runBlocking {
-        val item = tracked(1)
+        val item = trackedFixture(1)
 
         val result = GitHubTrackedRefreshBatchRunner.run(
             trackedItems = listOf(item),
@@ -338,53 +338,15 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
-    fun `run exposes performance evidence for 30 and 100 item fixtures`() = runBlocking {
-        listOf(30, 100).forEach { count ->
-            val result = GitHubTrackedRefreshBatchRunner.run(
-                trackedItems = (1..count).map { index -> tracked(index) },
-                maxConcurrency = 8,
-                dispatcher = Dispatchers.Default,
-                refreshTimestampMs = NOW_MS
-            ) { item ->
-                Thread.sleep((item.repo.removePrefix("repo-").toInt() % 3 + 5).toLong())
-                check(
-                    status = when {
-                        item.repo.endsWith("7") -> GitHubTrackedReleaseStatus.Failed
-                        item.repo.endsWith("3") -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
-                        item.repo.endsWith("1") -> GitHubTrackedReleaseStatus.UpdateAvailable
-                        else -> GitHubTrackedReleaseStatus.UpToDate
-                    },
-                    hasUpdate = item.repo.endsWith("1") || item.repo.endsWith("3"),
-                    hasPreReleaseUpdate = item.repo.endsWith("3")
-                )
-            }
-
-            assertEquals(count, result.totalCount)
-            assertEquals(count, result.cacheEntries.size)
-            assertTrue(result.performance.elapsedMs > 0L)
-            assertTrue(result.performance.p50ItemMs > 0L)
-            assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
-            assertTrue(result.performance.maxItemMs >= result.performance.p95ItemMs)
-            assertEquals(8, result.performance.maxConcurrency)
-            assertEquals(count, result.performance.repositoryItemCount)
-            assertEquals(5, result.performance.slowItems.size)
-            assertTrue(
-                result.performance.slowItems.zipWithNext()
-                    .all { (left, right) -> left.elapsedMs >= right.elapsedMs }
-            )
-        }
-    }
-
-    @Test
     fun `run records source mix concurrency and slow item evidence`() = runBlocking {
         val items =
             listOf(
-                tracked(1, sourceMode = GitHubTrackedSourceMode.GitHubRepository),
-                tracked(2, sourceMode = GitHubTrackedSourceMode.GitRepository),
-                tracked(3, sourceMode = GitHubTrackedSourceMode.DirectApk),
-                tracked(4, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
-                tracked(5, sourceMode = GitHubTrackedSourceMode.DirectApk),
-                tracked(6, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
+                trackedFixture(1, sourceMode = GitHubTrackedSourceMode.GitHubRepository),
+                trackedFixture(2, sourceMode = GitHubTrackedSourceMode.GitRepository),
+                trackedFixture(3, sourceMode = GitHubTrackedSourceMode.DirectApk),
+                trackedFixture(4, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
+                trackedFixture(5, sourceMode = GitHubTrackedSourceMode.DirectApk),
+                trackedFixture(6, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
             )
 
         val result =
@@ -419,7 +381,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
     fun `run keeps stage diagnostics for slow refresh items`() = runBlocking {
         val result =
             GitHubTrackedRefreshBatchRunner.run(
-                trackedItems = listOf(tracked(1), tracked(2)),
+                trackedItems = listOf(trackedFixture(1), trackedFixture(2)),
                 maxConcurrency = 2,
                 dispatcher = Dispatchers.Default,
                 refreshTimestampMs = NOW_MS,
@@ -453,165 +415,72 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
-    fun `scheduler interleaves github and direct apk sources fairly`() {
-        val items = listOf(
-            tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
-            tracked(2, sourceMode = GitHubTrackedSourceMode.DirectApk),
-            tracked(3),
-            tracked(4, sourceMode = GitHubTrackedSourceMode.DirectApk),
-            tracked(5)
-        )
-
-        val order = GitHubTrackedRefreshBatchScheduler
-            .buildFairRefreshOrder(items)
-            .map { it.item.packageName }
-
-        assertEquals(
-            listOf("demo.repo3", "demo.repo1", "demo.repo5", "demo.repo2", "demo.repo4"),
-            order
-        )
-    }
-
-    @Test
-    fun `scheduler treats git repository sources as repository work`() {
-        val items = listOf(
-            tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
-            tracked(2, sourceMode = GitHubTrackedSourceMode.GitRepository),
-            tracked(3),
-            tracked(4, sourceMode = GitHubTrackedSourceMode.DirectApk)
-        )
-
-        val order = GitHubTrackedRefreshBatchScheduler
-            .buildFairRefreshOrder(items)
-            .map { it.item.packageName }
-
-        assertEquals(
-            listOf("demo.repo2", "demo.repo1", "demo.repo3", "demo.repo4"),
-            order
-        )
-    }
-
-    @Test
-    fun `scheduler interleaves github direct apk and fdroid sources fairly`() {
-        val items = listOf(
-            tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
-            tracked(2, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
-            tracked(3),
-            tracked(4, sourceMode = GitHubTrackedSourceMode.DirectApk),
-            tracked(5, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
-            tracked(6)
-        )
-
-        val order = GitHubTrackedRefreshBatchScheduler
-            .buildFairRefreshOrder(items)
-            .map { it.item.packageName }
-
-        assertEquals(
-            listOf("demo.repo3", "demo.repo1", "demo.repo2", "demo.repo6", "demo.repo4", "demo.repo5"),
-            order
-        )
-    }
-
-    @Test
-    fun `scheduler increases refresh concurrency for larger batches`() {
-        val tiers = listOf(1, 8, 16, 48).map(GitHubTrackedRefreshBatchScheduler::refreshConcurrency)
-
-        assertEquals(1, tiers.first(), "a batch of one needs one worker")
-        assertEquals(
-            tiers.sorted(),
-            tiers,
-            "each tier must be at least the one below it: $tiers",
-        )
-        assertTrue(tiers.last() > tiers.first())
-    }
-
-    @Test
-    fun `run limits direct apk manifest checks inside mixed refresh batches`() = runBlocking {
-        val directActive = AtomicInteger(0)
-        val maxDirectActive = AtomicInteger(0)
-        val items = (1..8).map { index ->
-            tracked(
-                index = index,
-                sourceMode = if (index % 2 == 0) {
-                    GitHubTrackedSourceMode.DirectApk
-                } else {
-                    GitHubTrackedSourceMode.GitHubRepository
-                }
+    fun `fair refresh order interleaves source kinds`() {
+        val github = GitHubTrackedSourceMode.GitHubRepository
+        val git = GitHubTrackedSourceMode.GitRepository
+        val direct = GitHubTrackedSourceMode.DirectApk
+        val fdroid = GitHubTrackedSourceMode.FdroidRepository
+        // (case, source mode of demo.repo1..N in input order, expected refresh order)
+        val cases = listOf(
+            Triple(
+                "github and direct apk",
+                listOf(direct, direct, github, direct, github),
+                listOf("demo.repo3", "demo.repo1", "demo.repo5", "demo.repo2", "demo.repo4")
+            ),
+            Triple(
+                "git repository counts as repository work",
+                listOf(direct, git, github, direct),
+                listOf("demo.repo2", "demo.repo1", "demo.repo3", "demo.repo4")
+            ),
+            Triple(
+                "github, direct apk and fdroid",
+                listOf(direct, fdroid, github, direct, fdroid, github),
+                listOf("demo.repo3", "demo.repo1", "demo.repo2", "demo.repo6", "demo.repo4", "demo.repo5")
             )
-        }
+        )
 
-        GitHubTrackedRefreshBatchRunner.run(
-            trackedItems = items,
-            maxConcurrency = 4,
-            dispatcher = Dispatchers.Default,
-            refreshTimestampMs = NOW_MS
-        ) { item ->
-            if (item.sourceMode == GitHubTrackedSourceMode.DirectApk) {
-                val current = directActive.incrementAndGet()
-                maxDirectActive.updateAndGet { old -> maxOf(old, current) }
-                Thread.sleep(30)
-                directActive.decrementAndGet()
-            } else {
-                Thread.sleep(5)
-            }
-            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
-        }
+        cases.forEach { (case, sourceModes, expected) ->
+            val items = sourceModes.mapIndexed { index, mode -> trackedFixture(index + 1, sourceMode = mode) }
 
-        assertTrue(maxDirectActive.get() <= 2)
+            val order = GitHubTrackedRefreshBatchScheduler
+                .buildFairRefreshOrder(items)
+                .map { it.item.packageName }
+
+            assertEquals(expected, order, case)
+        }
     }
 
     @Test
-    fun `run limits fdroid checks inside mixed refresh batches`() = runBlocking {
-        val fdroidActive = AtomicInteger(0)
-        val maxFdroidActive = AtomicInteger(0)
-        val items = (1..8).map { index ->
-            tracked(
-                index = index,
-                sourceMode = if (index % 2 == 0) {
-                    GitHubTrackedSourceMode.FdroidRepository
-                } else {
-                    GitHubTrackedSourceMode.GitHubRepository
-                }
-            )
-        }
-
-        GitHubTrackedRefreshBatchRunner.run(
-            trackedItems = items,
-            maxConcurrency = 4,
-            dispatcher = Dispatchers.Default,
-            refreshTimestampMs = NOW_MS
-        ) { item ->
-            if (item.isFdroidRepositoryTrack()) {
-                val current = fdroidActive.incrementAndGet()
-                maxFdroidActive.updateAndGet { old -> maxOf(old, current) }
-                Thread.sleep(30)
-                fdroidActive.decrementAndGet()
-            } else {
-                Thread.sleep(5)
+    fun `per-source concurrency cap holds in mixed batches`() = runBlocking {
+        listOf(GitHubTrackedSourceMode.DirectApk, GitHubTrackedSourceMode.FdroidRepository).forEach { limited ->
+            val limitedActive = AtomicInteger(0)
+            val maxLimitedActive = AtomicInteger(0)
+            val items = (1..8).map { index ->
+                trackedFixture(
+                    index = index,
+                    sourceMode = if (index % 2 == 0) limited else GitHubTrackedSourceMode.GitHubRepository
+                )
             }
-            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+
+            GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = items,
+                maxConcurrency = 4,
+                dispatcher = Dispatchers.Default,
+                refreshTimestampMs = NOW_MS
+            ) { item ->
+                if (item.sourceMode == limited) {
+                    val current = limitedActive.incrementAndGet()
+                    maxLimitedActive.updateAndGet { old -> maxOf(old, current) }
+                    Thread.sleep(30)
+                    limitedActive.decrementAndGet()
+                } else {
+                    Thread.sleep(5)
+                }
+                check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+            }
+
+            assertTrue(maxLimitedActive.get() <= 2, "$limited ran ${maxLimitedActive.get()} at once")
         }
-
-        assertTrue(maxFdroidActive.get() <= 2)
-    }
-
-    private fun tracked(
-        index: Int,
-        sourceMode: GitHubTrackedSourceMode = GitHubTrackedSourceMode.GitHubRepository
-    ): GitHubTrackedApp {
-        return GitHubTrackedApp(
-            repoUrl = when (sourceMode) {
-                GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo-$index"
-                GitHubTrackedSourceMode.GitRepository -> "https://gitee.com/demo/repo-$index"
-                GitHubTrackedSourceMode.DirectApk -> "https://example.com/download/repo-$index.apk"
-                GitHubTrackedSourceMode.FdroidRepository -> "https://f-droid.org/repo"
-            },
-            owner = "demo",
-            repo = "repo-$index",
-            packageName = "demo.repo$index",
-            appLabel = "Repo $index",
-            sourceMode = sourceMode
-        )
     }
 
     private fun check(

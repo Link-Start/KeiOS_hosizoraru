@@ -3,8 +3,7 @@ package os.kei.feature.github.domain
 import android.content.Intent
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 import org.junit.Test
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallSourceInfo
@@ -12,24 +11,87 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedAppInstallSnapshot
 
 class GitHubAppInstallHistoryServiceTest {
+    private data class BroadcastCase(
+        val label: String,
+        val previous: GitHubTrackedAppInstallSnapshot?,
+        val current: GitHubTrackedAppInstallSnapshot?,
+        val action: String,
+        val replacing: Boolean,
+        val expectedAction: GitHubAppInstallHistoryAction,
+        val expectedPreviousCode: Long,
+        val expectedCurrentCode: Long,
+        val expectedRemoveSnapshot: Boolean,
+    )
+
     @Test
-    fun `package added records install for tracked app`() {
-        val result =
-            GitHubAppInstallHistoryService.buildPackageChangeResult(
-                trackedItems = listOf(trackedApp()),
-                previousSnapshot = null,
-                currentSnapshot = snapshot(versionName = "1.0", versionCode = 10L),
-                packageName = "dev.example.app",
+    fun `package broadcast maps to history action`() {
+        val cases = listOf(
+            BroadcastCase(
+                label = "added -> install",
+                previous = null,
+                current = snapshot(versionName = "1.0", versionCode = 10L),
                 action = Intent.ACTION_PACKAGE_ADDED,
                 replacing = false,
-                changedAtMillis = 1_000L,
-            )
+                expectedAction = GitHubAppInstallHistoryAction.Installed,
+                expectedPreviousCode = -1L,
+                expectedCurrentCode = 10L,
+                expectedRemoveSnapshot = false,
+            ),
+            BroadcastCase(
+                label = "replaced with higher version code -> update",
+                previous = snapshot(versionName = "1.0", versionCode = 10L),
+                current = snapshot(versionName = "1.1", versionCode = 11L),
+                action = Intent.ACTION_PACKAGE_REPLACED,
+                replacing = true,
+                expectedAction = GitHubAppInstallHistoryAction.Updated,
+                expectedPreviousCode = 10L,
+                expectedCurrentCode = 11L,
+                expectedRemoveSnapshot = false,
+            ),
+            BroadcastCase(
+                label = "replaced with lower version code -> downgrade",
+                previous = snapshot(versionName = "2.0", versionCode = 20L),
+                current = snapshot(versionName = "1.0", versionCode = 10L),
+                action = Intent.ACTION_PACKAGE_REPLACED,
+                replacing = true,
+                expectedAction = GitHubAppInstallHistoryAction.Downgraded,
+                expectedPreviousCode = 20L,
+                expectedCurrentCode = 10L,
+                expectedRemoveSnapshot = false,
+            ),
+            BroadcastCase(
+                label = "removed (not replacing) -> uninstall and drop snapshot",
+                previous = snapshot(versionName = "1.0", versionCode = 10L),
+                current = null,
+                action = Intent.ACTION_PACKAGE_REMOVED,
+                replacing = false,
+                expectedAction = GitHubAppInstallHistoryAction.Uninstalled,
+                expectedPreviousCode = 10L,
+                expectedCurrentCode = -1L,
+                expectedRemoveSnapshot = true,
+            ),
+        )
 
-        assertEquals(GitHubAppInstallHistoryAction.Installed, result.records.single().action)
-        assertEquals(-1L, result.records.single().previousVersionCode)
-        assertEquals(10L, result.records.single().currentVersionCode)
-        assertEquals("dev.example.app", result.nextSnapshot?.packageName)
-        assertFalse(result.removeSnapshot)
+        cases.forEach { case ->
+            val result =
+                GitHubAppInstallHistoryService.buildPackageChangeResult(
+                    trackedItems = listOf(trackedApp()),
+                    previousSnapshot = case.previous,
+                    currentSnapshot = case.current,
+                    packageName = "dev.example.app",
+                    action = case.action,
+                    replacing = case.replacing,
+                    changedAtMillis = 1_000L,
+                )
+
+            val record = result.records.singleOrNull()
+            assertNotNull(record, "${case.label}: expected one record, got ${result.records}")
+            assertEquals(case.expectedAction, record.action, case.label)
+            assertEquals(case.expectedPreviousCode, record.previousVersionCode, case.label)
+            assertEquals(case.expectedCurrentCode, record.currentVersionCode, case.label)
+            assertEquals(case.current, result.nextSnapshot, "${case.label}: next snapshot")
+            assertEquals(case.expectedRemoveSnapshot, result.removeSnapshot, "${case.label}: removeSnapshot")
+        }
     }
 
     @Test
@@ -50,62 +112,6 @@ class GitHubAppInstallHistoryServiceTest {
         assertEquals(emptyList(), result.records)
         assertEquals(previous, result.nextSnapshot)
         assertFalse(result.removeSnapshot)
-    }
-
-    @Test
-    fun `package replaced records update when version code increases`() {
-        val result =
-            GitHubAppInstallHistoryService.buildPackageChangeResult(
-                trackedItems = listOf(trackedApp()),
-                previousSnapshot = snapshot(versionName = "1.0", versionCode = 10L),
-                currentSnapshot = snapshot(versionName = "1.1", versionCode = 11L),
-                packageName = "dev.example.app",
-                action = Intent.ACTION_PACKAGE_REPLACED,
-                replacing = true,
-                changedAtMillis = 1_000L,
-            )
-
-        assertEquals(GitHubAppInstallHistoryAction.Updated, result.records.single().action)
-        assertEquals(10L, result.records.single().previousVersionCode)
-        assertEquals(11L, result.records.single().currentVersionCode)
-    }
-
-    @Test
-    fun `package replaced records downgrade when version code decreases`() {
-        val result =
-            GitHubAppInstallHistoryService.buildPackageChangeResult(
-                trackedItems = listOf(trackedApp()),
-                previousSnapshot = snapshot(versionName = "2.0", versionCode = 20L),
-                currentSnapshot = snapshot(versionName = "1.0", versionCode = 10L),
-                packageName = "dev.example.app",
-                action = Intent.ACTION_PACKAGE_REPLACED,
-                replacing = true,
-                changedAtMillis = 1_000L,
-            )
-
-        assertEquals(GitHubAppInstallHistoryAction.Downgraded, result.records.single().action)
-        assertEquals(20L, result.records.single().previousVersionCode)
-        assertEquals(10L, result.records.single().currentVersionCode)
-    }
-
-    @Test
-    fun `package removed records uninstall and removes snapshot`() {
-        val result =
-            GitHubAppInstallHistoryService.buildPackageChangeResult(
-                trackedItems = listOf(trackedApp()),
-                previousSnapshot = snapshot(versionName = "1.0", versionCode = 10L),
-                currentSnapshot = null,
-                packageName = "dev.example.app",
-                action = Intent.ACTION_PACKAGE_REMOVED,
-                replacing = false,
-                changedAtMillis = 1_000L,
-            )
-
-        assertEquals(GitHubAppInstallHistoryAction.Uninstalled, result.records.single().action)
-        assertEquals(10L, result.records.single().previousVersionCode)
-        assertEquals(-1L, result.records.single().currentVersionCode)
-        assertNull(result.nextSnapshot)
-        assertTrue(result.removeSnapshot)
     }
 
     @Test

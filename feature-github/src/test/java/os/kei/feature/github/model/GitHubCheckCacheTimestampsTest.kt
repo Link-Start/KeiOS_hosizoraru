@@ -4,15 +4,46 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class GitHubCheckCacheTimestampsTest {
-    @Test
-    fun `refresh timestamp follows oldest checked result instead of partial refresh`() {
-        val entries =
-            mapOf(
-                "one" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
-                "two" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
-            )
+    private data class RefreshTimestampCase(
+        val label: String,
+        val entries: Map<String, GitHubCheckCacheEntry>,
+        val fallbackMs: Long,
+        val expected: Long,
+    )
 
-        assertEquals(100L, entries.resolvedRefreshTimestamp(fallbackMs = 1_000L))
+    @Test
+    fun `resolved refresh timestamp uses oldest checked result or falls back`() {
+        val cases = listOf(
+            RefreshTimestampCase(
+                label = "oldest of two checked entries, not the partial refresh",
+                entries = mapOf(
+                    "one" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
+                    "two" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
+                ),
+                fallbackMs = 1_000L,
+                expected = 100L,
+            ),
+            RefreshTimestampCase(
+                label = "no entry has a checked result -> fallback",
+                entries = mapOf("one" to GitHubCheckCacheEntry()),
+                fallbackMs = 500L,
+                expected = 500L,
+            ),
+            RefreshTimestampCase(
+                label = "empty cache -> no refresh timestamp",
+                entries = emptyMap(),
+                fallbackMs = 500L,
+                expected = 0L,
+            ),
+        )
+
+        cases.forEach { case ->
+            assertEquals(
+                case.expected,
+                case.entries.resolvedRefreshTimestamp(fallbackMs = case.fallbackMs),
+                case.label,
+            )
+        }
     }
 
     @Test
@@ -36,20 +67,5 @@ class GitHubCheckCacheTimestampsTest {
             )
 
         assertEquals(100L, entries.oldestCheckedAtMillis())
-    }
-
-    @Test
-    fun `refresh timestamp falls back only when entries have no checked result`() {
-        val entries = mapOf("one" to GitHubCheckCacheEntry())
-
-        assertEquals(500L, entries.resolvedRefreshTimestamp(fallbackMs = 500L))
-    }
-
-    @Test
-    fun `empty cache has no refresh timestamp`() {
-        assertEquals(
-            0L,
-            emptyMap<String, GitHubCheckCacheEntry>().resolvedRefreshTimestamp(fallbackMs = 500L),
-        )
     }
 }

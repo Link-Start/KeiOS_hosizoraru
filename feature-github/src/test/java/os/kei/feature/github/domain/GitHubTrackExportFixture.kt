@@ -2,7 +2,6 @@ package os.kei.feature.github.domain
 
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 
 internal object GitHubTrackExportFixture {
@@ -23,9 +22,5 @@ internal object GitHubTrackExportFixture {
 
     val gitHubRepositoryItems: List<GitHubTrackedApp> by lazy {
         trackedItems.filter { it.isGitHubRepositoryTrack() }
-    }
-
-    val directApkItems: List<GitHubTrackedApp> by lazy {
-        trackedItems.filter { it.isDirectApkTrack() }
     }
 }

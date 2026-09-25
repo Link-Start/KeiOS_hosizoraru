@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarWriter
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
@@ -22,24 +23,12 @@ class FdroidReleaseCheckSourceTest {
     @Test
     fun `evaluate maps selected fdroid candidate to update check`() = runBlocking {
         var savedSidecar: FdroidMetadataSidecar? = null
-        val packageSnapshot = FdroidPackageSnapshot(
-            repoUrl = "https://f-droid.org/repo",
-            packageName = "org.fdroid.fdroid",
-            suggestedVersionCode = 102,
-            appName = "F-Droid",
-            versions = listOf(
+        val source = source(
+            packageSnapshot(
                 version(versionCode = 102, versionName = "1.2.0"),
                 version(versionCode = 100, versionName = "1.0.0")
-            )
-        )
-        val source = FdroidReleaseCheckSource(
-            snapshotProvider = staticLookupSnapshotProvider(
-                packageSnapshot = packageSnapshot,
-                repositorySnapshot = repositorySnapshot(packageSnapshot)
             ),
-            metadataWriter = { sidecar -> savedSidecar = sidecar },
-            ioDispatcher = Dispatchers.Unconfined,
-            deviceSdkProvider = { 37 }
+            metadataWriter = { sidecar -> savedSidecar = sidecar }
         )
 
         val result = source.evaluate(
@@ -87,117 +76,69 @@ class FdroidReleaseCheckSourceTest {
     }
 
     @Test
-    fun `evaluate fails when apk hash policy cannot verify selected version`() = runBlocking {
-        val packageSnapshot = FdroidPackageSnapshot(
-            repoUrl = "https://f-droid.org/repo",
-            packageName = "org.fdroid.fdroid",
-            suggestedVersionCode = 102,
-            appName = "F-Droid",
-            versions = listOf(
-                version(versionCode = 102, versionName = "1.2.0", apkSha256 = "")
-            )
-        )
-        val source = FdroidReleaseCheckSource(
-            snapshotProvider = staticLookupSnapshotProvider(
-                packageSnapshot = packageSnapshot,
-                repositorySnapshot = repositorySnapshot(packageSnapshot)
+    fun `trust policy failures block the check`() = runBlocking {
+        // (policy config, the only version offered, fragment the failure message must name)
+        val rows = listOf(
+            Triple(
+                FdroidTrackedAppConfig(trustPolicy = FdroidTrustPolicy.RequireApkHash),
+                version(versionCode = 102, versionName = "1.2.0", apkSha256 = ""),
+                "APK hash"
             ),
-            metadataWriter = { },
-            ioDispatcher = Dispatchers.Unconfined,
-            deviceSdkProvider = { 37 }
-        )
-
-        val result = source.evaluate(
-            item = fdroidItem(
-                FdroidTrackedAppConfig(trustPolicy = FdroidTrustPolicy.RequireApkHash)
+            Triple(
+                FdroidTrackedAppConfig(trustPolicy = FdroidTrustPolicy.RequireOfficialSignerIndex),
+                version(versionCode = 102, versionName = "1.2.0", signerSha256 = emptyList()),
+                "signer index"
             ),
-            lookupConfig = GitHubLookupConfig(),
-            localVersion = "1.0.0",
-            localVersionCode = 100,
-            forceRefresh = false
-        )
-
-        assertEquals(GitHubTrackedReleaseStatus.Failed, result.status)
-        assertTrue(result.message.contains("APK hash"))
-    }
-
-    @Test
-    fun `evaluate fails when signer index policy cannot verify selected version`() = runBlocking {
-        val packageSnapshot = FdroidPackageSnapshot(
-            repoUrl = "https://f-droid.org/repo",
-            packageName = "org.fdroid.fdroid",
-            suggestedVersionCode = 102,
-            appName = "F-Droid",
-            versions = listOf(
-                version(versionCode = 102, versionName = "1.2.0", signerSha256 = emptyList())
-            )
-        )
-        val source = FdroidReleaseCheckSource(
-            snapshotProvider = staticLookupSnapshotProvider(
-                packageSnapshot = packageSnapshot,
-                repositorySnapshot = repositorySnapshot(packageSnapshot)
-            ),
-            metadataWriter = { },
-            ioDispatcher = Dispatchers.Unconfined,
-            deviceSdkProvider = { 37 }
-        )
-
-        val result = source.evaluate(
-            item = fdroidItem(
-                FdroidTrackedAppConfig(trustPolicy = FdroidTrustPolicy.RequireOfficialSignerIndex)
-            ),
-            lookupConfig = GitHubLookupConfig(),
-            localVersion = "1.0.0",
-            localVersionCode = 100,
-            forceRefresh = false
-        )
-
-        assertEquals(GitHubTrackedReleaseStatus.Failed, result.status)
-        assertTrue(result.message.contains("signer index"))
-    }
-
-    @Test
-    fun `evaluate fails when repository fingerprint policy has no configured fingerprint`() = runBlocking {
-        val packageSnapshot = FdroidPackageSnapshot(
-            repoUrl = "https://f-droid.org/repo",
-            packageName = "org.fdroid.fdroid",
-            suggestedVersionCode = 102,
-            appName = "F-Droid",
-            versions = listOf(
-                version(versionCode = 102, versionName = "1.2.0")
-            )
-        )
-        val source = FdroidReleaseCheckSource(
-            snapshotProvider = staticLookupSnapshotProvider(
-                packageSnapshot = packageSnapshot,
-                repositorySnapshot = repositorySnapshot(packageSnapshot)
-            ),
-            metadataWriter = { },
-            ioDispatcher = Dispatchers.Unconfined,
-            deviceSdkProvider = { 37 }
-        )
-
-        val result = source.evaluate(
-            item = fdroidItem(
+            Triple(
                 FdroidTrackedAppConfig(
                     trustPolicy = FdroidTrustPolicy.RequireRepoFingerprint,
                     repoFingerprint = ""
-                )
-            ),
-            lookupConfig = GitHubLookupConfig(),
-            localVersion = "1.0.0",
-            localVersionCode = 100,
-            forceRefresh = false
+                ),
+                version(versionCode = 102, versionName = "1.2.0"),
+                "repository fingerprint"
+            )
         )
 
-        assertEquals(GitHubTrackedReleaseStatus.Failed, result.status)
-        assertTrue(result.message.contains("repository fingerprint"))
+        rows.forEach { (config, offered, expectedMessage) ->
+            val result = source(packageSnapshot(offered)).evaluate(
+                item = fdroidItem(config),
+                lookupConfig = GitHubLookupConfig(),
+                localVersion = "1.0.0",
+                localVersionCode = 100,
+                forceRefresh = false
+            )
+
+            assertEquals(GitHubTrackedReleaseStatus.Failed, result.status, "${config.trustPolicy}")
+            assertTrue(
+                result.message.contains(expectedMessage),
+                "${config.trustPolicy}: expected \"$expectedMessage\" in \"${result.message}\""
+            )
+        }
     }
 
-    private fun staticSnapshotProvider(
-        snapshot: FdroidPackageSnapshot
-    ): FdroidPackageSnapshotProvider {
-        return staticSnapshotProvider(Result.success(snapshot))
+    private fun source(
+        packageSnapshot: FdroidPackageSnapshot,
+        metadataWriter: FdroidMetadataSidecarWriter = FdroidMetadataSidecarWriter { }
+    ): FdroidReleaseCheckSource {
+        return FdroidReleaseCheckSource(
+            snapshotProvider = staticLookupSnapshotProvider(
+                packageSnapshot = packageSnapshot,
+                repositorySnapshot = repositorySnapshot(packageSnapshot)
+            ),
+            metadataWriter = metadataWriter,
+            ioDispatcher = Dispatchers.Unconfined,
+            deviceSdkProvider = { 37 }
+        )
+    }
+
+    private fun packageSnapshot(vararg versions: FdroidVersionSnapshot): FdroidPackageSnapshot {
+        return FdroidPackageSnapshot(
+            repoUrl = "https://f-droid.org/repo",
+            packageName = "org.fdroid.fdroid",
+            suggestedVersionCode = 102,
+            appName = "F-Droid",
+            versions = versions.toList()
+        )
     }
 
     private fun staticSnapshotProvider(
@@ -251,24 +192,14 @@ class FdroidReleaseCheckSourceTest {
         versionName: String,
         apkSha256: String = "sha256-$versionCode",
         signerSha256: List<String> = emptyList()
-    ): FdroidVersionSnapshot {
-        return FdroidVersionSnapshot(
-            versionName = versionName,
-            versionCode = versionCode,
-            apkName = "org.fdroid.fdroid_$versionCode.apk",
-            apkPath = "/repo/org.fdroid.fdroid_$versionCode.apk",
-            apkSha256 = apkSha256,
-            apkSizeBytes = versionCode,
-            addedAtMillis = null,
-            minSdk = 23,
-            targetSdk = 35,
-            nativeAbis = emptyList(),
-            signerSha256 = signerSha256,
-            releaseChannels = emptyList(),
-            whatsNew = "notes $versionCode",
-            antiFeatures = emptyList()
-        )
-    }
+    ) = fdroidVersionFixture(
+        versionCode = versionCode,
+        versionName = versionName,
+        apkName = "org.fdroid.fdroid_$versionCode.apk",
+        apkPath = "/repo/org.fdroid.fdroid_$versionCode.apk",
+        apkSha256 = apkSha256,
+        signerSha256 = signerSha256
+    )
 
     private fun repositorySnapshot(packageSnapshot: FdroidPackageSnapshot): FdroidRepositorySnapshot {
         return FdroidRepositorySnapshot(

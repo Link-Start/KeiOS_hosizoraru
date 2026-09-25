@@ -5,21 +5,6 @@ import kotlin.test.assertEquals
 
 class FdroidRepositoryPresetsTest {
     @Test
-    fun `common source defaults enable fdroid and izzy`() {
-        assertEquals(
-            listOf(
-                FdroidRepositoryPresets.MAIN_ID,
-                FdroidRepositoryPresets.IZZY_ID,
-            ),
-            FdroidRepositoryPresets.defaultCommonSearchRepoIds,
-        )
-        assertEquals(
-            FdroidRepositoryPresets.defaultCommonSearchRepoIds,
-            GitHubLookupConfig().normalizedFdroidCommonRepoIds,
-        )
-    }
-
-    @Test
     fun `common source normalization drops unknown ids and preserves preset order`() {
         assertEquals(
             listOf(

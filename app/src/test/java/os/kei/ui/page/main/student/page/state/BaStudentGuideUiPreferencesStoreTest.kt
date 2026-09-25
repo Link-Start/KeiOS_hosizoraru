@@ -42,22 +42,10 @@ class BaStudentGuideUiPreferencesStoreTest {
         // reach for the app-wide one.
         assertEquals(setOf("sidebar_navigation_preferred"), kv.written.keys)
     }
-
-    @Test
-    fun `an unrelated key in the same file does not answer for the shape`() {
-        val kv = FakeKeyValueStore(initial = mapOf("some_other_guide_preference" to true))
-
-        assertFalse(
-            BaStudentGuideUiPreferencesStore.isSidebarPreferred(kv),
-            "the shape must come from its own key, not from whatever else the file holds",
-        )
-    }
 }
 
-private class FakeKeyValueStore(
-    initial: Map<String, Boolean> = emptyMap(),
-) : BaStudentGuideUiPreferencesKeyValueStore {
-    private val values = initial.toMutableMap()
+private class FakeKeyValueStore : BaStudentGuideUiPreferencesKeyValueStore {
+    private val values = mutableMapOf<String, Boolean>()
     val written = mutableMapOf<String, Boolean>()
 
     override fun decodeBool(

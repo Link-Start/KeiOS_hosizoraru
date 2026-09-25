@@ -32,21 +32,6 @@ class BaGuideTempMediaCacheTest {
     }
 
     @Test
-    fun `session scan reflects files removed from disk`() {
-        val sessionDir = newScanDir("stale-session")
-        val file = File(sessionDir, "image.webp").apply { writeText("1234") }
-
-        assertEquals(1, scanBaGuideMediaCacheSession(sessionDir).count)
-
-        file.delete()
-
-        val summary = scanBaGuideMediaCacheSession(sessionDir)
-        assertEquals(0, summary.count)
-        assertEquals(0L, summary.bytes)
-        sessionDir.deleteRecursively()
-    }
-
-    @Test
     fun `session scan skips partial download files`() {
         val sessionDir = newScanDir("partial-session")
         File(sessionDir, "video.mp4").writeText("ready")

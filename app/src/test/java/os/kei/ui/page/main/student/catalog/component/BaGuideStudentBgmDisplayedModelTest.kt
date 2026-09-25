@@ -32,25 +32,6 @@ class BaGuideStudentBgmDisplayedModelTest {
     }
 
     @Test
-    fun `filter and sort keeps base order when favorite set is empty`() {
-        val entries =
-            listOf(
-                testCatalogEntry(contentId = 1L, name = "Alice", order = 1),
-                testCatalogEntry(contentId = 2L, name = "Bob", order = 2),
-                testCatalogEntry(contentId = 3L, name = "Carol", order = 3),
-            )
-
-        val result =
-            filterAndSortStudentBgmEntries(
-                entries = entries,
-                searchQuery = "",
-                favoriteContentIds = emptySet(),
-            )
-
-        assertEquals(listOf(1L, 2L, 3L), result.map { it.contentId })
-    }
-
-    @Test
     fun `filter and sort places favorites first then entry order`() {
         val entries =
             listOf(

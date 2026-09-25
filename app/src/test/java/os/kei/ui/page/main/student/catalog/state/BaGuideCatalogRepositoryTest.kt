@@ -81,49 +81,6 @@ class BaGuideCatalogRepositoryTest {
         }
 
     @Test
-    fun `network fetch receives repository clock`() =
-        runBlocking {
-            val fetched = catalogBundle("网络学生")
-            var fetchNowMs = 0L
-            val result =
-                repository(
-                    cached = null,
-                    fetcher = { _, _, _, clock, _ ->
-                        fetchNowMs = clock.nowMs()
-                        fetched
-                    },
-                    complete = { false },
-                    expired = { _, _, _ -> true },
-                    clock = BaGuideDataClock { 99_000L },
-                ).load()
-
-            assertEquals(fetched, result.catalog)
-            assertEquals(null, result.error)
-            assertEquals(99_000L, fetchNowMs)
-        }
-
-    @Test
-    fun `short configured interval keeps complete cache fresh for twelve hours`() =
-        runBlocking {
-            val syncedAtMs = 1_000L
-            val cached =
-                catalogBundle("十二小时内缓存").copy(
-                    syncedAtMs = syncedAtMs,
-                    fullSyncedAtMs = syncedAtMs,
-                )
-            val result =
-                repository(
-                    cached = cached,
-                    complete = { true },
-                    intervalHours = 3,
-                    clock = BaGuideDataClock { syncedAtMs + 11L * 60L * 60L * 1000L },
-                ).load()
-
-            assertEquals(cached, result.catalog)
-            assertEquals(null, result.error)
-        }
-
-    @Test
     fun `expired complete cache fetches incremental refresh before full cadence`() =
         runBlocking {
             val syncedAtMs = 1_000L

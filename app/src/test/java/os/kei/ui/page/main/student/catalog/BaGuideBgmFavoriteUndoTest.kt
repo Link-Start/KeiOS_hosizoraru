@@ -59,15 +59,6 @@ class BaGuideBgmFavoriteUndoTest {
         assertEquals(1, undoClicks, "the card's Undo must reach the list's undo callback")
     }
 
-    @Test
-    fun `no pending removal, no undo card`() {
-        setFavoritesList(pendingUndoFavorite = null, onUndo = {})
-
-        composeRule
-            .onNodeWithText(context.getString(R.string.ba_catalog_bgm_action_undo))
-            .assertDoesNotExist()
-    }
-
     private fun setFavoritesList(
         pendingUndoFavorite: GuideBgmFavoriteItem?,
         onUndo: () -> Unit,

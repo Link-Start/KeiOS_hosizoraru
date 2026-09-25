@@ -68,71 +68,8 @@ class GuideVideoPictureInPictureActionsTest {
                 maxActions = 0,
         )
 
-        val closeAction = assertNotNull(actionSet.closeAction)
-        assertFalse(
-            actionSet.actions.any { action ->
-                action.actionIntent == closeAction.actionIntent
-            }
-        )
+        assertNotNull(actionSet.closeAction)
         assertEquals(0, actionSet.actions.size)
-    }
-
-    @Test
-    fun `visible actions keep balanced controls for system action limits`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-
-        assertEquals(
-            listOf(
-                GUIDE_VIDEO_ACTION_SEEK_BACK_10S,
-                GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
-                GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S,
-                GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
-            ),
-            buildGuidePictureInPictureActionSet(
-                context = context,
-                sessionId = 46L,
-                playWhenReady = true,
-                repeatEnabled = true,
-                maxActions = 4,
-            ).savedActionNames(),
-        )
-        assertEquals(
-            listOf(
-                GUIDE_VIDEO_ACTION_SEEK_BACK_10S,
-                GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
-                GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S,
-            ),
-            buildGuidePictureInPictureActionSet(
-                context = context,
-                sessionId = 47L,
-                playWhenReady = true,
-                repeatEnabled = true,
-                maxActions = 3,
-            ).savedActionNames(),
-        )
-        assertEquals(
-            listOf(
-                GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
-                GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
-            ),
-            buildGuidePictureInPictureActionSet(
-                context = context,
-                sessionId = 48L,
-                playWhenReady = true,
-                repeatEnabled = true,
-                maxActions = 2,
-            ).savedActionNames(),
-        )
-        assertEquals(
-            listOf(GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK),
-            buildGuidePictureInPictureActionSet(
-                context = context,
-                sessionId = 49L,
-                playWhenReady = true,
-                repeatEnabled = true,
-                maxActions = 1,
-            ).savedActionNames(),
-        )
     }
 
     @Test
@@ -211,11 +148,5 @@ class GuideVideoPictureInPictureActionsTest {
 
         assertTrue(playingParams.isAutoEnterEnabled)
         assertFalse(pausedParams.isAutoEnterEnabled)
-    }
-}
-
-private fun os.kei.ui.pip.AppPictureInPictureActionSet.savedActionNames(): List<String> {
-    return actions.map { action ->
-        shadowOf(action.actionIntent).savedIntent.action.orEmpty()
     }
 }

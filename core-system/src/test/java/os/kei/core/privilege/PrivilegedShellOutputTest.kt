@@ -3,49 +3,33 @@ package os.kei.core.privilege
 import org.junit.Test
 import os.kei.core.system.AppCommandResult
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class PrivilegedShellOutputTest {
     @Test
-    fun `command output keeps stderr when the command produced no exit code`() {
-        val result =
-            AppCommandResult(
+    fun `command output prefers stdout, falls back to stderr, and maps blank to null`() {
+        data class Row(val label: String, val stdout: String, val stderr: String, val exitCode: Int?, val expected: String?)
+        listOf(
+            Row(
+                "stderr kept when the command produced no exit code",
                 stdout = "",
                 stderr = "Root unavailable (no su binary found)",
                 exitCode = null,
-                timedOut = false,
-                cancelled = false,
-            )
+                expected = "Root unavailable (no su binary found)",
+            ),
+            Row("stdout preferred over stderr", stdout = "root", stderr = "ignored", exitCode = 0, expected = "root"),
+            Row("blank output maps to null", stdout = "   ", stderr = "", exitCode = 0, expected = null),
+        ).forEach { row ->
+            val result =
+                AppCommandResult(
+                    stdout = row.stdout,
+                    stderr = row.stderr,
+                    exitCode = row.exitCode,
+                    timedOut = false,
+                    cancelled = false,
+                )
 
-        assertEquals("Root unavailable (no su binary found)", privilegedCommandOutputOrNull(result))
-    }
-
-    @Test
-    fun `command output prefers stdout over stderr`() {
-        val result =
-            AppCommandResult(
-                stdout = "root",
-                stderr = "ignored",
-                exitCode = 0,
-                timedOut = false,
-                cancelled = false,
-            )
-
-        assertEquals("root", privilegedCommandOutputOrNull(result))
-    }
-
-    @Test
-    fun `blank output maps to null`() {
-        val result =
-            AppCommandResult(
-                stdout = "   ",
-                stderr = "",
-                exitCode = 0,
-                timedOut = false,
-                cancelled = false,
-            )
-
-        assertNull(privilegedCommandOutputOrNull(result))
+            assertEquals(row.expected, privilegedCommandOutputOrNull(result), row.label)
+        }
     }
 
     @Test

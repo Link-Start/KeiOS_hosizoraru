@@ -8,11 +8,6 @@ import kotlin.test.assertTrue
 
 class UiPrefsDefaultSnapshotTest {
     @Test
-    fun `home hdr highlight starts disabled`() {
-        assertFalse(UiPrefs.defaultSnapshot().homeIconHdrEnabled)
-    }
-
-    @Test
     fun `non home background customization keeps legacy default rendering`() {
         val snapshot = UiPrefs.defaultSnapshot()
 

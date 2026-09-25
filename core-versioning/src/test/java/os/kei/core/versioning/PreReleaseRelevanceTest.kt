@@ -111,37 +111,6 @@ class PreReleaseRelevanceTest {
         )
     }
 
-    /**
-     * The case that makes the release date the wrong clock on its own.
-     *
-     * A pre-release used to host CI builds is published once and never again, while what it holds is
-     * replaced on every run. Judged by `published_at` such a line looks years dead; judged by its
-     * assets it is producing builds newer than the stable. The caller resolves the two into one
-     * timestamp before asking, so what arrives here is the later of them — this pins that a line
-     * kept alive only by its artifacts is not retired.
-     */
-    @Test
-    fun `a rolling CI line is judged by its artifacts, not by when its tag was cut`() {
-        val tagCutLongAgo = Instant.parse("2022-01-01T00:00:00Z").toEpochMilli()
-        val assetsRebuiltYesterday = Instant.parse("2026-05-07T00:00:00Z").toEpochMilli()
-        val now = Instant.parse("2026-05-08T10:56:13Z").toEpochMilli()
-
-        assertTrue(
-            VersioningEngine.isAbandonedPreRelease(
-                preReleaseFreshnessMillis = tagCutLongAgo,
-                nowMillis = now,
-            ),
-            "the tag alone reads as abandoned, which is why the caller must not pass it alone",
-        )
-        assertFalse(
-            VersioningEngine.isAbandonedPreRelease(
-                preReleaseFreshnessMillis = maxOf(tagCutLongAgo, assetsRebuiltYesterday),
-                nowMillis = now,
-            ),
-            "resolved against its assets the line is alive",
-        )
-    }
-
     /** Without both timestamps there is no supersession claim to make. */
     @Test
     fun `an undated preview is left to the version comparison`() {

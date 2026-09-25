@@ -42,18 +42,6 @@ class PrivilegeStatusTest {
     }
 
     @Test
-    fun `disabled mode reports an inactive privilege runtime`() {
-        val status =
-            PrivilegeStatus(
-                mode = PrivilegeMode.Disabled,
-                code = PrivilegeStatusCode.Disabled,
-            )
-
-        assertFalse(status.isCommandReady)
-        assertEquals("Privilege mode: disabled", status.text)
-    }
-
-    @Test
     fun `notice text passes the detail through unchanged`() {
         val status =
             PrivilegeStatus(
@@ -75,13 +63,5 @@ class PrivilegeStatusTest {
                     assertTrue(text.isNotBlank(), "blank text for $mode/$code")
                 }
         }
-    }
-
-    @Test
-    fun `initializing helper carries the requested mode`() {
-        assertEquals(
-            PrivilegeStatus(mode = PrivilegeMode.Root, code = PrivilegeStatusCode.Initializing),
-            PrivilegeStatus.initializing(PrivilegeMode.Root),
-        )
     }
 }

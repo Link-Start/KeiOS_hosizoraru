@@ -13,39 +13,24 @@ import kotlin.test.assertTrue
  */
 class LiquidPresentationMaterialContractTest {
     @Test
-    fun `nobody inlines the presentation blur expression any more`() {
-        // The same two-line expression was pasted into four files. Frame cost lives in it, so it should
-        // be one line to find and one line to change.
-        val offenders =
-            kotlinMainSources()
-                .filter { it.name != "LiquidPresentationMaterial.kt" }
-                .filter { file ->
-                    val text = file.readText()
-                    "maxGlassBlur" in text && "blurScaleFor" in text
-                }.map { it.name }
+    fun `nobody inlines the presentation blur or lens expression any more`() {
+        // The same two-line expressions were pasted into four files. Frame cost lives in them, so each
+        // should be one line to find and one line to change: presentationGlassBlur() and
+        // presentationGlassLens(...) in the one allowed file.
+        val expressions =
+            mapOf(
+                "blur" to listOf("maxGlassBlur", "blurScaleFor"),
+                "lens" to listOf("backdropLens", "lensScaleFor"),
+            )
+        val (owners, others) = kotlinMainSources().partition { it.name == PRESENTATION_MATERIAL_FILE }
+        val owner = owners.single().readText()
 
-        assertEquals(
-            emptyList(),
-            offenders,
-            "these should call presentationGlassBlur() instead of re-deriving it",
-        )
-    }
-
-    @Test
-    fun `nobody inlines the presentation lens expression any more`() {
-        val offenders =
-            kotlinMainSources()
-                .filter { it.name != "LiquidPresentationMaterial.kt" }
-                .filter { file ->
-                    val text = file.readText()
-                    "backdropLens" in text && "lensScaleFor" in text
-                }.map { it.name }
-
-        assertEquals(
-            emptyList(),
-            offenders,
-            "these should call presentationGlassLens(...) instead of re-deriving it",
-        )
+        expressions.forEach { (name, markers) ->
+            // The allow-list still matches: the owner derives it, so the scan below is not vacuous.
+            assertTrue(markers.all { it in owner }, "$PRESENTATION_MATERIAL_FILE no longer derives the $name")
+            val offenders = others.filter { file -> file.readText().let { text -> markers.all { it in text } } }
+            assertEquals(emptyList(), offenders.map { it.name }, "these re-derive the presentation $name")
+        }
     }
 
     @Test
@@ -66,6 +51,10 @@ class LiquidPresentationMaterialContractTest {
             "layerBlock = transformProvider" in toastSource("LiquidToastSurface.kt"),
             "the pill's transform has to reach drawBackdrop's layerBlock",
         )
+    }
+
+    private companion object {
+        const val PRESENTATION_MATERIAL_FILE = "LiquidPresentationMaterial.kt"
     }
 
     private fun toastSource(name: String): String = kotlinMainSources().single { it.name == name }.readText()

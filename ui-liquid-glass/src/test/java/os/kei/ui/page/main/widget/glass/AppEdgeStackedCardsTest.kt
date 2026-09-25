@@ -419,19 +419,14 @@ class AppEdgeStackedCardsTest {
     }
 
     @Test
-    fun `the scrim is heavier in dark mode than in light`() {
-        val card = AppEdgeStackCard().apply { apply(transformAt(stackLine - 4000f)) }
+    fun `a resting card draws no scrim and a deep one is heavier in dark mode than in light`() {
+        val resting = AppEdgeStackCard()
+        assertEquals(0f, appEdgeStackDimAlpha(resting, isDark = true))
+        assertEquals(0f, appEdgeStackDimAlpha(resting, isDark = false))
 
-        assertEquals(APP_EDGE_STACK_DIM_DARK, appEdgeStackDimAlpha(card, isDark = true))
-        assertEquals(APP_EDGE_STACK_DIM_LIGHT, appEdgeStackDimAlpha(card, isDark = false))
+        val deep = AppEdgeStackCard().apply { apply(transformAt(stackLine - 4000f)) }
+        assertEquals(APP_EDGE_STACK_DIM_DARK, appEdgeStackDimAlpha(deep, isDark = true))
+        assertEquals(APP_EDGE_STACK_DIM_LIGHT, appEdgeStackDimAlpha(deep, isDark = false))
         assertTrue(APP_EDGE_STACK_DIM_LIGHT < APP_EDGE_STACK_DIM_DARK)
-    }
-
-    @Test
-    fun `a resting card draws no scrim at all`() {
-        val card = AppEdgeStackCard()
-
-        assertEquals(0f, appEdgeStackDimAlpha(card, isDark = true))
-        assertEquals(0f, appEdgeStackDimAlpha(card, isDark = false))
     }
 }

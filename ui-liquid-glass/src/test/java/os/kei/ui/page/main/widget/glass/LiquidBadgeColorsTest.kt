@@ -9,19 +9,14 @@ import kotlin.test.assertTrue
 
 class LiquidBadgeColorsTest {
     @Test
-    fun defaultThemePairIsPreserved() {
-        assertEquals(
-            LiquidBadgeColors(DefaultContainer, DefaultContent),
-            resolveColors(),
-        )
-    }
-
-    @Test
-    fun explicitDefaultContainerKeepsThemePair() {
-        assertEquals(
-            LiquidBadgeColors(DefaultContainer, DefaultContent),
-            resolveColors(containerColor = DefaultContainer),
-        )
+    fun noCustomContainerKeepsTheThemePair() {
+        listOf(
+            "no container" to null,
+            "the default container passed explicitly" to DefaultContainer,
+            "an unspecified container" to Color.Unspecified,
+        ).forEach { (label, container) ->
+            assertEquals(LiquidBadgeColors(DefaultContainer, DefaultContent), resolveColors(containerColor = container), label)
+        }
     }
 
     @Test
@@ -75,12 +70,7 @@ class LiquidBadgeColorsTest {
     }
 
     @Test
-    fun unspecifiedColorsUseSafeAutomaticFallbacks() {
-        assertEquals(
-            LiquidBadgeColors(DefaultContainer, DefaultContent),
-            resolveColors(containerColor = Color.Unspecified),
-        )
-
+    fun unspecifiedContentColorUsesASafeAutomaticFallback() {
         val automatic =
             resolveColors(
                 containerColor = Color(0xFF3B82F6),

@@ -45,6 +45,12 @@ class LiquidSliderThumbColorControlsTest {
             "Brightness is the whole of the press emphasis now, so it must be positive and non-trivial",
             SliderThumbPressedBrightness >= 0.08f,
         )
+        // A 20dp capsule of glass over arbitrary content, including photos. Past roughly this bound a
+        // luminance lift stops looking like light on glass and starts washing the refraction out.
+        assertTrue(
+            "Pressed brightness $SliderThumbPressedBrightness is beyond a plausible lift",
+            SliderThumbPressedBrightness <= 0.18f,
+        )
     }
 
     /**
@@ -73,16 +79,6 @@ class LiquidSliderThumbColorControlsTest {
         assertTrue(
             "A residual frost above about a quarter stops reading as 'the glass clears up'",
             SliderThumbPressedBlurFloorFraction <= 0.25f,
-        )
-    }
-
-    @Test
-    fun theLiftStaysGentleEnoughToReadAsLight() {
-        // A 20dp capsule of glass over arbitrary content, including photos. Past roughly this bound a
-        // luminance lift stops looking like light on glass and starts washing the refraction out.
-        assertTrue(
-            "Pressed brightness $SliderThumbPressedBrightness is beyond a plausible lift",
-            SliderThumbPressedBrightness <= 0.18f,
         )
     }
 

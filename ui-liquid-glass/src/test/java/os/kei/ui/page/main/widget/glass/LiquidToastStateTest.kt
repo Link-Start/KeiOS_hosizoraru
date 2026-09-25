@@ -18,18 +18,6 @@ class LiquidToastStateTest {
     private fun LiquidToastState.messages(): List<String> = visibleSlots.map { it.data.message }
 
     @Test
-    fun visibilityTracksTheLiveToastStack() {
-        val state = LiquidToastState()
-
-        assertFalse(state.isVisible)
-        state.show("Visible")
-        assertTrue(state.isVisible)
-
-        state.dismissAll()
-        assertFalse(state.isVisible)
-    }
-
-    @Test
     fun stacksUpToTwoVisibleAndQueuesTheRest() {
         val state = LiquidToastState()
         state.show("A")
@@ -138,12 +126,15 @@ class LiquidToastStateTest {
     @Test
     fun dismissAllClearsVisibleAndQueued() {
         val state = LiquidToastState()
+        assertFalse(state.isVisible)
         listOf("A", "B", "C", "D").forEach { state.show(it) }
+        assertTrue(state.isVisible)
         assertTrue(state.hasBacklog)
 
         state.dismissAll()
 
         assertTrue(state.visibleSlots.isEmpty())
         assertFalse(state.hasBacklog)
+        assertFalse(state.isVisible)
     }
 }

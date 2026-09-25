@@ -121,28 +121,24 @@ class AppNavigationPlacementTest {
     }
 
     /**
-     * A pushed route owns its top row, so both ends of it come in with the content column.
+     * A pushed route owns its top row, so both ends of it come in with the content column. At the top tab
+     * bar the row belongs to the app, not the page, so it spans the window at both ends.
      *
      * The numbers are the Pad AVD's real gutters. 280dp landscape is what the back button used to be adrift
      * by: measured on the device, the content column started at 294dp while the button started at 14dp.
+     * Keeping the gutter at the tab bar pulled the trailing actions into the centred bar at 1280dp.
      */
     @Test
-    fun `a page's top row chrome follows the content column`() {
-        listOf(AppNavigationPlacement.Bottom, AppNavigationPlacement.Sidebar).forEach { placement ->
-            assertEquals(280.dp, appTopBarChromeGutterFor(placement, 280.dp), "placement=$placement")
-            assertEquals(40.dp, appTopBarChromeGutterFor(placement, 40.dp), "placement=$placement")
+    fun `a page's top row chrome follows the content column, the app's own row spans the window`() {
+        listOf(
+            Triple(AppNavigationPlacement.Bottom, 280.dp, 280.dp),
+            Triple(AppNavigationPlacement.Bottom, 40.dp, 40.dp),
+            Triple(AppNavigationPlacement.Sidebar, 280.dp, 280.dp),
+            Triple(AppNavigationPlacement.Sidebar, 40.dp, 40.dp),
+            Triple(AppNavigationPlacement.Top, 280.dp, 0.dp),
+            Triple(AppNavigationPlacement.Top, 40.dp, 0.dp),
+        ).forEach { (placement, gutter, expected) ->
+            assertEquals(expected, appTopBarChromeGutterFor(placement, gutter), "placement=$placement gutter=$gutter")
         }
-    }
-
-    /**
-     * At the top tab bar the row belongs to the app, not the page, so it spans the window at both ends.
-     *
-     * Keeping the gutter there pulled the trailing actions into the centred tab bar on the Pad at 1280dp,
-     * and would now do the same to the leading chrome.
-     */
-    @Test
-    fun `the app's own top row spans the window`() {
-        assertEquals(0.dp, appTopBarChromeGutterFor(AppNavigationPlacement.Top, 280.dp))
-        assertEquals(0.dp, appTopBarChromeGutterFor(AppNavigationPlacement.Top, 40.dp))
     }
 }

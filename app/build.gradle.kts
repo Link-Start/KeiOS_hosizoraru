@@ -483,6 +483,11 @@ android {
         unitTests.all {
             // Keep unit tests on the desktop OkHttp platform.
             it.systemProperty("okhttp.platform", "jdk9")
+            // Two JVMs split :app's suite, which sets the whole project's wall time. Each fork pays its own
+            // Robolectric startup, so more stops paying: `:app:testDebugUnitTest --rerun`, two runs each,
+            // 2026-09-25 on a 12-core Mac: 1 fork 36s/31s, 2 forks 27s/26s, 4 forks 27s/25s, 6 forks 32s/29s.
+            // CI's runner has 4 vCPUs.
+            it.maxParallelForks = 2
         }
     }
 }

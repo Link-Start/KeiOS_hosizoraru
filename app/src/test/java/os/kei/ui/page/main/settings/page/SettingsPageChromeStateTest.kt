@@ -55,22 +55,20 @@ class SettingsPageChromeStateTest {
     }
 
     @Test
-    fun `card expansion falls back to card default`() {
-        assertEquals(
-            SettingsCardExpansionId.Permissions.defaultExpanded,
-            emptyMap<SettingsCardExpansionId, Boolean>().isSettingsCardExpanded(SettingsCardExpansionId.Permissions),
-        )
-        assertEquals(
-            SettingsCardExpansionId.KeepAlive.defaultExpanded,
-            emptyMap<SettingsCardExpansionId, Boolean>().isSettingsCardExpanded(SettingsCardExpansionId.KeepAlive),
-        )
-    }
+    fun `card expansion reads the snapshot and falls back to each card's default`() {
+        // One default of each kind, and overrides against both: the old cases used only open-by-default
+        // cards and overrode one to the value it already had, so they passed with the map ignored.
+        val empty = emptyMap<SettingsCardExpansionId, Boolean>()
+        assertEquals(true, empty.isSettingsCardExpanded(SettingsCardExpansionId.KeepAlive))
+        assertEquals(false, empty.isSettingsCardExpanded(SettingsCardExpansionId.Performance))
 
-    @Test
-    fun `card expansion snapshot overrides card default`() {
-        val snapshot = mapOf(SettingsCardExpansionId.KeepAlive to true)
-
-        assertEquals(true, snapshot.isSettingsCardExpanded(SettingsCardExpansionId.KeepAlive))
+        val snapshot =
+            mapOf(
+                SettingsCardExpansionId.KeepAlive to false,
+                SettingsCardExpansionId.Performance to true,
+            )
+        assertEquals(false, snapshot.isSettingsCardExpanded(SettingsCardExpansionId.KeepAlive))
+        assertEquals(true, snapshot.isSettingsCardExpanded(SettingsCardExpansionId.Performance))
     }
 
     @Test

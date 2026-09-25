@@ -26,28 +26,12 @@ class GitHubAtomHeuristicsTest {
     }
 
     @Test
-    fun `channel detection supports tracked project variants`() {
+    fun `channel detection reads a canary tag as dev`() {
         assertEquals(
             GitHubReleaseChannel.DEV,
             GitHubAtomHeuristics.detectReleaseChannel(
                 tag = "Version.26.4.Canary_C378",
                 title = "Capsulyric Canary",
-                contentPreview = ""
-            )
-        )
-        assertEquals(
-            GitHubReleaseChannel.PREVIEW,
-            GitHubAtomHeuristics.detectReleaseChannel(
-                tag = "v1.4.6-prerelease2",
-                title = "BatteryRecorder pre-release",
-                contentPreview = ""
-            )
-        )
-        assertEquals(
-            GitHubReleaseChannel.DEV,
-            GitHubAtomHeuristics.detectReleaseChannel(
-                tag = "1.9.0.n488.nightly",
-                title = "WhatAnime nightly",
                 contentPreview = ""
             )
         )

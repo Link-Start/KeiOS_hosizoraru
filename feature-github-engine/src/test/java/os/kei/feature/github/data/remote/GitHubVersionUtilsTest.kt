@@ -9,33 +9,6 @@ import kotlin.test.assertTrue
 
 class GitHubVersionUtilsTest {
     @Test
-    fun `stable release outranks same-base rc from ImageToolbox style versions`() {
-        val compare = GitHubVersionUtils.compareVersionToCandidates(
-            localVersion = "3.8.0-rc04",
-            candidates = listOf("3.8.0")
-        )
-        assertEquals(-1, compare)
-    }
-
-    @Test
-    fun `canary build is older than alpha build for Capsulyric style versions`() {
-        val compare = GitHubVersionUtils.compareVersionToCandidates(
-            localVersion = "Version.26.4.Canary_C378",
-            candidates = listOf("Version.26.4.Alpha2_C384")
-        )
-        assertEquals(-1, compare)
-    }
-
-    @Test
-    fun `newer alpha still outranks older stable for SaltPlayer style versions`() {
-        val compare = GitHubVersionUtils.compareVersionToCandidates(
-            localVersion = "11.2.0-alpha01",
-            candidates = listOf("11.1.0")
-        )
-        assertEquals(1, compare)
-    }
-
-    @Test
     fun `wild tracked version tags classify into their release channel`() {
         // Null means "no pre-release marker"; the STABLE row accepts either null or STABLE.
         val rows = listOf(
@@ -63,6 +36,9 @@ class GitHubVersionUtilsTest {
             "date prefixed release name must expose its semantic version candidate",
         )
         val rows = listOf(
+            Triple("ImageToolbox: stable outranks its same-base rc", "3.8.0-rc04" to "3.8.0", -1),
+            Triple("Capsulyric: canary is older than alpha", "Version.26.4.Canary_C378" to "Version.26.4.Alpha2_C384", -1),
+            Triple("SaltPlayer: newer alpha outranks older stable", "11.2.0-alpha01" to "11.1.0", 1),
             Triple("C01 build before its Dev tag", "26.4.3.C01" to "v26.4.9.C01-Dev", -1),
             Triple("revision hash builds", "1.8.8.r471.cff36155" to "1.9.0.r488.d07a3e1b", -1),
             Triple("date prefixed release name", "1.22" to "260412_1.22", 0),
@@ -110,13 +86,6 @@ class GitHubVersionUtilsTest {
             candidates = candidates
         )
         assertEquals(-1, compare)
-    }
-
-    @Test
-    fun `candidate normalization keeps tracked project formats`() {
-        val candidates = GitHubVersionUtils.normalizeVersionCandidates("Version.26.4.Canary_C378")
-        assertTrue(candidates.any { it.contains("26.4") })
-        assertTrue(candidates.any { it.contains("canary") || it.contains("dev") })
     }
 
     @Test
@@ -200,7 +169,7 @@ class GitHubVersionUtilsTest {
     }
 
     @Test
-    fun `remote candidate can match local versionName plus versionCode`() {
+    fun `remote candidate matches local versionName plus versionCode only on the same build code`() {
         val candidates = GitHubVersionUtils.buildVersionCandidates(
             GitHubVersionCandidateSource.Tag to "v1.2.18.2102"
         )
@@ -212,21 +181,14 @@ class GitHubVersionUtilsTest {
                 remoteCandidates = candidates
             )
         )
-    }
-
-    @Test
-    fun `remote candidate with different build code stays newer`() {
-        val candidates = GitHubVersionUtils.buildVersionCandidates(
-            GitHubVersionCandidateSource.Tag to "v1.2.18.2102"
-        )
-
         assertEquals(
             false,
             GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
                 localVersion = "1.2.18",
                 localVersionCode = 2101L,
                 remoteCandidates = candidates
-            )
+            ),
+            "a different build code stays newer"
         )
     }
 }

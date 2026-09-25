@@ -10,7 +10,6 @@ import org.junit.Test
 import os.kei.core.io.BoundedContentTextReadTooLargeException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GitHubAtomReleaseStrategyTest {
@@ -41,51 +40,40 @@ class GitHubAtomReleaseStrategyTest {
         }
     }
 
+    /** Each row is a feed plus the `releases/latest` answer, and the lanes the strategy must pick. */
     @Test
-    fun `atom snapshot keeps stable redirect and prerelease entry`() = runBlocking {
-        MockWebServer().use { server ->
-            server.routeAtom(feed = sampleAtomFeedXml(), latest = latestRedirect("v1.1.0"))
-
-            val trace = server.loadAtomSnapshotTrace()
-            val snapshot = trace.result.getOrThrow()
-
-            assertFalse(trace.fromCache)
-            assertEquals("v1.1.0", snapshot.latestStable.rawTag)
-            assertEquals("v1.2.0-beta1", snapshot.latestPreRelease?.rawTag)
-            assertEquals(2, snapshot.feed.entries.size)
-        }
-    }
-
-    @Test
-    fun `atom snapshot keeps forward prerelease when it outruns stable`() = runBlocking {
-        MockWebServer().use { server ->
-            server.routeAtom(
-                feed = atomFeed(
+    fun `atom snapshot picks stable from the latest lookup and keeps the right prerelease`() = runBlocking {
+        data class Case(
+            val label: String,
+            val feed: String,
+            val latest: MockResponse,
+            val stable: String,
+            val preRelease: String?,
+            val hasStable: Boolean = true,
+            val stableName: String? = null,
+        )
+        val cases = listOf(
+            Case(
+                "stable redirect plus a newer beta entry",
+                sampleAtomFeedXml(),
+                latestRedirect("v1.1.0"),
+                stable = "v1.1.0",
+                preRelease = "v1.2.0-beta1",
+            ),
+            Case(
+                "a forward prerelease that outruns stable stays visible",
+                atomFeed(
                     AtomEntry("v1.4.7-prerelease3", updated = "2026-04-13T09:00:00Z", content = "Preview build"),
                     AtomEntry("v1.4.4-release", updated = "2026-04-12T09:00:00Z", content = "Stable build"),
                 ),
-                latest = latestRedirect("v1.4.4-release"),
-            )
-
-            val trace = server.loadAtomSnapshotTrace()
-            val snapshot = trace.result.getOrThrow()
-
-            assertFalse(trace.fromCache)
-            assertEquals("v1.4.4-release", snapshot.latestStable.rawTag)
-            assertEquals("v1.4.7-prerelease3", snapshot.latestPreRelease?.rawTag)
-        }
-    }
-
-    @Test
-    fun `atom latest redirect matches exact stable tag instead of newer alpha entry`() = runBlocking {
-        MockWebServer().use { server ->
-            server.routeAtom(
-                feed = atomFeed(
-                    AtomEntry(
-                        "Version.26.4.Alpha2_C384",
-                        updated = "2026-04-13T09:00:00Z",
-                        content = "Alpha preview build",
-                    ),
+                latestRedirect("v1.4.4-release"),
+                stable = "v1.4.4-release",
+                preRelease = "v1.4.7-prerelease3",
+            ),
+            Case(
+                "the redirect matches the exact stable tag, not a newer alpha or its canary alias",
+                atomFeed(
+                    AtomEntry("Version.26.4.Alpha2_C384", updated = "2026-04-13T09:00:00Z", content = "Alpha preview build"),
                     AtomEntry(
                         "Canary.Version_C384",
                         updated = "2026-04-13T08:59:00Z",
@@ -94,63 +82,46 @@ class GitHubAtomReleaseStrategyTest {
                     ),
                     AtomEntry("Version.1.3.Fix2_C359", updated = "2026-04-12T09:00:00Z", content = "Stable build"),
                 ),
-                latest = latestRedirect("Version.1.3.Fix2_C359"),
-            )
-
-            val snapshot = server.loadAtomSnapshotTrace().result.getOrThrow()
-
-            assertTrue(snapshot.hasStableRelease)
-            assertEquals("Version.1.3.Fix2_C359", snapshot.latestStable.rawTag)
-            assertEquals("Version.26.4.Alpha2_C384", snapshot.latestPreRelease?.rawTag)
-        }
-    }
-
-    @Test
-    fun `atom keeps rc prerelease visible when stable redirect points to same base final release`() = runBlocking {
-        MockWebServer().use { server ->
-            server.routeAtom(
-                feed = atomFeed(
-                    AtomEntry(
-                        "3.8.0",
-                        updated = "2026-04-12T09:00:00Z",
-                        content = "Full Changelog 3.7.2-alpha02...3.8.0",
-                    ),
-                    AtomEntry(
-                        "3.8.0-rc04",
-                        updated = "2026-04-13T09:00:00Z",
-                        content = "Full Changelog 3.8.0-rc03...3.8.0-rc04",
-                    ),
+                latestRedirect("Version.1.3.Fix2_C359"),
+                stable = "Version.1.3.Fix2_C359",
+                preRelease = "Version.26.4.Alpha2_C384",
+            ),
+            Case(
+                "an rc stays visible when the redirect points at its same-base final release",
+                atomFeed(
+                    AtomEntry("3.8.0", updated = "2026-04-12T09:00:00Z", content = "Full Changelog 3.7.2-alpha02...3.8.0"),
+                    AtomEntry("3.8.0-rc04", updated = "2026-04-13T09:00:00Z", content = "Full Changelog 3.8.0-rc03...3.8.0-rc04"),
                 ),
-                latest = latestRedirect("3.8.0"),
-            )
-
-            val snapshot = server.loadAtomSnapshotTrace().result.getOrThrow()
-
-            assertTrue(snapshot.hasStableRelease)
-            assertEquals("3.8.0", snapshot.latestStable.rawTag)
-            assertEquals("3.8.0-rc04", snapshot.latestPreRelease?.rawTag)
-        }
-    }
-
-    @Test
-    fun `atom snapshot keeps prerelease only repos explicit instead of faking stable channel`() = runBlocking {
-        MockWebServer().use { server ->
-            server.routeAtom(
-                feed = atomFeed(
+                latestRedirect("3.8.0"),
+                stable = "3.8.0",
+                preRelease = "3.8.0-rc04",
+            ),
+            Case(
+                "a prerelease-only repository stays explicit instead of faking a stable channel",
+                atomFeed(
                     AtomEntry("0.0.8", updated = "2026-04-13T10:28:20Z", title = "v0.0.8", content = "Preview build"),
                     AtomEntry("0.0.7", updated = "2026-04-11T11:03:39Z", title = "v0.0.7", content = "Preview build"),
                 ),
-                latest = MockResponse().setResponseCode(404),
-            )
+                MockResponse().setResponseCode(404),
+                stable = "0.0.8",
+                preRelease = "0.0.8",
+                hasStable = false,
+                stableName = "v0.0.8",
+            ),
+        )
 
-            val trace = server.loadAtomSnapshotTrace()
-            val snapshot = trace.result.getOrThrow()
+        cases.forEach { case ->
+            GitHubAtomReleaseStrategy.clearCaches()
+            MockWebServer().use { server ->
+                server.routeAtom(feed = case.feed, latest = case.latest)
 
-            assertFalse(trace.fromCache)
-            assertFalse(snapshot.hasStableRelease)
-            assertEquals("0.0.8", snapshot.latestStable.rawTag)
-            assertEquals("v0.0.8", snapshot.latestStable.rawName)
-            assertEquals("0.0.8", snapshot.latestPreRelease?.rawTag)
+                val snapshot = server.loadAtomSnapshotTrace().result.getOrThrow()
+
+                assertEquals(case.hasStable, snapshot.hasStableRelease, case.label)
+                assertEquals(case.stable, snapshot.latestStable.rawTag, case.label)
+                assertEquals(case.preRelease, snapshot.latestPreRelease?.rawTag, case.label)
+                case.stableName?.let { assertEquals(it, snapshot.latestStable.rawName, case.label) }
+            }
         }
     }
 

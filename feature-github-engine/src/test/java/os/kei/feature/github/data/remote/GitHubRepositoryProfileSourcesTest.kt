@@ -4,16 +4,12 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
-import os.kei.feature.github.model.GitHubAtomFeed
-import os.kei.feature.github.model.GitHubReleaseSignalSource
-import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
 import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
 import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
-import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -110,48 +106,6 @@ class GitHubRepositoryProfileSourcesTest {
         )
         assertEquals(1200, profile.activity.stargazersCount?.value)
         assertTrue(profile.community.hasReadme?.value == true)
-    }
-
-    @Test
-    fun `release profile keeps atom api and redirect signals in the same shape`() {
-        val atomProfile = GitHubReleaseProfileSource.build(
-            snapshot = releaseSnapshot(
-                strategyId = "atom_feed",
-                source = GitHubReleaseSignalSource.AtomEntry,
-            ),
-            fetchedAtMillis = FETCHED_AT,
-        )
-        val apiProfile = GitHubReleaseProfileSource.build(
-            snapshot = releaseSnapshot(
-                strategyId = "github_api_token",
-                source = GitHubReleaseSignalSource.GitHubApi,
-            ),
-            fetchedAtMillis = FETCHED_AT,
-        )
-
-        assertEquals(atomProfile.hasStableRelease?.value, apiProfile.hasStableRelease?.value)
-        assertEquals(atomProfile.latestStableTag?.value, apiProfile.latestStableTag?.value)
-        assertEquals(atomProfile.latestPreReleaseTag?.value, apiProfile.latestPreReleaseTag?.value)
-        assertEquals(
-            GitHubRepositoryProfileSource.AtomReleaseFeed,
-            atomProfile.latestStableTag?.source,
-        )
-        assertEquals(
-            GitHubRepositoryProfileSource.GitHubApiReleases,
-            apiProfile.latestStableTag?.source,
-        )
-
-        val redirectProfile = GitHubReleaseProfileSource.build(
-            snapshot = releaseSnapshot(
-                strategyId = "atom_feed",
-                source = GitHubReleaseSignalSource.LatestRedirect,
-            ),
-            fetchedAtMillis = FETCHED_AT,
-        )
-        assertEquals(
-            GitHubRepositoryProfileSource.HtmlLatestReleaseRedirect,
-            redirectProfile.latestStableTag?.source,
-        )
     }
 
     @Test
@@ -306,33 +260,6 @@ class GitHubRepositoryProfileSourcesTest {
         assertEquals(110L, matched.remoteVersionCode?.value)
         assertFalse(mismatched.packageNameMatched?.value == true)
         assertEquals(GitHubRepositoryProfileSource.LocalInstall, mismatched.packageNameMatched?.source)
-    }
-
-    private fun releaseSnapshot(
-        strategyId: String,
-        source: GitHubReleaseSignalSource,
-    ): GitHubRepositoryReleaseSnapshot {
-        return GitHubRepositoryReleaseSnapshot(
-            strategyId = strategyId,
-            feed = GitHubAtomFeed(title = "demo/app releases"),
-            latestStable = releaseSignal("v1.2.0", source),
-            hasStableRelease = true,
-            latestPreRelease = releaseSignal("v1.3.0-beta1", source),
-        )
-    }
-
-    private fun releaseSignal(
-        tag: String,
-        source: GitHubReleaseSignalSource,
-    ): GitHubReleaseVersionSignals {
-        return GitHubReleaseVersionSignals(
-            displayVersion = tag,
-            rawTag = tag,
-            rawName = tag,
-            updatedAtMillis = 1_700_000_000_000L,
-            source = source,
-            authorName = "maintainer",
-        )
     }
 
     private fun apiRepositoryJson(

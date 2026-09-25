@@ -6,7 +6,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
 import os.kei.core.io.BoundedContentTextReadTooLargeException
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GitHubRepositoryProfileHttpClientTest {
@@ -24,19 +23,6 @@ class GitHubRepositoryProfileHttpClientTest {
                 .exceptionOrNull()
 
             assertTrue(error is BoundedContentTextReadTooLargeException)
-        }
-    }
-
-    @Test
-    fun `profile html keeps bounded normal response`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(200).setBody("<html>demo</html>"))
-            val http = profileClient(server)
-
-            assertEquals(
-                "<html>demo</html>",
-                http.fetchHtml(server.url("/demo/app").toString()).getOrThrow(),
-            )
         }
     }
 

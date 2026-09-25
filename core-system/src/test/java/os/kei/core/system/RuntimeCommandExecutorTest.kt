@@ -1,5 +1,8 @@
 package os.kei.core.system
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Test
@@ -167,9 +170,11 @@ class RuntimeCommandExecutorTest {
     fun `persistent shell rebuilds after timeout`() = runTest {
         val executor = PersistentShellCommandExecutor()
 
+        val startedNs = System.nanoTime()
         val timedOut = executor.executeAsync(
             AppCommandRequest("sleep 2; printf late", timeoutMs = 100L)
         )
+        val elapsedMs = (System.nanoTime() - startedNs) / 1_000_000
         val recovered = executor.executeAsync(
             AppCommandRequest("printf recovered", timeoutMs = 1_000L)
         )
@@ -178,8 +183,32 @@ class RuntimeCommandExecutorTest {
 
         assertTrue(timedOut.timedOut)
         assertNull(timedOut.exitCode)
+        // The timeout has to fire while the command is quiet, not when it next prints: a blocking pipe
+        // read ignored it, and this call took the full 2s of `sleep 2`.
+        assertTrue(elapsedMs < 1_000, "a 100ms timeout returned after ${elapsedMs}ms")
         assertEquals("recovered", recovered.stdout)
         assertTrue(recovered.succeeded)
+    }
+
+    @Test
+    fun `persistent shell stops waiting as soon as the caller is cancelled`() = runTest {
+        val executor = PersistentShellCommandExecutor()
+        val call = launch(Dispatchers.IO) {
+            executor.executeAsync(AppCommandRequest("sleep 2; printf late", timeoutMs = 10_000L))
+        }
+        Thread.sleep(200)
+
+        val startedNs = System.nanoTime()
+        call.cancelAndJoin()
+        val elapsedMs = (System.nanoTime() - startedNs) / 1_000_000
+        val recovered = executor.executeAsync(
+            AppCommandRequest("printf recovered", timeoutMs = 1_000L)
+        )
+
+        executor.close()
+
+        assertTrue(elapsedMs < 1_000, "cancelling a quiet command took ${elapsedMs}ms")
+        assertEquals("recovered", recovered.stdout)
     }
 
     @Test

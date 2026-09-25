@@ -2,14 +2,13 @@ package os.kei.core.system
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.BufferedReader
 import java.io.BufferedWriter
-import java.io.InputStreamReader
+import java.io.InputStream
 import java.io.OutputStreamWriter
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.cancellation.CancellationException
@@ -51,7 +50,7 @@ internal class PersistentShellCommandExecutor(
 ) {
     private data class ShellSession(
         val process: Process,
-        val reader: BufferedReader,
+        val input: InputStream,
         val writer: BufferedWriter
     )
 
@@ -162,7 +161,7 @@ internal class PersistentShellCommandExecutor(
             .start()
         val created = ShellSession(
             process = process,
-            reader = BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)),
+            input = process.inputStream,
             writer = BufferedWriter(OutputStreamWriter(process.outputStream, Charsets.UTF_8))
         )
         synchronized(sessionLock) {
@@ -194,9 +193,10 @@ internal class PersistentShellCommandExecutor(
         val beginMarker = beginMarker(marker)
         val endMarkerPrefix = "${endMarker(marker)}:"
         val output = BoundedShellOutput(maxOutputBytes)
+        val lines = ShellLineReader(session)
         var started = false
         while (true) {
-            val line = runInterruptible { session.reader.readLine() }
+            val line = lines.next()
                 ?: return ShellReadResult(
                     output = output,
                     exitCode = null,
@@ -232,7 +232,7 @@ internal class PersistentShellCommandExecutor(
 
     private fun ShellSession.closeSession() {
         runCatching { writer.close() }
-        runCatching { reader.close() }
+        runCatching { input.close() }
         runCatching { process.outputStream.close() }
         runCatching { process.inputStream.close() }
         runCatching { process.errorStream.close() }
@@ -247,6 +247,73 @@ internal class PersistentShellCommandExecutor(
     private fun beginMarker(marker: String): String = "${marker}_BEGIN"
 
     private fun endMarker(marker: String): String = "${marker}_END"
+
+    /**
+     * Lines from the shell's output, read without ever blocking in a read.
+     *
+     * A blocking read on a process pipe ignores thread interrupts, so the timeout around it could not
+     * fire while a command was quiet: `runInterruptible { readLine() }` returned only when the command
+     * printed or exited, and a 100ms timeout on `sleep 2` took 2.05s. Closing the stream does not help
+     * either: the command's children keep the pipe open, and the reader's close waits for its own lock.
+     * So this reads only the bytes [InputStream.available] says have arrived, and waits in [delay],
+     * where timeouts and cancellation take effect. Lines split on the `\n` byte, which never occurs
+     * inside a UTF-8 sequence, and decode as UTF-8.
+     */
+    private class ShellLineReader(
+        private val session: ShellSession
+    ) {
+        private var buffer = ByteArray(READ_CHUNK_BYTES)
+        private var start = 0
+        private var end = 0
+
+        /** The next complete line, or null once the shell has exited and nothing more is buffered. */
+        suspend fun next(): String? {
+            while (true) {
+                takeLine()?.let { return it }
+                val available = session.input.available()
+                if (available > 0) {
+                    ensureRoom(minOf(available, READ_CHUNK_BYTES))
+                    val read = session.input.read(buffer, end, minOf(available, buffer.size - end))
+                    if (read < 0) return takeRemainder()
+                    end += read
+                } else if (!session.process.isAlive) {
+                    // Its last bytes can land between the two checks; drain them before calling it closed.
+                    if (session.input.available() > 0) continue
+                    return takeRemainder()
+                } else {
+                    delay(POLL_INTERVAL_MS)
+                }
+            }
+        }
+
+        private fun takeLine(): String? {
+            for (index in start until end) {
+                if (buffer[index] == NEWLINE) {
+                    val line = String(buffer, start, index - start, Charsets.UTF_8).removeSuffix("\r")
+                    start = index + 1
+                    return line
+                }
+            }
+            return null
+        }
+
+        private fun takeRemainder(): String? {
+            if (start == end) return null
+            val line = String(buffer, start, end - start, Charsets.UTF_8)
+            start = end
+            return line
+        }
+
+        private fun ensureRoom(bytes: Int) {
+            if (buffer.size - end >= bytes) return
+            val pendingBytes = end - start
+            val target = if (pendingBytes + bytes <= buffer.size) buffer else ByteArray(maxOf(buffer.size * 2, pendingBytes + bytes))
+            System.arraycopy(buffer, start, target, 0, pendingBytes)
+            buffer = target
+            start = 0
+            end = pendingBytes
+        }
+    }
 
     private class BoundedShellOutput(
         private val maxOutputBytes: Int
@@ -285,5 +352,8 @@ internal class PersistentShellCommandExecutor(
 
     private companion object {
         private const val MIN_OUTPUT_BYTES = 1_024
+        private const val READ_CHUNK_BYTES = 8_192
+        private const val POLL_INTERVAL_MS = 5L
+        private const val NEWLINE = '\n'.code.toByte()
     }
 }

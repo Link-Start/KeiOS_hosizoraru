@@ -5,6 +5,7 @@ import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubReleaseChannel
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.QueueDispatcher
 import org.junit.After
 import org.junit.Test
 import os.kei.core.io.BoundedContentTextReadTooLargeException
@@ -138,8 +139,8 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `blank token uses guest api without authorization header`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(successReleaseListResponse())
-            server.enqueue(successLatestReleaseResponse())
             val guestStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "",
                 apiBaseUrl = server.url("/").toString()
@@ -158,8 +159,8 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `token api sends bearer authorization header`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(successReleaseListResponse())
-            server.enqueue(successLatestReleaseResponse())
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -202,8 +203,8 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `second api load hits cache and avoids extra network request`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(successReleaseListResponse())
-            server.enqueue(successLatestReleaseResponse())
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -221,8 +222,9 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `latest api endpoint decides stable release while list still exposes prerelease`() = runBlocking {
+    fun `a same-base rc stays visible beside its final release`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -255,25 +257,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         """.trimIndent()
                     )
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            {
-                                "id": 1,
-                                "node_id": "R_1",
-                                "tag_name": "3.8.0",
-                                "name": "3.8.0",
-                                "html_url": "https://github.com/demo/app/releases/tag/3.8.0",
-                                "body": "Stable build for everyone, thanks rc testers",
-                                "draft": false,
-                                "prerelease": false,
-                                "published_at": "2026-04-09T19:28:15Z"
-                            }
-                        """.trimIndent()
-                    )
-            )
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -281,6 +264,7 @@ class GitHubApiTokenReleaseStrategyTest {
 
             val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
 
+            assertEquals(1, server.requestCount, "an ordinary history must not ask releases/latest")
             assertEquals("3.8.0", snapshot.latestStable.rawTag)
             assertEquals("3.8.0-rc04", snapshot.latestPreRelease?.rawTag)
         }
@@ -289,6 +273,7 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `stable latest release is not downgraded by rc words in changelog`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -321,25 +306,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         """.trimIndent()
                     )
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            {
-                              "id": 1,
-                              "node_id": "R_1",
-                              "tag_name": "1.4.3",
-                              "name": "1.4.3",
-                              "html_url": "https://github.com/demo/app/releases/tag/1.4.3",
-                              "body": "Fix pre-translation flow and rc migration leftovers",
-                              "draft": false,
-                              "prerelease": false,
-                              "published_at": "2026-04-13T10:28:20Z"
-                            }
-                        """.trimIndent()
-                    )
-            )
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -347,6 +313,7 @@ class GitHubApiTokenReleaseStrategyTest {
 
             val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
 
+            assertEquals(1, server.requestCount, "an ordinary history must not ask releases/latest")
             assertTrue(snapshot.hasStableRelease)
             assertEquals("1.4.3", snapshot.latestStable.rawTag)
             assertNull(snapshot.latestPreRelease)
@@ -356,6 +323,7 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `placeholder prerelease without version candidate is ignored`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -388,25 +356,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         """.trimIndent()
                     )
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            {
-                              "id": 1,
-                              "node_id": "R_1",
-                              "tag_name": "v0.5.1",
-                              "name": "Release",
-                              "html_url": "https://github.com/demo/app/releases/tag/v0.5.1",
-                              "body": "stable",
-                              "draft": false,
-                              "prerelease": false,
-                              "published_at": "2026-04-09T19:28:15Z"
-                            }
-                        """.trimIndent()
-                    )
-            )
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -414,77 +363,16 @@ class GitHubApiTokenReleaseStrategyTest {
 
             val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
 
+            assertEquals(1, server.requestCount, "an ordinary history must not ask releases/latest")
             assertEquals("v0.5.1", snapshot.latestStable.rawTag)
             assertNull(snapshot.latestPreRelease)
         }
     }
 
     @Test
-    fun `latest api failure falls back to stable selection from releases list while keeping newest prerelease visible`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            [
-                              {
-                                "id": 1,
-                                "node_id": "R_1",
-                                "tag_name": "Version.26.4.Alpha2_C384",
-                                "name": "Version.26.4.Alpha2_C384",
-                                "html_url": "https://github.com/demo/app/releases/tag/Version.26.4.Alpha2_C384",
-                                "body": "preview",
-                                "draft": false,
-                                "prerelease": true,
-                                "published_at": "2026-04-08T18:17:14Z"
-                              },
-                              {
-                                "id": 3,
-                                "node_id": "R_3",
-                                "tag_name": "Canary.Version_C384",
-                                "name": "Canary Build Version.26.4.Canary_C384",
-                                "html_url": "https://github.com/demo/app/releases/tag/Canary.Version_C384",
-                                "body": "preview",
-                                "draft": false,
-                                "prerelease": true,
-                                "published_at": "2026-04-08T18:16:59Z"
-                              },
-                              {
-                                "id": 2,
-                                "node_id": "R_2",
-                                "tag_name": "Version.1.3.Fix2_C359",
-                                "name": "Version.1.3.Fix2_C359",
-                                "html_url": "https://github.com/demo/app/releases/tag/Version.1.3.Fix2_C359",
-                                "body": "stable",
-                                "draft": false,
-                                "prerelease": false,
-                                "published_at": "2026-04-04T18:25:19Z"
-                              }
-                            ]
-                        """.trimIndent()
-                    )
-            )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(404)
-                    .setBody("""{"message":"Not Found"}""")
-            )
-            val tokenStrategy = GitHubApiTokenReleaseStrategy(
-                apiToken = "ghp_testtoken123",
-                apiBaseUrl = server.url("/").toString()
-            )
-
-            val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
-
-            assertEquals("Version.1.3.Fix2_C359", snapshot.latestStable.rawTag)
-            assertEquals("Version.26.4.Alpha2_C384", snapshot.latestPreRelease?.rawTag)
-        }
-    }
-
-    @Test
     fun `newer prerelease ahead of stable is kept visible`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -517,25 +405,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         """.trimIndent()
                     )
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            {
-                              "id": 2,
-                              "node_id": "R_2",
-                              "tag_name": "v1.4.4-release",
-                              "name": "v1.4.4-release",
-                              "html_url": "https://github.com/demo/app/releases/tag/v1.4.4-release",
-                              "body": "stable",
-                              "draft": false,
-                              "prerelease": false,
-                              "published_at": "2026-04-09T19:28:15Z"
-                            }
-                        """.trimIndent()
-                    )
-            )
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -543,6 +412,7 @@ class GitHubApiTokenReleaseStrategyTest {
 
             val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
 
+            assertEquals(1, server.requestCount, "an ordinary history must not ask releases/latest")
             assertEquals("v1.4.4-release", snapshot.latestStable.rawTag)
             assertEquals("v1.4.7-prerelease3", snapshot.latestPreRelease?.rawTag)
         }
@@ -551,6 +421,7 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `branch like historical prerelease does not surface as latest prerelease`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -583,25 +454,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         """.trimIndent()
                     )
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            {
-                              "id": 1,
-                              "node_id": "R_1",
-                              "tag_name": "v1.8.7",
-                              "name": "v1.8.7",
-                              "html_url": "https://github.com/demo/app/releases/tag/v1.8.7",
-                              "body": "stable",
-                              "draft": false,
-                              "prerelease": false,
-                              "published_at": "2026-04-12T02:42:30Z"
-                            }
-                        """.trimIndent()
-                    )
-            )
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -609,6 +461,7 @@ class GitHubApiTokenReleaseStrategyTest {
 
             val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
 
+            assertEquals(1, server.requestCount, "an ordinary history must not ask releases/latest")
             assertEquals("v1.8.7", snapshot.latestStable.rawTag)
             assertNull(snapshot.latestPreRelease)
         }
@@ -617,6 +470,7 @@ class GitHubApiTokenReleaseStrategyTest {
     @Test
     fun `latest prerelease selection prefers newer animeko beta over older major branch beta`() = runBlocking {
         MockWebServer().use { server ->
+            server.failFastOnUnqueuedRequest()
             server.enqueue(
                 MockResponse()
                     .setResponseCode(200)
@@ -660,25 +514,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         """.trimIndent()
                     )
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            {
-                              "id": 1,
-                              "node_id": "R_1",
-                              "tag_name": "v5.4.3",
-                              "name": "5.4.3",
-                              "html_url": "https://github.com/demo/app/releases/tag/v5.4.3",
-                              "body": "stable",
-                              "draft": false,
-                              "prerelease": false,
-                              "published_at": "2026-04-12T02:42:30Z"
-                            }
-                        """.trimIndent()
-                    )
-            )
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
                 apiToken = "ghp_testtoken123",
                 apiBaseUrl = server.url("/").toString()
@@ -686,6 +521,7 @@ class GitHubApiTokenReleaseStrategyTest {
 
             val snapshot = tokenStrategy.loadSnapshot(owner = "demo", repo = "app").getOrThrow()
 
+            assertEquals(1, server.requestCount, "an ordinary history must not ask releases/latest")
             assertEquals("v5.4.3", snapshot.latestStable.rawTag)
             assertEquals("v5.4.0-beta05", snapshot.latestPreRelease?.rawTag)
         }
@@ -824,6 +660,15 @@ class GitHubApiTokenReleaseStrategyTest {
         }
     }
 
+    /**
+     * These histories all carry an ordinary stable release, so the strategy must decide from the
+     * list alone. Answer an unqueued request at once instead of blocking until the read timeout, so a
+     * regression that starts asking `releases/latest` fails on the request count straight away.
+     */
+    private fun MockWebServer.failFastOnUnqueuedRequest() {
+        dispatcher = QueueDispatcher().apply { setFailFast(true) }
+    }
+
     private fun successReleaseListResponse(): MockResponse {
         return MockResponse()
             .setResponseCode(200)
@@ -846,30 +691,6 @@ class GitHubApiTokenReleaseStrategyTest {
                         }
                       }
                     ]
-                """.trimIndent()
-            )
-    }
-
-    private fun successLatestReleaseResponse(): MockResponse {
-        return MockResponse()
-            .setResponseCode(200)
-            .setBody(
-                """
-                    {
-                      "id": 1,
-                      "node_id": "R_1",
-                      "tag_name": "v1.1.0",
-                      "name": "Version 1.1.0",
-                      "html_url": "https://github.com/demo/app/releases/tag/v1.1.0",
-                      "body": "Stable build",
-                      "draft": false,
-                      "prerelease": false,
-                      "published_at": "2026-04-12T08:00:00Z",
-                      "author": {
-                        "login": "demo",
-                        "avatar_url": "https://avatars.githubusercontent.com/u/1"
-                      }
-                    }
                 """.trimIndent()
             )
     }

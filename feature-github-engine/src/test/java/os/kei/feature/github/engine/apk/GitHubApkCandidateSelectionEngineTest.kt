@@ -32,6 +32,35 @@ class GitHubApkCandidateSelectionEngineTest {
     }
 
     @Test
+    fun `package arm64 release listed after the inspection cap is planned first`() {
+        // KeiOS and Mithka release naming: a dozen unrelated APKs, then every variant of the target.
+        val target = "KeiOS-arm64-v8a-release.apk"
+        val assets = buildList {
+            repeat(12) { index -> add(asset("other-package-$index.apk")) }
+            add(asset("notes.txt"))
+            add(asset("KeiOS-metadata.apk"))
+            add(asset("KeiOS-debug-arm64-v8a.apk"))
+            add(asset("KeiOS-benchmark-arm64-v8a.apk"))
+            add(asset("KeiOS-x86_64-release.apk"))
+            add(asset("KeiOS-armeabi-v7a-release.apk"))
+            add(asset("KeiOS-universal-release.apk"))
+            add(asset(target))
+        }
+        assertTrue(
+            assets.filter { it.name.endsWith(".apk") }.indexOfFirst { it.name == target } >=
+                GitHubApkCandidateSelectionEngine.DEFAULT_MAX_INSPECTION_CANDIDATES,
+            "premise: taking APKs in repository order would never inspect the target",
+        )
+
+        val planned = GitHubApkCandidateSelectionEngine.planInspection(
+            assets = assets,
+            expectedPackageName = "os.kei.keios",
+        )
+
+        assertEquals(target, planned.first().name, planned.map { it.name }.toString())
+    }
+
+    @Test
     fun `mithka corpus prefers arm64 release before legacy abi`() {
         val planned = GitHubApkCandidateSelectionEngine.planInspection(
             assets = listOf(

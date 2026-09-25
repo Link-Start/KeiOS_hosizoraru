@@ -5,7 +5,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.Test
-import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
+import os.kei.feature.github.fixture.ReleaseCorpusResources
 import os.kei.feature.github.model.GitHubReleaseDecisionBasis
 import os.kei.feature.github.model.GitHubReleaseDecisionNote
 import os.kei.feature.github.model.GitHubReleaseRejection
@@ -18,12 +18,10 @@ import os.kei.feature.github.model.GitHubReleaseRejection
  * that matter under the hundreds that do not.
  */
 class GitHubReleaseDecisionNoteTest {
-    private val strategy = GitHubApiTokenReleaseStrategy()
-
     @Test
     fun `an ordinary history has nothing to explain`() {
         val selection = GitHubReleaseSelector
-            .plan(entriesFrom("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
+            .plan(ReleaseCorpusResources.entries("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
             .resolve()
 
         val note = GitHubReleaseDecisionNote.from(selection)
@@ -40,7 +38,7 @@ class GitHubReleaseDecisionNoteTest {
     @Test
     fun `a confirmed restart is explained as the forge's own answer`() {
         val plan = GitHubReleaseSelector
-            .plan(entriesFrom("stratumauth-releases.json", "stratumauth", "app"))
+            .plan(ReleaseCorpusResources.entries("stratumauth-releases.json", "stratumauth", "app"))
         val selection = plan.resolve(
             authoritativeStable = requireNotNull(plan.stable.entry).let { entry ->
                 GitHubReleaseSelector.plan(listOf(entry)).resolve().stable
@@ -59,7 +57,7 @@ class GitHubReleaseDecisionNoteTest {
     fun `an unconfirmed restart is explained as a ranking by date`() {
         val note = GitHubReleaseDecisionNote.from(
             GitHubReleaseSelector
-                .plan(entriesFrom("stratumauth-releases.json", "stratumauth", "app"))
+                .plan(ReleaseCorpusResources.entries("stratumauth-releases.json", "stratumauth", "app"))
                 .resolve(),
         )
 
@@ -77,7 +75,7 @@ class GitHubReleaseDecisionNoteTest {
     @Test
     fun `a forge flag that merely agrees with an ordinary ranking is not news`() {
         val plan = GitHubReleaseSelector
-            .plan(entriesFrom("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
+            .plan(ReleaseCorpusResources.entries("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
         val selection = plan.resolve(
             authoritativeStable = requireNotNull(plan.stable.entry).let { entry ->
                 GitHubReleaseSelector.plan(listOf(entry)).resolve().stable
@@ -100,7 +98,7 @@ class GitHubReleaseDecisionNoteTest {
     @Test
     fun `the evaluator's rejection is the one reported`() {
         val selection = GitHubReleaseSelector
-            .plan(entriesFrom("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
+            .plan(ReleaseCorpusResources.entries("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
             .resolve()
 
         assertEquals(
@@ -121,13 +119,4 @@ class GitHubReleaseDecisionNoteTest {
         assertFalse(note.isEmpty)
         assertNull(GitHubReleaseDecisionNote.from(null).preReleaseRejection)
     }
-
-    private fun entriesFrom(resource: String, owner: String, repo: String) =
-        strategy.parseReleaseEntries(
-            json = requireNotNull(javaClass.classLoader?.getResourceAsStream(resource)) {
-                "missing $resource fixture"
-            }.use { it.readBytes().decodeToString() },
-            owner = owner,
-            repo = repo,
-        )
 }

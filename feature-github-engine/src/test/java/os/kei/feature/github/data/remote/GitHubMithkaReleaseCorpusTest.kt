@@ -1,10 +1,8 @@
 package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.runBlocking
-import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Test
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
@@ -27,28 +25,18 @@ class GitHubMithkaReleaseCorpusTest {
     @Test
     fun `atom identifies master flood as rolling prereleases`() = runBlocking {
         MockWebServer().use { server ->
-            // Routed by path, not queued by arrival: the feed and the latest-release lookup go out
-            // together now, so a queue would hand one of them the other's response at random.
-            server.dispatcher = object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse =
-                    if (request.path.orEmpty().endsWith("releases.atom")) {
-                        MockResponse().setResponseCode(200).setBody(MithkaReleaseCorpus.atomXml)
-                    } else {
-                        MockResponse()
-                            .setResponseCode(302)
-                            .addHeader(
-                                "Location",
-                                "https://github.com/iebb/mithka/releases/tag/" +
-                                    MithkaReleaseCorpus.stableTag,
-                            )
-                    }
-            }
+            server.routeAtom(
+                feed = MithkaReleaseCorpus.atomXml,
+                latest = latestRedirect(
+                    MithkaReleaseCorpus.stableTag,
+                    owner = MithkaReleaseCorpus.owner,
+                    repo = MithkaReleaseCorpus.repo,
+                ),
+            )
 
-            val snapshot = GitHubAtomReleaseStrategy.loadSnapshotTrace(
+            val snapshot = server.loadAtomSnapshotTrace(
                 owner = MithkaReleaseCorpus.owner,
                 repo = MithkaReleaseCorpus.repo,
-                atomFeedUrl = server.url("/iebb/mithka/releases.atom").toString(),
-                latestReleaseUrl = server.url("/iebb/mithka/releases/latest").toString(),
             ).result.getOrThrow()
 
             assertEquals(MithkaReleaseCorpus.stableTag, snapshot.latestStable.rawTag)
@@ -75,6 +63,26 @@ class GitHubMithkaReleaseCorpusTest {
         )
         assertEquals(GitHubReleaseChannel.STABLE, snapshot.latestStable.channel)
         assertEquals(GitHubReleaseChannel.DEV, snapshot.latestPreRelease?.channel)
+        val preRelease = requireNotNull(snapshot.latestPreRelease)
+        assertEquals(
+            -1,
+            GitHubVersionUtils.compareVersionToStructuredCandidates(
+                localVersion = "0.3.0",
+                candidates = preRelease.versionCandidates,
+                remoteChannel = preRelease.channel,
+            ),
+            "the rolling build is newer than the stable by name",
+        )
+        assertEquals(
+            -1,
+            GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
+                localVersion = "0.3.0",
+                localVersionCode = MithkaReleaseCorpus.stableVersionCode,
+                candidates = preRelease.versionCandidates,
+                remoteChannel = preRelease.channel,
+            ),
+            "and by name plus the stable's version code",
+        )
     }
 
     @Test

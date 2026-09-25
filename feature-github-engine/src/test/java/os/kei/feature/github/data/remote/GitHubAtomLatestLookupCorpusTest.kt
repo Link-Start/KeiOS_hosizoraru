@@ -13,6 +13,7 @@ import org.junit.After
 import org.junit.Test
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
+import os.kei.feature.github.fixture.ReleaseCorpusResources
 import os.kei.feature.github.model.GitHubReleaseRejection
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 
@@ -158,23 +159,14 @@ class GitHubAtomLatestLookupCorpusTest {
                 override fun dispatch(request: RecordedRequest) =
                     MockResponse().setResponseCode(200).setBody("<feed><entry><title>oops")
             }
-            val outcome = runCatching {
-                GitHubAtomReleaseStrategy.loadSnapshotTrace(
-                    owner = "demo",
-                    repo = "app",
-                    atomFeedUrl = server.url("/demo/app/releases.atom").toString(),
-                    latestReleaseUrl = server.url("/demo/app/releases/latest").toString(),
-                ).result
-            }
+            val outcome = runCatching { server.loadAtomSnapshotTrace().result }
 
             assertTrue(outcome.isSuccess, "nothing should be thrown out of the trace")
             assertTrue(outcome.getOrThrow().isFailure, "and the failure belongs in the Result")
         }
     }
 
-    private fun redirectingTo(tag: String) = MockResponse()
-        .setResponseCode(302)
-        .setHeader("Location", "https://github.com/o/r/releases/tag/$tag")
+    private fun redirectingTo(tag: String) = latestRedirect(tag, owner = "o", repo = "r")
 
     private suspend fun <T> withNekoBox(
         latest: MockResponse,
@@ -186,26 +178,9 @@ class GitHubAtomLatestLookupCorpusTest {
         latest: MockResponse,
         block: suspend (os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot) -> T,
     ): T {
-        val feed = requireNotNull(javaClass.classLoader?.getResourceAsStream(resource)) {
-            "missing $resource fixture"
-        }.use { it.readBytes().decodeToString() }
         return MockWebServer().use { server ->
-            server.dispatcher = object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse =
-                    if (request.path.orEmpty().endsWith("releases.atom")) {
-                        MockResponse().setResponseCode(200).setBody(feed)
-                    } else {
-                        latest
-                    }
-            }
-            block(
-                GitHubAtomReleaseStrategy.loadSnapshotTrace(
-                    owner = "o",
-                    repo = "r",
-                    atomFeedUrl = server.url("/o/r/releases.atom").toString(),
-                    latestReleaseUrl = server.url("/o/r/releases/latest").toString(),
-                ).result.getOrThrow(),
-            )
+            server.routeAtom(feed = ReleaseCorpusResources.text(resource), latest = latest)
+            block(server.loadAtomSnapshotTrace(owner = "o", repo = "r").result.getOrThrow())
         }
     }
 }

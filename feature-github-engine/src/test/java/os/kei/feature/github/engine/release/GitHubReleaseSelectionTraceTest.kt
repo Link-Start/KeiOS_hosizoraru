@@ -6,6 +6,7 @@ import kotlin.test.assertTrue
 import org.junit.Test
 import os.kei.core.versioning.ReleaseSelectionRule
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
+import os.kei.feature.github.fixture.ReleaseCorpusResources
 import os.kei.feature.github.model.GitHubReleaseRejection
 
 /**
@@ -29,7 +30,7 @@ class GitHubReleaseSelectionTraceTest {
      */
     @Test
     fun `a restarted project records what it overrode and that it is worth confirming`() {
-        val plan = GitHubReleaseSelector.plan(entriesFrom("stratumauth-releases.json", "stratumauth", "app"))
+        val plan = GitHubReleaseSelector.plan(ReleaseCorpusResources.entries("stratumauth-releases.json", "stratumauth", "app"))
 
         assertEquals(ReleaseSelectionRule.VersioningReset, plan.stable.rule)
         assertEquals("v1.6.2", plan.stable.entry?.tag)
@@ -53,7 +54,7 @@ class GitHubReleaseSelectionTraceTest {
      */
     @Test
     fun `a rolling preview is chosen by the selector and set aside by the evaluator`() {
-        val plan = GitHubReleaseSelector.plan(entriesFrom("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
+        val plan = GitHubReleaseSelector.plan(ReleaseCorpusResources.entries("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
         val selection = plan.resolve()
 
         assertEquals("1.4.2", selection.stable?.rawTag)
@@ -68,7 +69,7 @@ class GitHubReleaseSelectionTraceTest {
     /** The caveat on every other assertion here: one page is all anybody looked at. */
     @Test
     fun `a full page of releases is recorded as a window, not as the whole history`() {
-        val json = fixture("nekobox-releases.json")
+        val json = ReleaseCorpusResources.text("nekobox-releases.json")
         val window = strategy.parseReleaseWindow(
             json = json,
             owner = "MatsuriDayo",
@@ -89,19 +90,11 @@ class GitHubReleaseSelectionTraceTest {
     @Test
     fun `the summary names the choice, the runner up and the rule`() {
         val summary = GitHubReleaseSelector
-            .plan(entriesFrom("stratumauth-releases.json", "stratumauth", "app"))
+            .plan(ReleaseCorpusResources.entries("stratumauth-releases.json", "stratumauth", "app"))
             .resolve()
             .summary()
 
         assertTrue(summary.startsWith("stable=v1.6.2 by VersioningReset over 1.25.2"), summary)
         assertTrue(summary.contains("considered="), summary)
     }
-
-    private fun entriesFrom(resource: String, owner: String, repo: String) =
-        strategy.parseReleaseEntries(json = fixture(resource), owner = owner, repo = repo)
-
-    private fun fixture(resource: String): String =
-        requireNotNull(javaClass.classLoader?.getResourceAsStream(resource)) {
-            "missing $resource fixture"
-        }.use { it.readBytes().decodeToString() }
 }

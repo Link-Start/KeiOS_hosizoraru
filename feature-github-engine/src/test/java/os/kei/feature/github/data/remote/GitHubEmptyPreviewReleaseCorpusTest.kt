@@ -7,6 +7,7 @@ import org.junit.Test
 import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
+import os.kei.feature.github.fixture.ReleaseCorpusResources
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
@@ -27,13 +28,8 @@ import os.kei.feature.github.model.toReleaseVersionSignals
  *  - With no APK there is no version code to settle it, so the name comparison is the whole answer.
  */
 class GitHubEmptyPreviewReleaseCorpusTest {
-    private val strategy = GitHubApiTokenReleaseStrategy()
-
     private val entries by lazy {
-        val json = requireNotNull(
-            javaClass.classLoader?.getResourceAsStream("nekobox-releases.json"),
-        ) { "missing nekobox-releases.json fixture" }.use { it.readBytes().decodeToString() }
-        strategy.parseReleaseEntries(json = json, owner = "MatsuriDayo", repo = "NekoBoxForAndroid")
+        ReleaseCorpusResources.entries("nekobox-releases.json", owner = "MatsuriDayo", repo = "NekoBoxForAndroid")
     }
 
     private val latestStable by lazy {

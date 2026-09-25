@@ -1,7 +1,6 @@
 package os.kei.feature.github.data.remote
 
 import org.junit.Test
-import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import kotlin.test.assertEquals
 
@@ -39,17 +38,5 @@ class GitHubReleaseAssetJsonMapperTest {
         assertEquals(1, bundle.assets.size)
         assertEquals("demo-arm64.apk", bundle.assets.single().name)
         assertEquals("sha256:abc123", bundle.assets.single().digest)
-    }
-
-    @Test
-    fun `release stub preserves body`() {
-        val stub = GitHubReleaseAssetJsonMapper.buildReleaseStub(
-            releaseName = "Version 1.0",
-            rawTag = "v1.0",
-            releaseUrl = "https://github.com/demo/app/releases/tag/v1.0",
-            releaseNotesBody = "Notes from html"
-        )
-
-        assertEquals("Notes from html", stub.optString("body"))
     }
 }

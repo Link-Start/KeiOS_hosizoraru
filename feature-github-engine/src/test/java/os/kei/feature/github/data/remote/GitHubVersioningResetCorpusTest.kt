@@ -8,6 +8,7 @@ import org.junit.Test
 import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
+import os.kei.feature.github.fixture.ReleaseCorpusResources
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.toReleaseVersionSignals
@@ -31,15 +32,8 @@ import os.kei.feature.github.model.toReleaseVersionSignals
  * place the field list is recorded.
  */
 class GitHubVersioningResetCorpusTest {
-    private val strategy = GitHubApiTokenReleaseStrategy()
-
     private val entries by lazy {
-        val json = requireNotNull(
-            javaClass.classLoader?.getResourceAsStream("stratumauth-releases.json"),
-        ) { "missing stratumauth-releases.json fixture" }.use { stream ->
-            stream.readBytes().decodeToString()
-        }
-        strategy.parseReleaseEntries(json = json, owner = "stratumauth", repo = "app")
+        ReleaseCorpusResources.entries("stratumauth-releases.json", owner = "stratumauth", repo = "app")
     }
 
     @Test

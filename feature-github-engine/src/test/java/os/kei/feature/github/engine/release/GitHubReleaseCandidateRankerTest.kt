@@ -4,6 +4,7 @@ import org.junit.Test
 import os.kei.core.versioning.VersionCandidate
 import os.kei.core.versioning.VersionOrder
 import os.kei.core.versioning.VersioningEngine
+import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidate
@@ -45,6 +46,42 @@ class GitHubReleaseCandidateRankerTest {
             firstFromSource,
             GitHubReleaseCandidateRanker.latest(listOf(firstFromSource, secondFromSource)),
         )
+    }
+
+    /**
+     * `iebb/mithka` shape: a flood of `v<base>-master.<build>.<hash>` pre-releases, listed oldest
+     * build first with the oldest build carrying the newest timestamp. 105 is the count observed in
+     * the 2026-07-11 capture; 1000 is the flood size.
+     */
+    @Test
+    fun `rolling master builds rank by build number over timestamp and hash`() {
+        listOf(
+            Triple(105, "0.3.0", 26_070_000L),
+            Triple(1_000, "9.0.0", 27_000_000L),
+        ).forEach { (count, baseVersion, firstVersionCode) ->
+            val builds = List(count) { index ->
+                val hash = (index.toLong() * 2_654_435_761L).toString(16).takeLast(7).padStart(7, '0')
+                val tag = "v$baseVersion-master.${firstVersionCode + index}.$hash"
+                GitHubAtomReleaseEntry(
+                    entryId = tag,
+                    tag = tag,
+                    title = "Build $baseVersion master $hash",
+                    link = "https://github.com/fixture/app/releases/tag/$tag",
+                    updatedAtMillis = (count - index).toLong(),
+                    versionCandidates = GitHubVersionUtils.buildVersionCandidates(
+                        GitHubVersionCandidateSource.Tag to tag,
+                    ),
+                    channel = GitHubReleaseChannel.DEV,
+                    isLikelyPreRelease = true,
+                )
+            }
+
+            assertEquals(
+                builds.last().tag,
+                GitHubReleaseCandidateRanker.latest(builds)?.tag,
+                "$count rolling builds on $baseVersion",
+            )
+        }
     }
 
     @Test

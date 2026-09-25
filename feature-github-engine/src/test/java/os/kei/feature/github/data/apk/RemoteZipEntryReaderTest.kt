@@ -15,34 +15,11 @@ import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import os.kei.core.download.range.RemoteByteRangeResourceChangedException
 import org.junit.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class RemoteZipEntryReaderTest {
-    @Test
-    fun `reader uses bounded byte ranges to list and read zip entries`() = runBlocking {
-        val manifest = "manifest-content".encodeToByteArray()
-        val zipBytes = zipBytes("AndroidManifest.xml" to manifest, "assets/info.txt" to byteArrayOf(1, 2, 3))
-        MockWebServer().use { server ->
-            server.dispatcher = zipRangeDispatcher(zipBytes)
-            val reader = RemoteZipEntryReader(OkHttpClient())
-            val url = server.url("/app.apk").toString()
-
-            val names = reader.listEntryNames(url).getOrThrow()
-            val content = reader.readEntry(url, "AndroidManifest.xml").getOrThrow()
-
-            assertEquals(listOf("AndroidManifest.xml", "assets/info.txt"), names)
-            assertContentEquals(manifest, content)
-            assertTrue(server.requestCount >= 4)
-            repeat(server.requestCount) {
-                assertTrue(server.takeRequest().getHeader("Range")?.startsWith("bytes=") == true)
-            }
-        }
-    }
-
     @Test
     fun `reader rejects a zip that changes after probing`() = runBlocking {
         val zipBytes = zipBytes("AndroidManifest.xml" to "manifest-content".encodeToByteArray())

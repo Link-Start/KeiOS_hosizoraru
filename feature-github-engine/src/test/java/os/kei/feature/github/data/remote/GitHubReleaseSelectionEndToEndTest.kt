@@ -11,6 +11,7 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Test
 import os.kei.core.versioning.ReleaseSelectionRule
+import os.kei.feature.github.fixture.ReleaseCorpusResources
 
 /**
  * The selection, read off a snapshot the strategy actually built over HTTP.
@@ -29,7 +30,7 @@ class GitHubReleaseSelectionEndToEndTest {
     fun `a suspected reset is confirmed against the forge, and the snapshot says so`() = runBlocking {
         MockWebServer().use { server ->
             server.dispatcher = fixtureDispatcher(
-                listBody = fixture("stratumauth-releases.json"),
+                listBody = ReleaseCorpusResources.text("stratumauth-releases.json"),
                 latestBody = LATEST_V1_6_2,
             )
             val strategy = GitHubApiTokenReleaseStrategy(apiBaseUrl = server.url("/").toString())
@@ -51,7 +52,7 @@ class GitHubReleaseSelectionEndToEndTest {
     fun `an ordinary history is decided from the list alone`() = runBlocking {
         MockWebServer().use { server ->
             server.dispatcher = fixtureDispatcher(
-                listBody = fixture("nekobox-releases.json"),
+                listBody = ReleaseCorpusResources.text("nekobox-releases.json"),
                 latestBody = null,
             )
             val strategy = GitHubApiTokenReleaseStrategy(apiBaseUrl = server.url("/").toString())
@@ -82,11 +83,6 @@ class GitHubReleaseSelectionEndToEndTest {
                 }
             }
         }
-
-    private fun fixture(resource: String): String =
-        requireNotNull(javaClass.classLoader?.getResourceAsStream(resource)) {
-            "missing $resource fixture"
-        }.use { it.readBytes().decodeToString() }
 }
 
 /** What `releases/latest` returns for `stratumauth/app`: the maintainer's own flagged release. */

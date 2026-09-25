@@ -1,6 +1,7 @@
 package os.kei.feature.github.data.remote
 
 import org.junit.Test
+import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -35,15 +36,49 @@ class GitHubVersionUtilsTest {
     }
 
     @Test
-    fun `pre-release keyword without dash is recognized`() {
-        val channel = GitHubVersionUtils.classifyVersionChannel("v1.4.6-prerelease2")
-        assertEquals(os.kei.feature.github.model.GitHubReleaseChannel.PREVIEW, channel)
+    fun `wild tracked version tags classify into their release channel`() {
+        // Null means "no pre-release marker"; the STABLE row accepts either null or STABLE.
+        val rows = listOf(
+            "pre-release keyword without dash" to ("v1.4.6-prerelease2" to GitHubReleaseChannel.PREVIEW),
+            "BatteryRecorder prerelease tag" to ("v1.4.7-prerelease3" to GitHubReleaseChannel.PREVIEW),
+            "WhatAnime nightly token" to ("1.9.0.n488.nightly" to GitHubReleaseChannel.DEV),
+            "Hyper-pick-up-code Dev suffix" to ("v26.4.9.C01-Dev" to GitHubReleaseChannel.DEV),
+            "date prefixed stable name" to ("260412_1.22" to GitHubReleaseChannel.STABLE),
+        )
+
+        rows.forEach { (label, row) ->
+            val (input, expected) = row
+            assertEquals(
+                expected,
+                GitHubVersionUtils.classifyVersionChannel(input) ?: GitHubReleaseChannel.STABLE,
+                "$label: classifyVersionChannel(\"$input\")",
+            )
+        }
     }
 
     @Test
-    fun `nightly token is recognized for WhatAnime style builds`() {
-        val channel = GitHubVersionUtils.classifyVersionChannel("1.9.0.n488.nightly")
-        assertEquals(os.kei.feature.github.model.GitHubReleaseChannel.DEV, channel)
+    fun `wild tracked versions remain comparable after normalization`() {
+        assertTrue(
+            "1.22" in GitHubVersionUtils.normalizeVersionCandidates("260412_1.22"),
+            "date prefixed release name must expose its semantic version candidate",
+        )
+        val rows = listOf(
+            Triple("C01 build before its Dev tag", "26.4.3.C01" to "v26.4.9.C01-Dev", -1),
+            Triple("revision hash builds", "1.8.8.r471.cff36155" to "1.9.0.r488.d07a3e1b", -1),
+            Triple("date prefixed release name", "1.22" to "260412_1.22", 0),
+        )
+
+        rows.forEach { (label, versions, expected) ->
+            val (local, candidate) = versions
+            assertEquals(
+                expected,
+                GitHubVersionUtils.compareVersionToCandidates(
+                    localVersion = local,
+                    candidates = listOf(candidate),
+                ),
+                "$label: compare(\"$local\", \"$candidate\")",
+            )
+        }
     }
 
     @Test
@@ -108,17 +143,6 @@ class GitHubVersionUtilsTest {
 
         val compare = GitHubVersionUtils.compareVersionToStructuredCandidates("1.1.0", candidates)
         assertEquals(-1, compare)
-    }
-
-    @Test
-    fun `date prefixed release names still expose semantic version candidate`() {
-        val candidates = GitHubVersionUtils.normalizeVersionCandidates("260412_1.22")
-        assertTrue("1.22".lowercase() in candidates)
-        val compare = GitHubVersionUtils.compareVersionToCandidates(
-            localVersion = "1.22",
-            candidates = listOf("260412_1.22")
-        )
-        assertEquals(0, compare)
     }
 
     @Test

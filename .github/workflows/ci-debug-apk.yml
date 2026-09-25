@@ -201,27 +201,33 @@ jobs:
           cache-read-only: "true"
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 
-      - name: Compile library modules
-        run: ./gradlew :core-log:compileDebugKotlin :core-io:compileDebugKotlin --stacktrace
-
-      - name: Run debug unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+      # Every module's tests, by the unqualified task name, never a list of modules. This ran only
+      # `:app:testDebugUnitTest` until 2026-09-25, so the ~1,500 tests in the extracted modules
+      # (feature-github, ui-liquid-glass, core-*, ...) never ran here; the paths-ignore comment
+      # above describes the same failure for triggers. Compiling each module's tests compiles
+      # its main code too, so the separate library compile step this replaced is covered.
+      # `roborazzi.test.verify` compares the screenshot tests against their tracked goldens;
+      # without it they only compose. `--continue` reports every failing module, not the first.
+      - name: Run unit tests (all modules) and verify screenshots
+        run: ./gradlew testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace
 
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
-          path: app/build/reports/tests/testDebugUnitTest/
+          path: |
+            */build/reports/tests/testDebugUnitTest/
+            app/build/outputs/roborazzi/
           retention-days: 7
 
       - name: Write test summary
         if: always()
         run: |
           {
-            echo "### Debug unit tests"
+            echo "### Unit tests"
             echo ""
-            echo "- Tasks: \`:core-log:compileDebugKotlin\`, \`:core-io:compileDebugKotlin\`, \`:app:testDebugUnitTest\`"
+            echo "- Tasks: \`testDebugUnitTest\` (every module), screenshots verified"
             echo "- Commit: \`$(git rev-parse HEAD)\`"
             echo "- Run number: \`${GITHUB_RUN_NUMBER}\`"
           } >> "${GITHUB_STEP_SUMMARY}"

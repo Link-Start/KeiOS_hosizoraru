@@ -13,9 +13,17 @@ class GitHubWorkflowContractTest {
         val workflow = workflowText("ci-debug-apk.yml")
         val setupAction = actionText("setup-android-gradle-build/action.yml")
 
-        // Unit tests run as a parallel job inside the debug APK workflow
-        assertContains(workflow, "./gradlew :app:testDebugUnitTest --stacktrace")
-        assertContains(workflow, "./gradlew :core-log:compileDebugKotlin :core-io:compileDebugKotlin --stacktrace")
+        // Every module's tests, by the unqualified task name. Until 2026-09-25 this pinned
+        // `:app:testDebugUnitTest`, and the ~1,500 tests of the extracted modules never ran in CI:
+        // the same allowlist failure the paths-ignore test below describes, one level down.
+        assertContains(workflow, "./gradlew testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace")
+        // Commands only, so the comment explaining the history can still name the old task.
+        val qualified = runCommandsOf(workflow).filter { MODULE_QUALIFIED_TEST_TASK.containsMatchIn(it) }
+        assertTrue(
+            qualified.isEmpty(),
+            "run unit tests with the unqualified `testDebugUnitTest`; a module-qualified task tests only " +
+                "that module: $qualified",
+        )
         // Deliberate, and pinned here so it survives the next round of speed work: writing the
         // Gradle cache from the unit test job filled the Actions cache, and a stored
         // `testDebugUnitTest` entry would let a later run report a pass it never executed.
@@ -138,6 +146,10 @@ class GitHubWorkflowContractTest {
     private fun actionsUsedBy(text: String): List<String> =
         USES_LINE.findAll(text).map { it.groupValues[1] }.toList()
 
+    /** The command of every single-line `run:` step. */
+    private fun runCommandsOf(workflow: String): List<String> =
+        RUN_LINE.findAll(workflow).map { it.groupValues[1] }.toList()
+
     private fun gradleModules(): List<String> =
         GRADLE_INCLUDE
             .findAll(File(repoRoot(), "settings.gradle.kts").readText())
@@ -205,5 +217,7 @@ class GitHubWorkflowContractTest {
         val PATHS_IGNORE_ENTRY = Regex("""\s+- "([^"]+)"\s*""")
         val PATHS_ALLOWLIST = Regex("""^\s+paths:\s*$""", RegexOption.MULTILINE)
         val USES_LINE = Regex("""^\s*(?:- )?uses:\s*(\S+)\s*$""", RegexOption.MULTILINE)
+        val RUN_LINE = Regex("""^\s*(?:- )?run:\s*(\S.*)$""", RegexOption.MULTILINE)
+        val MODULE_QUALIFIED_TEST_TASK = Regex(""":[A-Za-z0-9._-]+:test[A-Za-z]*UnitTest\b""")
     }
 }

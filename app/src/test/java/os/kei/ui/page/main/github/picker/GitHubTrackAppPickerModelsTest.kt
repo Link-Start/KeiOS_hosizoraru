@@ -6,104 +6,71 @@ import kotlin.test.assertEquals
 
 class GitHubTrackAppPickerModelsTest {
     @Test
-    fun `add flow hides tracked apps by default`() {
-        val result = filterAndSortGitHubTrackAppCandidates(
-            apps = apps,
-            query = "",
-            includeUserApps = true,
-            includeSystemApps = false,
-            includeTrackedApps = false,
-            trackedPackageNames = setOf("com.demo.beta"),
-            pinnedPackageNames = emptySet(),
-            sortMode = GitHubTrackAppPickerSortMode.Name,
-            sortDirection = GitHubTrackAppPickerSortDirection.Ascending
+    fun `candidate filter applies scope, tracked, pinned and search rules`() {
+        data class Case(
+            val name: String,
+            val query: String = "",
+            val includeUserApps: Boolean,
+            val includeSystemApps: Boolean,
+            val includeTrackedApps: Boolean,
+            val trackedPackageNames: Set<String> = setOf("com.demo.beta"),
+            val pinnedPackageNames: Set<String> = emptySet(),
+            val expected: List<String>,
         )
-
-        assertEquals(listOf("com.demo.alpha"), result.map { it.packageName })
-    }
-
-    @Test
-    fun `tracked toggle includes tracked apps`() {
-        val result = filterAndSortGitHubTrackAppCandidates(
-            apps = apps,
-            query = "",
-            includeUserApps = true,
-            includeSystemApps = false,
-            includeTrackedApps = true,
-            trackedPackageNames = setOf("com.demo.beta"),
-            pinnedPackageNames = emptySet(),
-            sortMode = GitHubTrackAppPickerSortMode.Name,
-            sortDirection = GitHubTrackAppPickerSortDirection.Ascending
-        )
-
-        assertEquals(
-            listOf("com.demo.alpha", "com.demo.beta"),
-            result.map { it.packageName }
-        )
-    }
-
-    @Test
-    fun `editing keeps current tracked app visible with scope filters off`() {
-        val result = filterAndSortGitHubTrackAppCandidates(
-            apps = apps,
-            query = "",
-            includeUserApps = false,
-            includeSystemApps = false,
-            includeTrackedApps = false,
-            trackedPackageNames = setOf("com.demo.beta"),
-            pinnedPackageNames = setOf("com.demo.beta"),
-            sortMode = GitHubTrackAppPickerSortMode.Name,
-            sortDirection = GitHubTrackAppPickerSortDirection.Ascending
-        )
-
-        assertEquals(listOf("com.demo.beta"), result.map { it.packageName })
-    }
-
-    @Test
-    fun `search still applies to pinned app`() {
-        val result = filterAndSortGitHubTrackAppCandidates(
-            apps = apps,
-            query = "Alpha",
-            includeUserApps = true,
-            includeSystemApps = true,
-            includeTrackedApps = false,
-            trackedPackageNames = setOf("com.demo.beta"),
-            pinnedPackageNames = setOf("com.demo.beta"),
-            sortMode = GitHubTrackAppPickerSortMode.Name,
-            sortDirection = GitHubTrackAppPickerSortDirection.Ascending
-        )
-
-        assertEquals(listOf("com.demo.alpha"), result.map { it.packageName })
-    }
-
-    @Test
-    fun `package matching normalizes case and whitespace`() {
-        val result = filterAndSortGitHubTrackAppCandidates(
-            apps = apps,
-            query = "",
-            includeUserApps = true,
-            includeSystemApps = true,
-            includeTrackedApps = false,
-            trackedPackageNames = setOf(" COM.DEMO.BETA "),
-            pinnedPackageNames = emptySet(),
-            sortMode = GitHubTrackAppPickerSortMode.Name,
-            sortDirection = GitHubTrackAppPickerSortDirection.Ascending
-        )
-
-        assertEquals(
-            listOf("com.demo.alpha", "com.demo.system"),
-            result.map { it.packageName }
-        )
-    }
-
-    @Test
-    fun `install source pill is only shown for install source sort`() {
-        GitHubTrackAppPickerSortMode.entries.forEach { mode ->
-            assertEquals(
-                mode == GitHubTrackAppPickerSortMode.InstallSource,
-                mode.showsInstallSourcePill(),
-                mode.name
+        listOf(
+            Case(
+                name = "add flow hides tracked apps by default",
+                includeUserApps = true,
+                includeSystemApps = false,
+                includeTrackedApps = false,
+                expected = listOf("com.demo.alpha"),
+            ),
+            Case(
+                name = "tracked toggle includes tracked apps",
+                includeUserApps = true,
+                includeSystemApps = false,
+                includeTrackedApps = true,
+                expected = listOf("com.demo.alpha", "com.demo.beta"),
+            ),
+            Case(
+                name = "editing keeps current tracked app visible with scope filters off",
+                includeUserApps = false,
+                includeSystemApps = false,
+                includeTrackedApps = false,
+                pinnedPackageNames = setOf("com.demo.beta"),
+                expected = listOf("com.demo.beta"),
+            ),
+            Case(
+                name = "search still applies to pinned app",
+                query = "Alpha",
+                includeUserApps = true,
+                includeSystemApps = true,
+                includeTrackedApps = false,
+                pinnedPackageNames = setOf("com.demo.beta"),
+                expected = listOf("com.demo.alpha"),
+            ),
+            Case(
+                name = "package matching normalizes case and whitespace",
+                includeUserApps = true,
+                includeSystemApps = true,
+                includeTrackedApps = false,
+                trackedPackageNames = setOf(" COM.DEMO.BETA "),
+                expected = listOf("com.demo.alpha", "com.demo.system"),
+            ),
+        ).forEach { case ->
+            val result = filterAndSortGitHubTrackAppCandidates(
+                apps = apps,
+                query = case.query,
+                includeUserApps = case.includeUserApps,
+                includeSystemApps = case.includeSystemApps,
+                includeTrackedApps = case.includeTrackedApps,
+                trackedPackageNames = case.trackedPackageNames,
+                pinnedPackageNames = case.pinnedPackageNames,
+                sortMode = GitHubTrackAppPickerSortMode.Name,
+                sortDirection = GitHubTrackAppPickerSortDirection.Ascending
             )
+
+            assertEquals(case.expected, result.map { it.packageName }, case.name)
         }
     }
 

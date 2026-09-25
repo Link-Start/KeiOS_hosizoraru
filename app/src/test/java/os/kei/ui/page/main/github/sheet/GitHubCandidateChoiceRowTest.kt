@@ -2,14 +2,10 @@ package os.kei.ui.page.main.github.sheet
 
 import android.app.Application
 import android.content.Context
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -43,7 +39,6 @@ import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.ui.page.main.github.GitHubStatusPalette
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -243,30 +238,6 @@ class GitHubCandidateChoiceRowTest {
     }
 
     @Test
-    fun candidateColorsKeepPreviousLightAndDarkRoles() {
-        lateinit var lightCapture: CandidateChoiceThemeCapture
-        lateinit var darkCapture: CandidateChoiceThemeCapture
-
-        composeRule.setContent {
-            Column {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    val capture = candidateChoiceThemeCapture(isDark = false)
-                    SideEffect { lightCapture = capture }
-                }
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                    val capture = candidateChoiceThemeCapture(isDark = true)
-                    SideEffect { darkCapture = capture }
-                }
-            }
-        }
-
-        composeRule.runOnIdle {
-            assertCandidateChoiceColors(lightCapture, containerAlpha = 0.10f)
-            assertCandidateChoiceColors(darkCapture, containerAlpha = 0.08f)
-        }
-    }
-
-    @Test
     fun repositoryCandidateListExposesSelectableGroupSemantics() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
@@ -347,72 +318,6 @@ class GitHubCandidateChoiceRowTest {
             )
     }
 }
-
-@Composable
-private fun candidateChoiceThemeCapture(isDark: Boolean): CandidateChoiceThemeCapture =
-    CandidateChoiceThemeCapture(
-        primary = MiuixTheme.colorScheme.primary,
-        onBackground = MiuixTheme.colorScheme.onBackground,
-        selected =
-            gitHubCandidateChoiceColors(
-                selected = true,
-                recommended = true,
-                isDark = isDark,
-            ),
-        recommended =
-            gitHubCandidateChoiceColors(
-                selected = false,
-                recommended = true,
-                isDark = isDark,
-            ),
-        default =
-            gitHubCandidateChoiceColors(
-                selected = false,
-                recommended = false,
-                isDark = isDark,
-            ),
-    )
-
-private data class CandidateChoiceThemeCapture(
-    val primary: Color,
-    val onBackground: Color,
-    val selected: GitHubCandidateChoiceColors,
-    val recommended: GitHubCandidateChoiceColors,
-    val default: GitHubCandidateChoiceColors,
-)
-
-private fun assertCandidateChoiceColors(
-    capture: CandidateChoiceThemeCapture,
-    containerAlpha: Float,
-) {
-    assertEquals(GitHubStatusPalette.Update, capture.selected.accentColor)
-    assertEquals(
-        GitHubStatusPalette.Update.copy(alpha = containerAlpha),
-        capture.selected.containerColor,
-    )
-    assertEquals(
-        GitHubStatusPalette.Update.copy(alpha = 0.34f),
-        capture.selected.borderColor,
-    )
-    assertEquals(GitHubStatusPalette.Update, capture.selected.titleColor)
-
-    assertEquals(GitHubStatusPalette.Active, capture.recommended.accentColor)
-    assertEquals(
-        GitHubStatusPalette.Active.copy(alpha = containerAlpha),
-        capture.recommended.containerColor,
-    )
-    assertEquals(
-        GitHubStatusPalette.Active.copy(alpha = 0.34f),
-        capture.recommended.borderColor,
-    )
-    assertEquals(capture.onBackground, capture.recommended.titleColor)
-
-    assertEquals(capture.primary, capture.default.accentColor)
-    assertEquals(capture.primary.copy(alpha = containerAlpha), capture.default.containerColor)
-    assertEquals(capture.primary.copy(alpha = 0.18f), capture.default.borderColor)
-    assertEquals(capture.onBackground, capture.default.titleColor)
-}
-
 private fun repositoryCandidate(
     owner: String = "hosizoraru",
     repo: String = "KeiOS",

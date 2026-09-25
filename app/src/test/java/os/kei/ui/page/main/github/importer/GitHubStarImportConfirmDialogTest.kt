@@ -4,6 +4,7 @@ package os.kei.ui.page.main.github.importer
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
@@ -45,137 +46,40 @@ class GitHubStarImportConfirmDialogTest {
     @Test
     fun importConfirmExitKeepsSummaryAndActionsUntilDismissalFinishes() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val show = mutableStateOf(true)
-        val retainedSummary =
-            context.getString(
-                R.string.github_star_import_confirm_summary_format,
-                3,
-                2,
-                1,
+        assertExitRetainsUntilDismissed(
+            title = context.getString(R.string.github_star_import_confirm_title),
+            dismissLabel = context.getString(R.string.common_cancel),
+            confirmLabel = context.getString(R.string.github_star_import_confirm_action),
+            value = context.getString(R.string.github_star_import_confirm_summary_format, 3, 2, 1),
+            summaryFor = { it },
+        ) { enabled, onDismiss, onConfirm ->
+            GitHubStarImportConfirmActions(
+                importing = false,
+                actionsEnabled = enabled,
+                onDismissRequest = onDismiss,
+                onConfirmImport = onConfirm,
             )
-        var observedSnapshot: GitHubStarDialogExitSnapshot<String>? = null
-        var dismissCount = 0
-        var confirmCount = 0
-        val title = context.getString(R.string.github_star_import_confirm_title)
-        val cancelLabel = context.getString(R.string.common_cancel)
-        val confirmLabel = context.getString(R.string.github_star_import_confirm_action)
-
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                CompositionLocalProvider(LocalTransitionAnimationsEnabled provides true) {
-                    val currentSummary = retainedSummary.takeIf { show.value }
-                    val exitSnapshot = rememberGitHubStarDialogExitSnapshot(currentSummary)
-                    val renderedSummary = exitSnapshot.resolve(currentSummary)
-                    SideEffect { observedSnapshot = exitSnapshot }
-                    LiquidGlassDialog(
-                        show = show.value,
-                        title = title,
-                        summary = renderedSummary,
-                        onDismissFinished = exitSnapshot::clear,
-                    ) {
-                        renderedSummary?.let {
-                            GitHubStarImportConfirmActions(
-                                importing = false,
-                                actionsEnabled = show.value,
-                                onDismissRequest = { dismissCount++ },
-                                onConfirmImport = { confirmCount++ },
-                            )
-                        }
-                    }
-                }
-            }
         }
-
-        composeRule.onNode(hasText(title) and isHeading()).assertIsDisplayed()
-        composeRule.onNode(hasText(retainedSummary)).assertIsDisplayed()
-        composeRule.onNode(hasText(cancelLabel) and hasClickAction()).performClick()
-        composeRule.onNode(hasText(confirmLabel) and hasClickAction()).performClick()
-
-        composeRule.mainClock.autoAdvance = false
-        composeRule.runOnIdle { show.value = false }
-        composeRule.mainClock.advanceTimeBy(EXIT_OBSERVATION_MILLIS)
-
-        composeRule.onNode(hasText(retainedSummary)).assertIsDisplayed()
-        composeRule.onNode(hasText(cancelLabel)).assertIsNotEnabled()
-        composeRule.onNode(hasText(confirmLabel)).assertIsNotEnabled()
-        assertEquals(retainedSummary, assertNotNull(observedSnapshot).retainedValue)
-
-        finishExitAnimation()
-
-        composeRule.onAllNodes(hasText(title)).assertCountEquals(0)
-        assertNull(assertNotNull(observedSnapshot).retainedValue)
-        assertEquals(1, dismissCount)
-        assertEquals(1, confirmCount)
     }
 
     @Test
     fun exitConfirmKeepsSelectedCountAndDangerActionsUntilDismissalFinishes() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val show = mutableStateOf(true)
-        val selectedCount = 5
-        var observedSnapshot: GitHubStarDialogExitSnapshot<Int>? = null
-        var dismissCount = 0
-        var confirmCount = 0
-        val title = context.getString(R.string.github_star_import_exit_confirm_title)
-        val summary =
-            context.getString(
-                R.string.github_star_import_exit_confirm_summary_format,
-                selectedCount,
+        assertExitRetainsUntilDismissed(
+            title = context.getString(R.string.github_star_import_exit_confirm_title),
+            dismissLabel = context.getString(R.string.github_star_import_exit_confirm_keep),
+            confirmLabel = context.getString(R.string.github_star_import_exit_confirm_action),
+            value = 5,
+            summaryFor = { count ->
+                context.getString(R.string.github_star_import_exit_confirm_summary_format, count)
+            },
+        ) { enabled, onDismiss, onConfirm ->
+            GitHubStarImportExitActions(
+                actionsEnabled = enabled,
+                onDismissRequest = onDismiss,
+                onConfirmExit = onConfirm,
             )
-        val keepLabel = context.getString(R.string.github_star_import_exit_confirm_keep)
-        val exitLabel = context.getString(R.string.github_star_import_exit_confirm_action)
-
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                CompositionLocalProvider(LocalTransitionAnimationsEnabled provides true) {
-                    val currentCount = selectedCount.takeIf { show.value }
-                    val exitSnapshot = rememberGitHubStarDialogExitSnapshot(currentCount)
-                    val renderedCount = exitSnapshot.resolve(currentCount)
-                    SideEffect { observedSnapshot = exitSnapshot }
-                    LiquidGlassDialog(
-                        show = show.value,
-                        title = title,
-                        summary =
-                            renderedCount?.let {
-                                context.getString(
-                                    R.string.github_star_import_exit_confirm_summary_format,
-                                    it,
-                                )
-                            },
-                        onDismissFinished = exitSnapshot::clear,
-                    ) {
-                        renderedCount?.let {
-                            GitHubStarImportExitActions(
-                                actionsEnabled = show.value,
-                                onDismissRequest = { dismissCount++ },
-                                onConfirmExit = { confirmCount++ },
-                            )
-                        }
-                    }
-                }
-            }
         }
-
-        composeRule.onNode(hasText(title) and isHeading()).assertIsDisplayed()
-        composeRule.onNode(hasText(summary)).assertIsDisplayed()
-        composeRule.onNode(hasText(keepLabel) and hasClickAction()).performClick()
-        composeRule.onNode(hasText(exitLabel) and hasClickAction()).performClick()
-
-        composeRule.mainClock.autoAdvance = false
-        composeRule.runOnIdle { show.value = false }
-        composeRule.mainClock.advanceTimeBy(EXIT_OBSERVATION_MILLIS)
-
-        composeRule.onNode(hasText(summary)).assertIsDisplayed()
-        composeRule.onNode(hasText(keepLabel)).assertIsNotEnabled()
-        composeRule.onNode(hasText(exitLabel)).assertIsNotEnabled()
-        assertEquals(selectedCount, assertNotNull(observedSnapshot).retainedValue)
-
-        finishExitAnimation()
-
-        composeRule.onAllNodes(hasText(title)).assertCountEquals(0)
-        assertNull(assertNotNull(observedSnapshot).retainedValue)
-        assertEquals(1, dismissCount)
-        assertEquals(1, confirmCount)
     }
 
     @Test
@@ -204,6 +108,67 @@ class GitHubStarImportConfirmDialogTest {
         composeRule.onNode(hasText(importingLabel)).assertIsNotEnabled()
         assertEquals(0, dismissCount)
         assertEquals(0, confirmCount)
+    }
+
+    /**
+     * Renders a star-import dialog through [rememberGitHubStarDialogExitSnapshot], clicks both actions,
+     * hides it, and checks that the summary and disabled actions stay until the exit animation ends.
+     */
+    private fun <T : Any> assertExitRetainsUntilDismissed(
+        title: String,
+        dismissLabel: String,
+        confirmLabel: String,
+        value: T,
+        summaryFor: (T) -> String,
+        actions: @Composable (enabled: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) -> Unit,
+    ) {
+        val show = mutableStateOf(true)
+        val summary = summaryFor(value)
+        var observedSnapshot: GitHubStarDialogExitSnapshot<T>? = null
+        var dismissCount = 0
+        var confirmCount = 0
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                CompositionLocalProvider(LocalTransitionAnimationsEnabled provides true) {
+                    val currentValue = value.takeIf { show.value }
+                    val exitSnapshot = rememberGitHubStarDialogExitSnapshot(currentValue)
+                    val renderedValue = exitSnapshot.resolve(currentValue)
+                    SideEffect { observedSnapshot = exitSnapshot }
+                    LiquidGlassDialog(
+                        show = show.value,
+                        title = title,
+                        summary = renderedValue?.let(summaryFor),
+                        onDismissFinished = exitSnapshot::clear,
+                    ) {
+                        renderedValue?.let {
+                            actions(show.value, { dismissCount++ }, { confirmCount++ })
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.onNode(hasText(title) and isHeading()).assertIsDisplayed()
+        composeRule.onNode(hasText(summary)).assertIsDisplayed()
+        composeRule.onNode(hasText(dismissLabel) and hasClickAction()).performClick()
+        composeRule.onNode(hasText(confirmLabel) and hasClickAction()).performClick()
+
+        composeRule.mainClock.autoAdvance = false
+        composeRule.runOnIdle { show.value = false }
+        composeRule.mainClock.advanceTimeBy(EXIT_OBSERVATION_MILLIS)
+
+        composeRule.onNode(hasText(summary)).assertIsDisplayed()
+        composeRule.onNode(hasText(dismissLabel)).assertIsNotEnabled()
+        composeRule.onNode(hasText(confirmLabel)).assertIsNotEnabled()
+        assertEquals(value, assertNotNull(observedSnapshot).retainedValue)
+
+        finishExitAnimation()
+
+        composeRule.onAllNodes(hasText(title)).assertCountEquals(0)
+        assertNull(assertNotNull(observedSnapshot).retainedValue)
+        assertEquals(1, dismissCount)
+        assertEquals(1, confirmCount)
     }
 
     private fun finishExitAnimation() {

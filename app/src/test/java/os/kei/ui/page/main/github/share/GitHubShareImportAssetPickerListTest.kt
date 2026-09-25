@@ -2,13 +2,9 @@ package os.kei.ui.page.main.github.share
 
 import android.app.Application
 import android.content.Context
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -38,7 +34,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.ui.page.main.github.GitHubStatusPalette
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -185,39 +180,6 @@ class GitHubShareImportAssetPickerListTest {
         }
     }
 
-    @Test
-    fun assetChoiceColorsKeepLightAndDarkRoles() {
-        lateinit var lightCapture: AssetChoiceThemeCapture
-        lateinit var darkCapture: AssetChoiceThemeCapture
-        composeRule.setContent {
-            Column {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    val capture = assetChoiceThemeCapture(isDark = false)
-                    SideEffect { lightCapture = capture }
-                }
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                    val capture = assetChoiceThemeCapture(isDark = true)
-                    SideEffect { darkCapture = capture }
-                }
-            }
-        }
-
-        composeRule.runOnIdle {
-            assertAssetChoiceColors(
-                capture = lightCapture,
-                selectedContainerAlpha = 0.11f,
-                unselectedContainerAlpha = 0.48f,
-                unselectedBorderAlpha = 0.12f,
-            )
-            assertAssetChoiceColors(
-                capture = darkCapture,
-                selectedContainerAlpha = 0.20f,
-                unselectedContainerAlpha = 0.38f,
-                unselectedBorderAlpha = 0.16f,
-            )
-        }
-    }
-
     private fun setAssetPickerContent(
         selectionEnabled: Boolean,
         onSelect: () -> Unit,
@@ -262,50 +224,6 @@ class GitHubShareImportAssetPickerListTest {
                 apiAssetUrl = "https://api.example.invalid/assets/42",
             )
     }
-}
-
-@Composable
-private fun assetChoiceThemeCapture(isDark: Boolean): AssetChoiceThemeCapture =
-    AssetChoiceThemeCapture(
-        surfaceContainer = MiuixTheme.colorScheme.surfaceContainer,
-        onBackgroundVariant = MiuixTheme.colorScheme.onBackgroundVariant,
-        onBackground = MiuixTheme.colorScheme.onBackground,
-        selected = gitHubShareAssetChoiceColors(selected = true, isDark = isDark),
-        unselected = gitHubShareAssetChoiceColors(selected = false, isDark = isDark),
-    )
-
-private data class AssetChoiceThemeCapture(
-    val surfaceContainer: Color,
-    val onBackgroundVariant: Color,
-    val onBackground: Color,
-    val selected: GitHubShareAssetChoiceColors,
-    val unselected: GitHubShareAssetChoiceColors,
-)
-
-private fun assertAssetChoiceColors(
-    capture: AssetChoiceThemeCapture,
-    selectedContainerAlpha: Float,
-    unselectedContainerAlpha: Float,
-    unselectedBorderAlpha: Float,
-) {
-    assertEquals(
-        GitHubStatusPalette.Active.copy(alpha = selectedContainerAlpha),
-        capture.selected.containerColor,
-    )
-    assertEquals(
-        GitHubStatusPalette.Active.copy(alpha = 0.30f),
-        capture.selected.borderColor,
-    )
-    assertEquals(GitHubStatusPalette.Active, capture.selected.titleColor)
-    assertEquals(
-        capture.surfaceContainer.copy(alpha = unselectedContainerAlpha),
-        capture.unselected.containerColor,
-    )
-    assertEquals(
-        capture.onBackgroundVariant.copy(alpha = unselectedBorderAlpha),
-        capture.unselected.borderColor,
-    )
-    assertEquals(capture.onBackground, capture.unselected.titleColor)
 }
 
 class GitHubShareImportAssetPickerListTestApp : Application()

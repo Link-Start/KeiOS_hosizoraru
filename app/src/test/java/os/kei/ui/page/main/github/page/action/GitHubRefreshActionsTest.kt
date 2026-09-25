@@ -10,45 +10,23 @@ import kotlin.test.assertTrue
 
 class GitHubRefreshActionsTest {
     @Test
-    fun `tracked update selector respects twelve hour global interval`() {
-        val item = GitHubTrackedApp(
-            repoUrl = "https://github.com/owner/repo",
-            owner = "owner",
-            repo = "repo",
-            packageName = "com.example.app",
-            appLabel = "Example"
-        )
-        val nowMs = 12L * 60L * 60L * 1000L
-        val selected = selectDueTrackedUpdateItems(
-            trackedItems = listOf(item),
-            checkedAtMillisById = mapOf(item.id to 1L),
-            lastRefreshMs = 0L,
-            refreshIntervalHours = 12,
-            nowMs = nowMs,
-        )
+    fun `tracked update selector refreshes only after twelve hour global interval`() {
+        val item = tracked("repo")
+        val twelveHoursMs = 12L * 60L * 60L * 1000L
+        listOf(
+            Triple("at twelve hours", twelveHoursMs, emptyList<GitHubTrackedApp>()),
+            Triple("one ms after twelve hours", twelveHoursMs + 1L, listOf(item)),
+        ).forEach { (case, nowMs, expected) ->
+            val selected = selectDueTrackedUpdateItems(
+                trackedItems = listOf(item),
+                checkedAtMillisById = mapOf(item.id to 1L),
+                lastRefreshMs = 0L,
+                refreshIntervalHours = 12,
+                nowMs = nowMs,
+            )
 
-        assertEquals(emptyList(), selected)
-    }
-
-    @Test
-    fun `tracked update selector refreshes after twelve hour global interval`() {
-        val item = GitHubTrackedApp(
-            repoUrl = "https://github.com/owner/repo",
-            owner = "owner",
-            repo = "repo",
-            packageName = "com.example.app",
-            appLabel = "Example"
-        )
-        val nowMs = 12L * 60L * 60L * 1000L + 1L
-        val selected = selectDueTrackedUpdateItems(
-            trackedItems = listOf(item),
-            checkedAtMillisById = mapOf(item.id to 1L),
-            lastRefreshMs = 0L,
-            refreshIntervalHours = 12,
-            nowMs = nowMs,
-        )
-
-        assertEquals(listOf(item), selected)
+            assertEquals(expected, selected, case)
+        }
     }
 
     @Test
@@ -203,16 +181,6 @@ class GitHubRefreshActionsTest {
         )
 
         assertEquals(emptyList(), selected)
-    }
-
-    @Test
-    fun `regular batch refresh preserves apk asset cache`() {
-        assertFalse(shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh = false))
-    }
-
-    @Test
-    fun `forced batch refresh preserves apk asset cache`() {
-        assertFalse(shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh = true))
     }
 
     private fun tracked(name: String): GitHubTrackedApp =

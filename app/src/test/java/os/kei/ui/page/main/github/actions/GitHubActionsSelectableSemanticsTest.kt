@@ -11,7 +11,6 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import kotlin.test.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -101,14 +100,3 @@ class GitHubActionsSelectableSemanticsTest {
 }
 
 internal class GitHubActionsSelectableSemanticsTestApp : Application()
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-
-    return requireNotNull(sourceFile) { "Unable to locate $relativePath from $workingDirectory" }
-        .readText()
-}

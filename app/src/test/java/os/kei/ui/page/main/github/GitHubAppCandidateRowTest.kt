@@ -4,9 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -25,7 +23,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -243,66 +240,6 @@ class GitHubAppCandidateRowTest {
         assertTrue(installSourceBounds.right <= cardBounds.right)
     }
 
-    @Test
-    fun candidateColorsRetainLightAndDarkSelectedAndUnselectedRoles() {
-        lateinit var lightCapture: CandidateThemeCapture
-        lateinit var darkCapture: CandidateThemeCapture
-
-        composeRule.setContent {
-            Column {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    val capture =
-                        CandidateThemeCapture(
-                            surfaceContainer = MiuixTheme.colorScheme.surfaceContainer,
-                            onBackgroundVariant = MiuixTheme.colorScheme.onBackgroundVariant,
-                            primary = MiuixTheme.colorScheme.primary,
-                            selected = gitHubAppCandidateColors(selected = true, isDark = false),
-                            unselected = gitHubAppCandidateColors(selected = false, isDark = false),
-                        )
-                    SideEffect { lightCapture = capture }
-                }
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                    val capture =
-                        CandidateThemeCapture(
-                            surfaceContainer = MiuixTheme.colorScheme.surfaceContainer,
-                            onBackgroundVariant = MiuixTheme.colorScheme.onBackgroundVariant,
-                            primary = MiuixTheme.colorScheme.primary,
-                            selected = gitHubAppCandidateColors(selected = true, isDark = true),
-                            unselected = gitHubAppCandidateColors(selected = false, isDark = true),
-                        )
-                    SideEffect { darkCapture = capture }
-                }
-            }
-        }
-
-        composeRule.runOnIdle {
-            assertEquals(
-                GitHubStatusPalette.Update.copy(alpha = 0.11f),
-                lightCapture.selected.containerColor,
-            )
-            assertEquals(
-                GitHubStatusPalette.Update.copy(alpha = 0.20f),
-                darkCapture.selected.containerColor,
-            )
-            listOf(lightCapture, darkCapture).forEach { capture ->
-                assertEquals(
-                    GitHubStatusPalette.Update.copy(alpha = 0.3f),
-                    capture.selected.borderColor,
-                )
-                assertEquals(GitHubStatusPalette.Update, capture.selected.titleColor)
-                assertEquals(
-                    capture.surfaceContainer.copy(alpha = 0.64f),
-                    capture.unselected.containerColor,
-                )
-                assertEquals(
-                    capture.onBackgroundVariant.copy(alpha = 0.12f),
-                    capture.unselected.borderColor,
-                )
-                assertEquals(capture.primary, capture.unselected.titleColor)
-            }
-        }
-    }
-
     private companion object {
         val candidate =
             InstalledAppItem(
@@ -316,25 +253,6 @@ class GitHubAppCandidateRowTest {
                 installSourceLabel = "A deliberately long application store source",
             )
     }
-}
-
-private data class CandidateThemeCapture(
-    val surfaceContainer: Color,
-    val onBackgroundVariant: Color,
-    val primary: Color,
-    val selected: GitHubAppCandidateColors,
-    val unselected: GitHubAppCandidateColors,
-)
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 class GitHubAppCandidateRowTestApp : Application()

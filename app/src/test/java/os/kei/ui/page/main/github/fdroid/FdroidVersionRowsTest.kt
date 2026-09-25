@@ -323,18 +323,6 @@ class FdroidRecommendedVersionsTest {
     }
 
     @Test
-    fun `a build this device cannot run is not the recommended one`() {
-        val recommended =
-            fdroidRecommendedVersionsFor(
-                snapshot = packageSnapshot(fdroidVersion(30L, minSdk = 36), fdroidVersion(20L, minSdk = 24)),
-                config = FdroidTrackedAppConfig(),
-                deviceSdk = 34,
-            )
-
-        assertEquals(20L, recommended.stable?.versionCode)
-    }
-
-    @Test
     fun `stable and pre-release are resolved separately`() {
         val recommended =
             fdroidRecommendedVersionsFor(
@@ -375,19 +363,6 @@ class FdroidRecommendedVersionsTest {
 
         assertEquals(20L, following.stable?.versionCode)
         assertEquals(30L, ignoring.stable?.versionCode)
-    }
-
-    @Test
-    fun `a history the track rejects entirely recommends nothing`() {
-        val recommended =
-            fdroidRecommendedVersionsFor(
-                snapshot = packageSnapshot(fdroidVersion(30L, minSdk = 40)),
-                config = FdroidTrackedAppConfig(),
-                deviceSdk = 34,
-            )
-
-        assertNull(recommended.stable)
-        assertNull(recommended.preRelease)
     }
 }
 

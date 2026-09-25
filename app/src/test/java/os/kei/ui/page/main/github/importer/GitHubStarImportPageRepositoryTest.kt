@@ -97,38 +97,6 @@ class GitHubStarImportPageRepositoryTest {
     }
 
     @Test
-    fun `apk verification keeps target order and uses snapshot config`() = runBlocking {
-        var token = "fresh"
-        val repository = GitHubStarImportPageRepository(
-            ioDispatcher = Dispatchers.Unconfined,
-            snapshotLoader = {
-                GitHubTrackSnapshot(
-                    lookupConfig = GitHubLookupConfig(apiToken = token),
-                    refreshIntervalHours = 12
-                )
-            },
-            apkVerifierFactory = {
-                GitHubStarImportApkVerifier(
-                    source = FakeApkSource(),
-                    cache = FixedVerificationCache()
-                )
-            }
-        )
-        val targets = listOf(
-            importCandidate("one"),
-            importCandidate("two")
-        )
-
-        val results = repository.verifyApkAssets(targets)
-
-        assertEquals(targets.map { it.trackedApp.id }, results.map { it.first })
-        assertEquals(
-            listOf("com.example.one", "com.example.two"),
-            results.map { it.second.packageName }
-        )
-    }
-
-    @Test
     fun `apk verification processes selections larger than the former batch limit`() = runBlocking {
         val repository =
             GitHubStarImportPageRepository(
@@ -147,6 +115,10 @@ class GitHubStarImportPageRepositoryTest {
 
         assertEquals(35, results.size)
         assertEquals(targets.map { it.trackedApp.id }, results.map { it.first })
+        assertEquals(
+            targets.map { "com.example.${it.repository.repo}" },
+            results.map { it.second.packageName }
+        )
     }
 
     private class FakeDiscoverySource(

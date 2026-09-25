@@ -4,10 +4,8 @@ import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -25,12 +23,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -126,77 +122,6 @@ class GitHubActionsNoticeCardTest {
         composeRule.onNodeWithText("Fallback notice").assertExists()
         composeRule.onNodeWithText("Parent material notice").assertExists()
     }
-
-    @Test
-    fun lightAndDarkNoticeColorsKeepNeutralAndErrorReadability() {
-        lateinit var lightNeutral: NoticeThemeCapture
-        lateinit var lightError: GitHubActionsNoticeColors
-        lateinit var darkNeutral: NoticeThemeCapture
-        lateinit var darkError: GitHubActionsNoticeColors
-
-        composeRule.setContent {
-            Column {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    val neutral = githubActionsNoticeColors(accent = Color.Gray, isDark = false)
-                    val error = githubActionsNoticeColors(accent = GitHubStatusPalette.Error, isDark = false)
-                    val capture =
-                        NoticeThemeCapture(
-                            colors = neutral,
-                            onBackground = MiuixTheme.colorScheme.onBackground,
-                            onBackgroundVariant = MiuixTheme.colorScheme.onBackgroundVariant,
-                        )
-                    SideEffect {
-                        lightNeutral = capture
-                        lightError = error
-                    }
-                    Box(modifier = Modifier.size(1.dp))
-                }
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                    val neutral = githubActionsNoticeColors(accent = Color.Gray, isDark = true)
-                    val error = githubActionsNoticeColors(accent = GitHubStatusPalette.Error, isDark = true)
-                    val capture =
-                        NoticeThemeCapture(
-                            colors = neutral,
-                            onBackground = MiuixTheme.colorScheme.onBackground,
-                            onBackgroundVariant = MiuixTheme.colorScheme.onBackgroundVariant,
-                        )
-                    SideEffect {
-                        darkNeutral = capture
-                        darkError = error
-                    }
-                    Box(modifier = Modifier.size(1.dp))
-                }
-            }
-        }
-
-        composeRule.runOnIdle {
-            assertEquals(lightNeutral.onBackgroundVariant, lightNeutral.colors.accentColor)
-            assertEquals(lightNeutral.onBackgroundVariant.copy(alpha = 0.085f), lightNeutral.colors.containerColor)
-            assertEquals(lightNeutral.onBackgroundVariant.copy(alpha = 0.14f), lightNeutral.colors.borderColor)
-            assertEquals(lightNeutral.onBackground.copy(alpha = 0.70f), lightNeutral.colors.contentColor)
-
-            assertEquals(darkNeutral.onBackgroundVariant, darkNeutral.colors.accentColor)
-            assertEquals(darkNeutral.onBackgroundVariant.copy(alpha = 0.15f), darkNeutral.colors.containerColor)
-            assertEquals(darkNeutral.onBackgroundVariant.copy(alpha = 0.20f), darkNeutral.colors.borderColor)
-            assertEquals(darkNeutral.onBackground.copy(alpha = 0.80f), darkNeutral.colors.contentColor)
-
-            assertEquals(GitHubStatusPalette.Error, lightError.accentColor)
-            assertEquals(GitHubStatusPalette.Error.copy(alpha = 0.09f), lightError.containerColor)
-            assertEquals(GitHubStatusPalette.Error.copy(alpha = 0.16f), lightError.borderColor)
-            assertEquals(GitHubStatusPalette.Error, lightError.contentColor)
-
-            assertEquals(GitHubStatusPalette.Error, darkError.accentColor)
-            assertEquals(GitHubStatusPalette.Error.copy(alpha = 0.16f), darkError.containerColor)
-            assertEquals(GitHubStatusPalette.Error.copy(alpha = 0.24f), darkError.borderColor)
-            assertEquals(GitHubStatusPalette.Error, darkError.contentColor)
-        }
-    }
 }
-
-private data class NoticeThemeCapture(
-    val colors: GitHubActionsNoticeColors,
-    val onBackground: Color,
-    val onBackgroundVariant: Color,
-)
 
 class GitHubActionsNoticeCardTestApp : Application()

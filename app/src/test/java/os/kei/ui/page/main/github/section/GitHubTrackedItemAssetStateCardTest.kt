@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import kotlin.math.abs
 import kotlin.test.assertTrue
 import org.junit.Rule
@@ -177,17 +176,6 @@ class GitHubTrackedItemAssetStateCardTest {
 class GitHubTrackedItemAssetStateCardTestApp : Application()
 
 private val progressMatcher = SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo)
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private const val LOADING_CARD_TAG = "github-tracked-asset-loading-card"
 private const val ERROR_CARD_TAG = "github-tracked-asset-error-card"

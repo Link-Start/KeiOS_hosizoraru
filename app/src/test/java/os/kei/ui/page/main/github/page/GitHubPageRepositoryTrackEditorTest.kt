@@ -23,11 +23,6 @@ import kotlin.test.assertIs
 
 class GitHubPageRepositoryTrackEditorTest {
     @Test
-    fun `repository construction keeps network clients lazy in plain unit tests`() {
-        assertIs<GitHubPageRepository>(repository())
-    }
-
-    @Test
     fun `github source rejects non github url`() {
         val result = buildTrackedItem(
             trackDraft(

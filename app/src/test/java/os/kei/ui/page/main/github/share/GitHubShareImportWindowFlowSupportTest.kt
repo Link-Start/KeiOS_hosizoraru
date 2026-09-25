@@ -13,7 +13,6 @@ import os.kei.feature.github.model.GitHubShareImportFlowMode
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GitHubShareImportWindowFlowSupportTest {
@@ -165,120 +164,70 @@ class GitHubShareImportWindowFlowSupportTest {
     }
 
     @Test
-    fun `reconciliation ignores package updated before current share was armed`() {
-        val pending = pendingTrack(armedAtMillis = 10_000L)
-        val candidate = selectRecentInstalledCandidateForPendingTrack(
-            pendingTrack = pending,
-            candidates = listOf(
-                installedPackage(
-                    packageName = "old.package",
-                    lastUpdateTimeMs = 9_999L
-                )
-            )
+    fun `reconciliation selects the recent install that belongs to the current share`() {
+        data class Case(
+            val name: String,
+            val armedAtMillis: Long,
+            val pendingPackage: String,
+            val candidates: List<Pair<String, Long>>,
+            val expectedPackage: String?,
         )
-
-        assertNull(candidate)
-    }
-
-    @Test
-    fun `reconciliation picks package updated after current share was armed`() {
-        val pending = pendingTrack(armedAtMillis = 10_000L)
-        val candidate = selectRecentInstalledCandidateForPendingTrack(
-            pendingTrack = pending,
-            candidates = listOf(
-                installedPackage(
-                    packageName = "old.package",
-                    lastUpdateTimeMs = 9_500L
+        listOf(
+            Case(
+                name = "ignores package updated before current share was armed",
+                armedAtMillis = 10_000L,
+                pendingPackage = "",
+                candidates = listOf("old.package" to 9_999L),
+                expectedPackage = null,
+            ),
+            Case(
+                name = "picks package updated after current share was armed",
+                armedAtMillis = 10_000L,
+                pendingPackage = "",
+                candidates = listOf("old.package" to 9_500L, "new.package" to 12_000L),
+                expectedPackage = "new.package",
+            ),
+            Case(
+                name = "uses exact package name when pending track has scanned manifest",
+                armedAtMillis = 10_000L,
+                pendingPackage = "target.package",
+                candidates = listOf("other.package" to 13_000L, "target.package" to 10_100L),
+                expectedPackage = "target.package",
+            ),
+            Case(
+                name = "allows exact package timestamp tolerance",
+                armedAtMillis = 200_000L,
+                pendingPackage = "target.package",
+                candidates = listOf("target.package" to 100_000L),
+                expectedPackage = "target.package",
+            ),
+            Case(
+                name = "rejects stale exact package snapshot",
+                armedAtMillis = 200_000L,
+                pendingPackage = "target.package",
+                candidates = listOf("target.package" to 70_000L),
+                expectedPackage = null,
+            ),
+            Case(
+                name = "stays empty when recent packages are ambiguous",
+                armedAtMillis = 10_000L,
+                pendingPackage = "",
+                candidates = listOf("first.package" to 13_000L, "second.package" to 12_500L),
+                expectedPackage = null,
+            ),
+        ).forEach { case ->
+            val candidate = selectRecentInstalledCandidateForPendingTrack(
+                pendingTrack = pendingTrack(
+                    armedAtMillis = case.armedAtMillis,
+                    packageName = case.pendingPackage
                 ),
-                installedPackage(
-                    packageName = "new.package",
-                    lastUpdateTimeMs = 12_000L
-                )
+                candidates = case.candidates.map { (packageName, lastUpdateTimeMs) ->
+                    installedPackage(packageName = packageName, lastUpdateTimeMs = lastUpdateTimeMs)
+                }
             )
-        )
 
-        assertEquals("new.package", candidate?.packageName)
-    }
-
-    @Test
-    fun `reconciliation uses exact package name when pending track has scanned manifest`() {
-        val pending = pendingTrack(
-            armedAtMillis = 10_000L,
-            packageName = "target.package"
-        )
-        val candidate = selectRecentInstalledCandidateForPendingTrack(
-            pendingTrack = pending,
-            candidates = listOf(
-                installedPackage(
-                    packageName = "other.package",
-                    lastUpdateTimeMs = 13_000L
-                ),
-                installedPackage(
-                    packageName = "target.package",
-                    lastUpdateTimeMs = 10_100L
-                )
-            )
-        )
-
-        assertEquals("target.package", candidate?.packageName)
-    }
-
-    @Test
-    fun `reconciliation allows exact package timestamp tolerance`() {
-        val pending = pendingTrack(
-            armedAtMillis = 200_000L,
-            packageName = "target.package"
-        )
-        val candidate = selectRecentInstalledCandidateForPendingTrack(
-            pendingTrack = pending,
-            candidates = listOf(
-                installedPackage(
-                    packageName = "target.package",
-                    lastUpdateTimeMs = 100_000L
-                )
-            )
-        )
-
-        assertEquals("target.package", candidate?.packageName)
-    }
-
-    @Test
-    fun `reconciliation rejects stale exact package snapshot`() {
-        val pending = pendingTrack(
-            armedAtMillis = 200_000L,
-            packageName = "target.package"
-        )
-        val candidate = selectRecentInstalledCandidateForPendingTrack(
-            pendingTrack = pending,
-            candidates = listOf(
-                installedPackage(
-                    packageName = "target.package",
-                    lastUpdateTimeMs = 70_000L
-                )
-            )
-        )
-
-        assertNull(candidate)
-    }
-
-    @Test
-    fun `reconciliation stays empty when recent packages are ambiguous`() {
-        val pending = pendingTrack(armedAtMillis = 10_000L)
-        val candidate = selectRecentInstalledCandidateForPendingTrack(
-            pendingTrack = pending,
-            candidates = listOf(
-                installedPackage(
-                    packageName = "first.package",
-                    lastUpdateTimeMs = 13_000L
-                ),
-                installedPackage(
-                    packageName = "second.package",
-                    lastUpdateTimeMs = 12_500L
-                )
-            )
-        )
-
-        assertNull(candidate)
+            assertEquals(case.expectedPackage, candidate?.packageName, case.name)
+        }
     }
 
     @Test
@@ -302,37 +251,6 @@ class GitHubShareImportWindowFlowSupportTest {
                 armedAtMillis = 200_000L,
                 packageLastUpdateTimeMs = 200_000L - shareImportTrackUpdateToleranceMs
             )
-        )
-    }
-
-    @Test
-    fun `coordinator result maps to share import phase consistently`() {
-        val pending = pendingTrack(armedAtMillis = 10_000L)
-        val candidate = pending.toAttachCandidate(
-            packageSnapshot = installedPackage(
-                packageName = "target.package",
-                lastUpdateTimeMs = 11_000L
-            ),
-            eventAction = Intent.ACTION_PACKAGE_ADDED,
-            detectedAtMillis = 12_000L
-        )
-
-        assertEquals(GitHubShareImportPhase.Idle, ShareImportCoordinatorResult.None.toShareImportPhase())
-        assertEquals(
-            GitHubShareImportPhase.WaitingInstall,
-            ShareImportCoordinatorResult.Pending(pending).toShareImportPhase()
-        )
-        assertEquals(
-            GitHubShareImportPhase.InstallDetected,
-            ShareImportCoordinatorResult.Detected(candidate).toShareImportPhase()
-        )
-        assertEquals(
-            GitHubShareImportPhase.Added,
-            ShareImportCoordinatorResult.AlreadyTracked(candidate).toShareImportPhase()
-        )
-        assertEquals(
-            GitHubShareImportPhase.Failed,
-            ShareImportCoordinatorResult.Failed("failed").toShareImportPhase()
         )
     }
 

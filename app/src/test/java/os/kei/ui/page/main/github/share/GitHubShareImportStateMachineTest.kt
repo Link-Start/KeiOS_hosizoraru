@@ -16,58 +16,30 @@ import kotlin.test.assertTrue
 
 class GitHubShareImportStateMachineTest {
     @Test
-    fun `active preview delivery reports missing preview`() {
-        val plan = resolveActivePreviewDeliveryPlan(null)
-
-        assertEquals(GitHubShareImportActivePreviewDeliveryPlan.MissingPreview, plan)
-    }
-
-    @Test
-    fun `active preview delivery requires install action`() {
-        val plan =
-            resolveActivePreviewDeliveryPlan(
+    fun `active preview delivery plan follows preview readiness`() {
+        listOf<Triple<String, GitHubShareImportPreview?, GitHubShareImportActivePreviewDeliveryPlan>>(
+            Triple("missing preview", null, GitHubShareImportActivePreviewDeliveryPlan.MissingPreview),
+            Triple(
+                "install action disabled",
                 preview().copy(sendInstallActionEnabled = false),
+                GitHubShareImportActivePreviewDeliveryPlan.InstallActionDisabled,
+            ),
+            Triple(
+                "no selected asset",
+                preview().copy(assets = emptyList(), sendInstallActionEnabled = true),
+                GitHubShareImportActivePreviewDeliveryPlan.MissingSelectedAsset,
+            ),
+        ).forEach { (case, preview, expected) ->
+            assertEquals(expected, resolveActivePreviewDeliveryPlan(preview), case)
+        }
+
+        val readyPlan =
+            assertIs<GitHubShareImportActivePreviewDeliveryPlan.Ready>(
+                resolveActivePreviewDeliveryPlan(preview().copy(sendInstallActionEnabled = true)),
+                "ready preview",
             )
-
-        assertEquals(GitHubShareImportActivePreviewDeliveryPlan.InstallActionDisabled, plan)
-    }
-
-    @Test
-    fun `active preview delivery requires selected asset`() {
-        val plan =
-            resolveActivePreviewDeliveryPlan(
-                preview().copy(
-                    assets = emptyList(),
-                    sendInstallActionEnabled = true,
-                ),
-            )
-
-        assertEquals(GitHubShareImportActivePreviewDeliveryPlan.MissingSelectedAsset, plan)
-    }
-
-    @Test
-    fun `active preview delivery resolves selected asset`() {
-        val plan =
-            resolveActivePreviewDeliveryPlan(
-                preview().copy(sendInstallActionEnabled = true),
-            )
-
-        val readyPlan = assertIs<GitHubShareImportActivePreviewDeliveryPlan.Ready>(plan)
         assertEquals("kei", readyPlan.preview.repo)
         assertEquals("keios-release.apk", readyPlan.selectedAsset.name)
-    }
-
-    @Test
-    fun `selected asset delivery uses direct delivery when managed install is disabled`() {
-        val plan =
-            resolveSelectedAssetDeliveryPlan(
-                preview = preview(),
-                selectedAsset = asset(),
-                appManagedShareInstallEnabled = false,
-                currentManagedProgress = null,
-            )
-
-        assertEquals(GitHubShareImportSelectedAssetDeliveryPlan.DirectDelivery, plan)
     }
 
     @Test

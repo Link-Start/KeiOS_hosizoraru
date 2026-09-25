@@ -11,187 +11,45 @@ import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GitHubPageContentStateDeriverTest {
     @Test
-    fun `pending share import card stays visible during linkage window`() = runBlocking {
+    fun `pending share import card stays visible only during linkage window`() = runBlocking {
         val armedAtMillis = 1_000L
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                pendingShareImportTrack = GitHubPendingShareImportTrack(
-                    projectUrl = "https://github.com/owner/repo",
-                    owner = "owner",
-                    repo = "repo",
-                    assetName = "demo.apk",
-                    armedAtMillis = armedAtMillis
-                ),
-                nowMillis = armedAtMillis + 24 * 60 * 1000L
-            )
-        )
-
-        assertTrue(derived.showPendingShareImportCard)
-    }
-
-    @Test
-    fun `pending share import card hides after linkage window`() = runBlocking {
-        val armedAtMillis = 1_000L
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                pendingShareImportTrack = GitHubPendingShareImportTrack(
-                    projectUrl = "https://github.com/owner/repo",
-                    owner = "owner",
-                    repo = "repo",
-                    assetName = "demo.apk",
-                    armedAtMillis = armedAtMillis
-                ),
-                nowMillis = armedAtMillis + 26 * 60 * 1000L
-            )
-        )
-
-        assertFalse(derived.showPendingShareImportCard)
-    }
-
-    @Test
-    fun `all filter keeps searched tracked items`() = runBlocking {
-        val items = sampleTrackedItems()
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedSearch = "demo",
-                trackedFilterMode = GitHubTrackedFilterMode.All
-            )
-        )
-
-        assertEquals(
-            listOf("demo.stable", "demo.pre", "demo.actions"),
-            derived.trackedUi.filteredTracked.map { it.packageName }
-        )
-    }
-
-    @Test
-    fun `pre release filter follows check state prerelease semantic`() = runBlocking {
-        val items = sampleTrackedItems()
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.PreReleaseTracked,
-                checkStates = mapOf(
-                    items[0].id to VersionCheckUi(isPreRelease = false),
-                    items[1].id to VersionCheckUi(isPreRelease = true)
+        listOf(
+            Triple("24 minutes after arming", armedAtMillis + 24 * 60 * 1000L, true),
+            Triple("26 minutes after arming", armedAtMillis + 26 * 60 * 1000L, false),
+        ).forEach { (case, nowMillis, expected) ->
+            val derived = GitHubPageContentStateDeriver().build(
+                baseInput(
+                    pendingShareImportTrack = GitHubPendingShareImportTrack(
+                        projectUrl = "https://github.com/owner/repo",
+                        owner = "owner",
+                        repo = "repo",
+                        assetName = "demo.apk",
+                        armedAtMillis = armedAtMillis
+                    ),
+                    nowMillis = nowMillis
                 )
             )
-        )
 
-        assertEquals(listOf("demo.pre"), derived.trackedUi.filteredTracked.map { it.packageName })
+            assertEquals(expected, derived.showPendingShareImportCard, case)
+        }
     }
 
     @Test
-    fun `update filter includes stable and pre release updates`() = runBlocking {
-        val items = sampleTrackedItems()
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.UpdateAvailable,
-                checkStates = mapOf(
-                    items[0].id to VersionCheckUi(hasUpdate = true),
-                    items[1].id to VersionCheckUi(hasPreReleaseUpdate = true),
-                    items[2].id to VersionCheckUi(hasUpdate = false, hasPreReleaseUpdate = false)
-                )
-            )
+    fun `tracked filter modes keep only matching tracked items`() = runBlocking {
+        data class Case(
+            val name: String,
+            val mode: GitHubTrackedFilterMode,
+            val search: String = "",
+            val withDirectApk: Boolean = false,
+            val checkStates: (List<GitHubTrackedApp>) -> Map<String, VersionCheckUi> = { emptyMap() },
+            val appList: List<InstalledAppItem> = emptyList(),
+            val expected: List<String>,
         )
-
-        assertEquals(
-            listOf("demo.stable", "demo.pre"),
-            derived.trackedUi.filteredTracked.map { it.packageName })
-    }
-
-    @Test
-    fun `installed filter matches installed package list`() = runBlocking {
-        val items = sampleTrackedItems()
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.Installed,
-                appList = listOf(InstalledAppItem(label = "Stable", packageName = "demo.stable"))
-            )
-        )
-
-        assertEquals(
-            listOf("demo.stable"),
-            derived.trackedUi.filteredTracked.map { it.packageName })
-    }
-
-    @Test
-    fun `failed checks filter keeps old failed only behavior`() = runBlocking {
-        val items = sampleTrackedItems()
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.FailedChecks,
-                checkStates = mapOf(
-                    items[0].id to VersionCheckUi(failed = true),
-                    items[1].id to VersionCheckUi(failed = false)
-                )
-            )
-        )
-
-        assertEquals(
-            listOf("demo.stable"),
-            derived.trackedUi.filteredTracked.map { it.packageName })
-    }
-
-    @Test
-    fun `failed checks filter resets when no tracked item is failed`() = runBlocking {
-        val items = sampleTrackedItems()
-        val input = baseInput(
-            trackedItems = items,
-            trackedFilterMode = GitHubTrackedFilterMode.FailedChecks,
-            checkStates = mapOf(
-                items[0].id to VersionCheckUi(failed = false),
-                items[1].id to VersionCheckUi(failed = false)
-            )
-        )
-        val derived = GitHubPageContentStateDeriver().build(input)
-
-        assertTrue(shouldResetFailedTrackedFilter(input, derived))
-    }
-
-    @Test
-    fun `failed checks filter stays active while a failed item remains`() = runBlocking {
-        val items = sampleTrackedItems()
-        val input = baseInput(
-            trackedItems = items,
-            trackedFilterMode = GitHubTrackedFilterMode.FailedChecks,
-            checkStates = mapOf(
-                items[0].id to VersionCheckUi(failed = true),
-                items[1].id to VersionCheckUi(failed = false)
-            )
-        )
-        val derived = GitHubPageContentStateDeriver().build(input)
-
-        assertFalse(shouldResetFailedTrackedFilter(input, derived))
-    }
-
-    @Test
-    fun `actions check filter keeps actions enabled items`() = runBlocking {
-        val items = sampleTrackedItems()
-        val derived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.ActionsCheckEnabled
-            )
-        )
-
-        assertEquals(
-            listOf("demo.actions"),
-            derived.trackedUi.filteredTracked.map { it.packageName })
-    }
-
-    @Test
-    fun `source filters split github repositories and direct apk tracks`() = runBlocking {
-        val items = sampleTrackedItems() + GitHubTrackedApp(
+        val directApkItem = GitHubTrackedApp(
             repoUrl = "https://telegram.org/dl/android/apk",
             owner = "telegram.org",
             repo = "dl-android-apk",
@@ -199,28 +57,109 @@ class GitHubPageContentStateDeriverTest {
             appLabel = "Telegram",
             sourceMode = GitHubTrackedSourceMode.DirectApk
         )
-
-        val githubDerived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.GitHubRepository
+        listOf(
+            Case(
+                name = "all filter keeps searched tracked items",
+                mode = GitHubTrackedFilterMode.All,
+                search = "demo",
+                expected = listOf("demo.stable", "demo.pre", "demo.actions"),
+            ),
+            Case(
+                name = "pre release filter follows check state prerelease semantic",
+                mode = GitHubTrackedFilterMode.PreReleaseTracked,
+                checkStates = { items ->
+                    mapOf(
+                        items[0].id to VersionCheckUi(isPreRelease = false),
+                        items[1].id to VersionCheckUi(isPreRelease = true)
+                    )
+                },
+                expected = listOf("demo.pre"),
+            ),
+            Case(
+                name = "update filter includes stable and pre release updates",
+                mode = GitHubTrackedFilterMode.UpdateAvailable,
+                checkStates = { items ->
+                    mapOf(
+                        items[0].id to VersionCheckUi(hasUpdate = true),
+                        items[1].id to VersionCheckUi(hasPreReleaseUpdate = true),
+                        items[2].id to VersionCheckUi(hasUpdate = false, hasPreReleaseUpdate = false)
+                    )
+                },
+                expected = listOf("demo.stable", "demo.pre"),
+            ),
+            Case(
+                name = "installed filter matches installed package list",
+                mode = GitHubTrackedFilterMode.Installed,
+                appList = listOf(InstalledAppItem(label = "Stable", packageName = "demo.stable")),
+                expected = listOf("demo.stable"),
+            ),
+            Case(
+                name = "failed checks filter keeps old failed only behavior",
+                mode = GitHubTrackedFilterMode.FailedChecks,
+                checkStates = { items ->
+                    mapOf(
+                        items[0].id to VersionCheckUi(failed = true),
+                        items[1].id to VersionCheckUi(failed = false)
+                    )
+                },
+                expected = listOf("demo.stable"),
+            ),
+            Case(
+                name = "actions check filter keeps actions enabled items",
+                mode = GitHubTrackedFilterMode.ActionsCheckEnabled,
+                expected = listOf("demo.actions"),
+            ),
+            Case(
+                name = "github repository filter excludes direct apk tracks",
+                mode = GitHubTrackedFilterMode.GitHubRepository,
+                withDirectApk = true,
+                expected = listOf("demo.stable", "demo.pre", "demo.actions"),
+            ),
+            Case(
+                name = "direct apk filter keeps only direct apk tracks",
+                mode = GitHubTrackedFilterMode.DirectApk,
+                withDirectApk = true,
+                expected = listOf("org.telegram.messenger"),
+            ),
+        ).forEach { case ->
+            val items = sampleTrackedItems() + listOfNotNull(directApkItem.takeIf { case.withDirectApk })
+            val derived = GitHubPageContentStateDeriver().build(
+                baseInput(
+                    trackedItems = items,
+                    trackedSearch = case.search,
+                    trackedFilterMode = case.mode,
+                    checkStates = case.checkStates(items),
+                    appList = case.appList
+                )
             )
-        )
-        val directDerived = GitHubPageContentStateDeriver().build(
-            baseInput(
-                trackedItems = items,
-                trackedFilterMode = GitHubTrackedFilterMode.DirectApk
-            )
-        )
 
-        assertEquals(
-            listOf("demo.stable", "demo.pre", "demo.actions"),
-            githubDerived.trackedUi.filteredTracked.map { it.packageName }
-        )
-        assertEquals(
-            listOf("org.telegram.messenger"),
-            directDerived.trackedUi.filteredTracked.map { it.packageName }
-        )
+            assertEquals(
+                case.expected,
+                derived.trackedUi.filteredTracked.map { it.packageName },
+                case.name
+            )
+        }
+    }
+
+    @Test
+    fun `failed checks filter resets only when no tracked item is failed`() = runBlocking {
+        val items = sampleTrackedItems()
+        listOf(
+            Triple("no tracked item is failed", false, true),
+            Triple("a failed item remains", true, false),
+        ).forEach { (case, firstItemFailed, expectedReset) ->
+            val input = baseInput(
+                trackedItems = items,
+                trackedFilterMode = GitHubTrackedFilterMode.FailedChecks,
+                checkStates = mapOf(
+                    items[0].id to VersionCheckUi(failed = firstItemFailed),
+                    items[1].id to VersionCheckUi(failed = false)
+                )
+            )
+            val derived = GitHubPageContentStateDeriver().build(input)
+
+            assertEquals(expectedReset, shouldResetFailedTrackedFilter(input, derived), case)
+        }
     }
 
     @Test

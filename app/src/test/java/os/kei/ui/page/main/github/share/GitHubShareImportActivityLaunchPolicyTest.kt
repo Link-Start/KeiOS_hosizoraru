@@ -7,58 +7,56 @@ import kotlin.test.assertEquals
 
 class GitHubShareImportActivityLaunchPolicyTest {
     @Test
-    fun `notification first incoming share starts hidden`() {
-        assertEquals(
-            GitHubShareImportActivityDisplayState.Hidden,
-            GitHubShareImportActivityLaunchPolicy.forIncomingShare(
-                sharedText = "https://github.com/open-ani/animeko/releases",
-                lookupConfig = GitHubLookupConfig(
-                    shareImportLinkageEnabled = true,
-                    shareImportFlowMode = GitHubShareImportFlowMode.NotificationFirst
-                )
-            )
+    fun `incoming share display state follows share text and flow mode`() {
+        data class Case(
+            val name: String,
+            val sharedText: String,
+            val linkageEnabled: Boolean,
+            val flowMode: GitHubShareImportFlowMode,
+            val expected: GitHubShareImportActivityDisplayState,
         )
-    }
-
-    @Test
-    fun `sheet assisted incoming share starts sheet`() {
-        assertEquals(
-            GitHubShareImportActivityDisplayState.Sheet,
-            GitHubShareImportActivityLaunchPolicy.forIncomingShare(
-                sharedText = "https://github.com/open-ani/animeko/releases",
-                lookupConfig = GitHubLookupConfig(
-                    shareImportLinkageEnabled = true,
-                    shareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted
-                )
-            )
-        )
-    }
-
-    @Test
-    fun `legacy disabled share import flag still follows flow mode`() {
-        assertEquals(
-            GitHubShareImportActivityDisplayState.Hidden,
-            GitHubShareImportActivityLaunchPolicy.forIncomingShare(
-                sharedText = "https://github.com/open-ani/animeko/releases",
-                lookupConfig = GitHubLookupConfig(
-                    shareImportLinkageEnabled = false,
-                    shareImportFlowMode = GitHubShareImportFlowMode.NotificationFirst
-                )
-            )
-        )
-    }
-
-    @Test
-    fun `invalid incoming share finishes activity`() {
-        assertEquals(
-            GitHubShareImportActivityDisplayState.Finish,
-            GitHubShareImportActivityLaunchPolicy.forIncomingShare(
+        val releasesUrl = "https://github.com/open-ani/animeko/releases"
+        listOf(
+            Case(
+                name = "notification first incoming share starts hidden",
+                sharedText = releasesUrl,
+                linkageEnabled = true,
+                flowMode = GitHubShareImportFlowMode.NotificationFirst,
+                expected = GitHubShareImportActivityDisplayState.Hidden,
+            ),
+            Case(
+                name = "sheet assisted incoming share starts sheet",
+                sharedText = releasesUrl,
+                linkageEnabled = true,
+                flowMode = GitHubShareImportFlowMode.SheetAssisted,
+                expected = GitHubShareImportActivityDisplayState.Sheet,
+            ),
+            Case(
+                name = "legacy disabled share import flag still follows flow mode",
+                sharedText = releasesUrl,
+                linkageEnabled = false,
+                flowMode = GitHubShareImportFlowMode.NotificationFirst,
+                expected = GitHubShareImportActivityDisplayState.Hidden,
+            ),
+            Case(
+                name = "invalid incoming share finishes activity",
                 sharedText = "hello",
-                lookupConfig = GitHubLookupConfig(
-                    shareImportLinkageEnabled = true,
-                    shareImportFlowMode = GitHubShareImportFlowMode.NotificationFirst
-                )
+                linkageEnabled = true,
+                flowMode = GitHubShareImportFlowMode.NotificationFirst,
+                expected = GitHubShareImportActivityDisplayState.Finish,
+            ),
+        ).forEach { case ->
+            assertEquals(
+                case.expected,
+                GitHubShareImportActivityLaunchPolicy.forIncomingShare(
+                    sharedText = case.sharedText,
+                    lookupConfig = GitHubLookupConfig(
+                        shareImportLinkageEnabled = case.linkageEnabled,
+                        shareImportFlowMode = case.flowMode
+                    )
+                ),
+                case.name
             )
-        )
+        }
     }
 }

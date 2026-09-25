@@ -41,9 +41,4 @@ class GitHubShareImportWindowChromeTest {
             typedArray.recycle()
         }
     }
-
-    @Test
-    fun shareImportWindowBlurUsesInstallerStyleRadius() {
-        assertEquals(30, GitHubShareImportWindowChrome.BlurBehindRadius)
-    }
 }

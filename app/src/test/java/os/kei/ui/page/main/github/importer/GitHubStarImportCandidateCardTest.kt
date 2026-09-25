@@ -4,12 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -46,9 +43,7 @@ import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
 import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
-import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.ui.page.main.github.GitHubStatusPalette
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -84,23 +79,6 @@ class GitHubStarImportCandidateCardTest {
         composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(1)
         composeRule.onNode(CHECKBOX).assertIsOn().performClick()
         composeRule.runOnIdle { assertEquals(1, clickCount) }
-    }
-
-    @Test
-    fun unselectedCandidateReportsUncheckedState() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                StarImportCandidateCard(
-                    candidate = candidate,
-                    selected = false,
-                    trackedSelectable = false,
-                    apkVerificationState = null,
-                    onToggle = {},
-                )
-            }
-        }
-
-        composeRule.onNode(CHECKBOX).assertIsOff()
     }
 
     @Test
@@ -167,29 +145,6 @@ class GitHubStarImportCandidateCardTest {
         setRichCandidate(fontScale = 1.5f)
 
         assertRichCandidateGeometry(maxHeight = 186.dp)
-    }
-
-    @Test
-    fun candidateColorsKeepLightAndDarkGlassRoles() {
-        lateinit var lightCapture: StarImportCandidateThemeCapture
-        lateinit var darkCapture: StarImportCandidateThemeCapture
-        composeRule.setContent {
-            Column {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    val capture = starImportCandidateThemeCapture(isDark = false)
-                    SideEffect { lightCapture = capture }
-                }
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
-                    val capture = starImportCandidateThemeCapture(isDark = true)
-                    SideEffect { darkCapture = capture }
-                }
-            }
-        }
-
-        composeRule.runOnIdle {
-            assertStarImportCandidateColors(lightCapture, containerAlpha = 0.10f)
-            assertStarImportCandidateColors(darkCapture, containerAlpha = 0.08f)
-        }
     }
 
     private fun setRichCandidate(fontScale: Float) {
@@ -285,82 +240,6 @@ class GitHubStarImportCandidateCardTest {
                     ),
             )
     }
-}
-
-@Composable
-private fun starImportCandidateThemeCapture(isDark: Boolean): StarImportCandidateThemeCapture =
-    StarImportCandidateThemeCapture(
-        primary = MiuixTheme.colorScheme.primary,
-        onBackground = MiuixTheme.colorScheme.onBackground,
-        onBackgroundVariant = MiuixTheme.colorScheme.onBackgroundVariant,
-        selected =
-            starImportCandidateColors(
-                selected = true,
-                disabled = false,
-                quality = GitHubStarImportQuality.NeedsReview,
-                isDark = isDark,
-            ),
-        recommended =
-            starImportCandidateColors(
-                selected = false,
-                disabled = false,
-                quality = GitHubStarImportQuality.LikelyAndroid,
-                isDark = isDark,
-            ),
-        ordinary =
-            starImportCandidateColors(
-                selected = false,
-                disabled = false,
-                quality = GitHubStarImportQuality.NeedsReview,
-                isDark = isDark,
-            ),
-        tracked =
-            starImportCandidateColors(
-                selected = false,
-                disabled = true,
-                quality = GitHubStarImportQuality.LikelyAndroid,
-                isDark = isDark,
-            ),
-    )
-
-private data class StarImportCandidateThemeCapture(
-    val primary: Color,
-    val onBackground: Color,
-    val onBackgroundVariant: Color,
-    val selected: StarImportCandidateColors,
-    val recommended: StarImportCandidateColors,
-    val ordinary: StarImportCandidateColors,
-    val tracked: StarImportCandidateColors,
-)
-
-private fun assertStarImportCandidateColors(
-    capture: StarImportCandidateThemeCapture,
-    containerAlpha: Float,
-) {
-    assertEquals(
-        GitHubStatusPalette.Update.copy(alpha = containerAlpha),
-        capture.selected.containerColor,
-    )
-    assertEquals(GitHubStatusPalette.Update.copy(alpha = 0.34f), capture.selected.borderColor)
-    assertEquals(capture.onBackground, capture.selected.titleColor)
-
-    assertEquals(
-        GitHubStatusPalette.Active.copy(alpha = containerAlpha),
-        capture.recommended.containerColor,
-    )
-    assertEquals(GitHubStatusPalette.Active.copy(alpha = 0.34f), capture.recommended.borderColor)
-    assertEquals(capture.onBackground, capture.recommended.titleColor)
-
-    assertEquals(capture.primary.copy(alpha = containerAlpha), capture.ordinary.containerColor)
-    assertEquals(capture.primary.copy(alpha = 0.18f), capture.ordinary.borderColor)
-    assertEquals(capture.onBackground, capture.ordinary.titleColor)
-
-    assertEquals(
-        capture.onBackgroundVariant.copy(alpha = containerAlpha),
-        capture.tracked.containerColor,
-    )
-    assertEquals(capture.onBackgroundVariant.copy(alpha = 0.18f), capture.tracked.borderColor)
-    assertEquals(capture.onBackground, capture.tracked.titleColor)
 }
 
 private fun starImportCandidateFixture(

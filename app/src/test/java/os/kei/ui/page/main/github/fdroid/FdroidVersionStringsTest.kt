@@ -6,57 +6,18 @@ import kotlin.test.assertTrue
 import org.junit.Test
 
 /**
- * The version history's own copy, held to the two rules the compiler cannot check.
- *
- * `R.string` resolves against the default locale alone, so a key added to `values/` and forgotten in
- * `values-en/` compiles, runs, and quietly shows Chinese to an English reader. And a positional
- * specifier that disagrees between locales — `%1$d` in one, `%1$s` in another — is not a fallback but a
- * crash inside `getString`, on that locale only, which is exactly the failure nobody tests on.
+ * The version history's own copy, held to a naming rule the compiler cannot check. Key and
+ * format-argument parity across locales is `LocalizedStringParityTest`'s job.
  */
 class FdroidVersionStringsTest {
-    @Test
-    fun `every version-history string exists in every locale`() {
-        val byLocale = LOCALES.associateWith { locale -> versionStrings(locale) }
-        val reference = byLocale.getValue(DEFAULT_LOCALE).keys
-
-        assertTrue(reference.isNotEmpty(), "no github_fdroid_version_* keys found at all")
-        byLocale.forEach { (locale, strings) ->
-            assertEquals(
-                emptySet(),
-                reference - strings.keys,
-                "$locale is missing keys the default locale declares",
-            )
-            assertEquals(
-                emptySet(),
-                strings.keys - reference,
-                "$locale declares keys the default locale does not",
-            )
-        }
-    }
-
-    @Test
-    fun `a format string carries the same specifiers in every locale`() {
-        val byLocale = LOCALES.associateWith { locale -> versionStrings(locale) }
-        val reference = byLocale.getValue(DEFAULT_LOCALE)
-
-        reference.forEach { (key, defaultText) ->
-            val expected = specifiers(defaultText)
-            byLocale.forEach { (locale, strings) ->
-                assertEquals(
-                    expected,
-                    specifiers(strings.getValue(key)),
-                    "$key: $locale would crash getString, or drop an argument",
-                )
-            }
-        }
-    }
-
     @Test
     fun `a key named as a format actually takes an argument, and one not named as a format takes none`() {
         // The naming is load-bearing rather than decorative: a `*_format` with no specifier means a call
         // site is passing an argument that goes nowhere, and a specifier on a key not named `*_format`
         // means a call site is about to hand `getString` no argument at all.
-        versionStrings(DEFAULT_LOCALE).forEach { (key, text) ->
+        val strings = versionStrings(DEFAULT_LOCALE)
+        assertTrue(strings.isNotEmpty(), "no github_fdroid_version_* keys found at all")
+        strings.forEach { (key, text) ->
             val hasSpecifiers = specifiers(text).isNotEmpty()
             assertEquals(
                 key.endsWith("_format"),
@@ -68,7 +29,6 @@ class FdroidVersionStringsTest {
 }
 
 private const val DEFAULT_LOCALE = "values"
-private val LOCALES = listOf("values", "values-en", "values-ja", "values-zh-rCN")
 private const val KEY_PREFIX = "github_fdroid_version_"
 
 /** `%1$s`, `%2$d` and friends, as a set so ordering in a translation is free to differ. */

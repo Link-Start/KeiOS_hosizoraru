@@ -128,8 +128,15 @@ ones kept relearning:
 
 Tests are for behaviour and for regressions that would otherwise ship. A test that reads one file's
 source and asserts that some expression, argument, call order or comment is present is a *mirror*: any
-refactor breaks it, and it cannot catch a behaviour bug. On 2026-09-23 about 240 of these were removed
-(`docs/planning/test-suite-cleanup.md`). Do not add new ones.
+refactor breaks it, and it cannot catch a behaviour bug. On 2026-09-23 about 240 of these were removed,
+and on 2026-09-25 the whole suite was audited and cut by the rules in
+`docs/planning/test-suite-cleanup.md`, which keeps the current numbers. Do not add new ones.
+
+Before adding a test, check it is not already asserted elsewhere, including in the module that owns
+the code: most modules were split out of `:app`, and their tests were often written twice. Put the
+test in the module that owns the code. CI runs every module's `testDebugUnitTest` and compares the
+screenshot tests only because it passes `-Proborazzi.test.verify=true`; without that property a
+screenshot test just composes.
 
 Source scans are still the right tool for a few things:
 

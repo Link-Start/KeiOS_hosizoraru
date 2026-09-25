@@ -25,7 +25,6 @@ import os.kei.ui.page.main.github.state.toUi
 
 internal class GitHubRefreshBatchActions(
     private val owner: GitHubRefreshActions,
-    private val assetActions: GitHubAssetActions,
     private val backgroundRefreshCoordinator: GitHubBackgroundRefreshCoordinator,
     private val actionsRunRefreshCoordinator: GitHubActionsRecommendedRunRefreshCoordinator,
 ) {
@@ -106,15 +105,6 @@ internal class GitHubRefreshBatchActions(
                 var completedCount = 0
                 try {
                     state.refreshTargetIds = targetIds.toSet()
-                    if (shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh)) {
-                        assetActions.clearApkAssetCachesForTargetsNow(
-                            targets =
-                                snapshot.map { item ->
-                                    item to (previousCheckStatesById[item.id] ?: VersionCheckUi())
-                                },
-                            allowLatestReleaseFallback = true,
-                        )
-                    }
                     if (clearAllCheckCache) {
                         repository.clearCheckCache()
                         state.lastRefreshMs = 0L

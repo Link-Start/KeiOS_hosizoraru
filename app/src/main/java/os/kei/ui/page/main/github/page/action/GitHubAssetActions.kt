@@ -116,16 +116,6 @@ internal class GitHubAssetActions(
         )
     }
 
-    suspend fun clearApkAssetCachesForTargetsNow(
-        targets: List<Pair<GitHubTrackedApp, VersionCheckUi>>,
-        allowLatestReleaseFallback: Boolean = false,
-    ) {
-        cacheActions.clearApkAssetCachesForTargetsNow(
-            targets = targets,
-            allowLatestReleaseFallback = allowLatestReleaseFallback,
-        )
-    }
-
     fun clearApkAssetStateAndCache(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,

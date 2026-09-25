@@ -72,7 +72,6 @@ internal class GitHubRefreshActions(
     private val batchActions =
         GitHubRefreshBatchActions(
             owner = this,
-            assetActions = assetActions,
             backgroundRefreshCoordinator = backgroundRefreshCoordinator,
             actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
         )

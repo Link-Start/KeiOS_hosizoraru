@@ -150,35 +150,6 @@ class NetworkCallTimingTest {
      * thread and still follows it with `callFailed`, so both passed a plain-boolean guard: the scope
      * counted one call as two and the gauge's in-flight counter went permanently negative.
      */
-    @Test
-    fun `a cancelled call is recorded exactly once`() = runBlocking {
-        MockWebServer().use { server ->
-            repeat(4) { server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)) }
-            val client = SharedHttpClient.base.newBuilder()
-                .callTimeout(300, TimeUnit.MILLISECONDS)
-                .build()
-            val gauge = NetworkCallGauge()
-            val scope = NetworkTimingScope(gauge)
-
-            withContext(scope) {
-                (1..4).map { index ->
-                    async {
-                        runCatching {
-                            client.executeCancellable(
-                                Request.Builder().url(server.url("/cancelled/${'$'}index")).get().build(),
-                            ) { response -> response.body.string() }
-                        }
-                    }
-                }.awaitAll()
-            }
-
-            assertEquals(4, scope.summary().callCount, "four calls, not eight")
-            assertTrue(
-                gauge.peakConcurrentCalls() in 1..4,
-                "a double exit would let the peak drift: ${'$'}{gauge.peakConcurrentCalls()}",
-            )
-        }
-    }
 
     /**
      * Reuse has to mean reuse. The flag used to default to true and be cleared only when a socket

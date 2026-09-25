@@ -40,15 +40,4 @@ class OsPageRowsStateLoaderTest {
             assertFalse(state.deriving)
             assertEquals(OsPageRowsDerivedState.Empty, state.rowsState)
         }
-
-    private fun collapsedFlags(): OsPageExpansionFlags =
-        OsPageExpansionFlags(
-            topInfoExpanded = false,
-            systemTableExpanded = false,
-            secureTableExpanded = false,
-            globalTableExpanded = false,
-            androidPropsExpanded = false,
-            javaPropsExpanded = false,
-            linuxEnvExpanded = false,
-        )
 }

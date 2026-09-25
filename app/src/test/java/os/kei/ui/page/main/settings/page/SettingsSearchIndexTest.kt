@@ -13,55 +13,47 @@ class SettingsSearchIndexTest {
     }
 
     @Test
-    fun `builder uses string resolver tokens`() {
-        val targets =
-            buildSettingsSearchTargets { resId ->
-                when (resId) {
-                    R.string.settings_theme_mode_title -> "Theme Mode"
-                    else -> "label-$resId"
-                }
-            }
-
-        assertEquals(
-            listOf(SettingsSearchCard.ThemeLanguage),
-            deriveSettingsSearchTargets(targets, "theme").map { it.card },
+    fun `resolved string labels route a query to its cards`() {
+        data class Case(
+            val name: String,
+            val labels: Map<Int, String>,
+            val query: String,
+            val expected: List<SettingsSearchCard>,
         )
-    }
-
-    @Test
-    fun `battery query targets keepalive card`() {
-        val targets =
-            buildSettingsSearchTargets { resId ->
-                when (resId) {
-                    R.string.settings_battery_optimization_title -> "Battery Optimization"
-                    else -> "label-$resId"
-                }
-            }
-
-        assertEquals(
-            listOf(SettingsSearchCard.KeepAlive),
-            deriveSettingsSearchTargets(targets, "battery").map { it.card },
-        )
-    }
-
-    @Test
-    fun `accessibility query targets guard cards`() {
-        val targets =
-            buildSettingsSearchTargets { resId ->
-                when (resId) {
-                    R.string.settings_accessibility_guard_policy_title -> "Self Guard Policy"
-                    R.string.settings_accessibility_guard_history_title -> "Guard History"
-                    else -> "label-$resId"
-                }
-            }
-
-        assertEquals(
-            listOf(
-                SettingsSearchCard.AccessibilityGuardPolicy,
-                SettingsSearchCard.AccessibilityGuardHistory,
+        listOf(
+            Case(
+                name = "builder uses string resolver tokens",
+                labels = mapOf(R.string.settings_theme_mode_title to "Theme Mode"),
+                query = "theme",
+                expected = listOf(SettingsSearchCard.ThemeLanguage),
             ),
-            deriveSettingsSearchTargets(targets, "guard").map { it.card },
-        )
+            Case(
+                name = "battery query targets keepalive card",
+                labels = mapOf(R.string.settings_battery_optimization_title to "Battery Optimization"),
+                query = "battery",
+                expected = listOf(SettingsSearchCard.KeepAlive),
+            ),
+            Case(
+                name = "accessibility query targets guard cards",
+                labels = mapOf(
+                    R.string.settings_accessibility_guard_policy_title to "Self Guard Policy",
+                    R.string.settings_accessibility_guard_history_title to "Guard History",
+                ),
+                query = "guard",
+                expected = listOf(
+                    SettingsSearchCard.AccessibilityGuardPolicy,
+                    SettingsSearchCard.AccessibilityGuardHistory,
+                ),
+            ),
+        ).forEach { case ->
+            val targets = buildSettingsSearchTargets { resId -> case.labels[resId] ?: "label-$resId" }
+
+            assertEquals(
+                case.name,
+                case.expected,
+                deriveSettingsSearchTargets(targets, case.query).map { it.card },
+            )
+        }
     }
 
     @Test

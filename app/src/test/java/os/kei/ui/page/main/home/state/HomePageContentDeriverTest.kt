@@ -94,13 +94,7 @@ class HomePageContentDeriverTest {
     @Test
     fun mcpRuntimeUsesProvidedRuntimeClock() {
         val state =
-            deriveHomePageContentState(
-                privilegeStatus =
-                    PrivilegeStatus(
-                        mode = PrivilegeMode.Shizuku,
-                        code = PrivilegeStatusCode.Ready,
-                        detail = "shell",
-                    ),
+            derive(
                 appOverview =
                     HomeAppOverview(
                         versionName = "1.8.0",
@@ -153,14 +147,6 @@ class HomePageContentDeriverTest {
                         cacheFreshness = staleCacheSnapshot(),
                     ),
                 runtimeNowMs = 3_660_000L,
-                text = testTextBundle(),
-                colors =
-                    HomePageContentColors(
-                        runningColor = Color.Green,
-                        stoppedColor = Color.Red,
-                        inactiveColor = Color.Gray,
-                        githubCacheColor = Color.Yellow,
-                    ),
             )
 
         assertEquals("1h", state.mcpRuntimeText)
@@ -179,16 +165,7 @@ class HomePageContentDeriverTest {
     @Test
     fun webDavAutoSyncIssuesOverrideNormalAutoSyncStatus() {
         val state =
-            deriveHomePageContentState(
-                privilegeStatus =
-                    PrivilegeStatus(
-                        mode = PrivilegeMode.Shizuku,
-                        code = PrivilegeStatusCode.Ready,
-                        detail = "shell",
-                    ),
-                appOverview = HomeAppOverview(loaded = true),
-                mcpOverview = HomeMcpOverview(),
-                githubOverview = HomeGitHubOverview(loaded = true),
+            derive(
                 webDavOverview =
                     HomeWebDavOverview(
                         configured = true,
@@ -198,16 +175,7 @@ class HomePageContentDeriverTest {
                         lastAutoSyncTimeMs = 60_000L,
                         autoSyncNeedsReview = true,
                     ),
-                baOverview = HomeBaOverview(loaded = true),
                 runtimeNowMs = 120_000L,
-                text = testTextBundle(),
-                colors =
-                    HomePageContentColors(
-                        runningColor = Color.Green,
-                        stoppedColor = Color.Red,
-                        inactiveColor = Color.Gray,
-                        githubCacheColor = Color.Yellow,
-                    ),
             )
 
         assertEquals("review", state.webDavStatusLine)
@@ -216,15 +184,7 @@ class HomePageContentDeriverTest {
     @Test
     fun githubRuntimeRefreshOverridesCachedHomeLines() {
         val state =
-            deriveHomePageContentState(
-                privilegeStatus =
-                    PrivilegeStatus(
-                        mode = PrivilegeMode.Shizuku,
-                        code = PrivilegeStatusCode.Ready,
-                        detail = "shell",
-                    ),
-                appOverview = HomeAppOverview(loaded = true),
-                mcpOverview = HomeMcpOverview(),
+            derive(
                 githubOverview =
                     HomeGitHubOverview(
                         loaded = true,
@@ -238,17 +198,7 @@ class HomePageContentDeriverTest {
                         refreshTotalTrackedCount = 75,
                         refreshCompletedCount = 0,
                     ),
-                webDavOverview = HomeWebDavOverview(),
-                baOverview = HomeBaOverview(loaded = true),
                 runtimeNowMs = 10_000L,
-                text = testTextBundle(),
-                colors =
-                    HomePageContentColors(
-                        runningColor = Color.Green,
-                        stoppedColor = Color.Red,
-                        inactiveColor = Color.Gray,
-                        githubCacheColor = Color.Yellow,
-                    ),
             )
 
         assertEquals("refreshing 0/1 tracked 75", state.githubFocusLine)
@@ -259,15 +209,7 @@ class HomePageContentDeriverTest {
     @Test
     fun githubCacheAgeUsesRuntimeClock() {
         val state =
-            deriveHomePageContentState(
-                privilegeStatus =
-                    PrivilegeStatus(
-                        mode = PrivilegeMode.Shizuku,
-                        code = PrivilegeStatusCode.Ready,
-                        detail = "shell",
-                    ),
-                appOverview = HomeAppOverview(loaded = true),
-                mcpOverview = HomeMcpOverview(),
+            derive(
                 githubOverview =
                     HomeGitHubOverview(
                         loaded = true,
@@ -277,17 +219,7 @@ class HomePageContentDeriverTest {
                         cacheLabelNowMs = 1_000L,
                         refreshIntervalHours = 3,
                     ),
-                webDavOverview = HomeWebDavOverview(),
-                baOverview = HomeBaOverview(loaded = true),
                 runtimeNowMs = 121_000L,
-                text = testTextBundle(),
-                colors =
-                    HomePageContentColors(
-                        runningColor = Color.Green,
-                        stoppedColor = Color.Red,
-                        inactiveColor = Color.Gray,
-                        githubCacheColor = Color.Yellow,
-                    ),
             )
 
         assertEquals("3h 2m", state.githubLastUpdateLine)
@@ -317,14 +249,32 @@ class HomePageContentDeriverTest {
         mode: PrivilegeMode,
         code: PrivilegeStatusCode,
     ): HomePageContentState =
-        deriveHomePageContentState(
+        derive(
             privilegeStatus = PrivilegeStatus(mode = mode, code = code),
             appOverview = HomeAppOverview(),
-            mcpOverview = HomeMcpOverview(),
             githubOverview = HomeGitHubOverview(),
-            webDavOverview = HomeWebDavOverview(),
             baOverview = HomeBaOverview(),
             runtimeNowMs = 0L,
+        )
+
+    private fun derive(
+        privilegeStatus: PrivilegeStatus =
+            PrivilegeStatus(mode = PrivilegeMode.Shizuku, code = PrivilegeStatusCode.Ready, detail = "shell"),
+        appOverview: HomeAppOverview = HomeAppOverview(loaded = true),
+        mcpOverview: HomeMcpOverview = HomeMcpOverview(),
+        githubOverview: HomeGitHubOverview = HomeGitHubOverview(loaded = true),
+        webDavOverview: HomeWebDavOverview = HomeWebDavOverview(),
+        baOverview: HomeBaOverview = HomeBaOverview(loaded = true),
+        runtimeNowMs: Long,
+    ): HomePageContentState =
+        deriveHomePageContentState(
+            privilegeStatus = privilegeStatus,
+            appOverview = appOverview,
+            mcpOverview = mcpOverview,
+            githubOverview = githubOverview,
+            webDavOverview = webDavOverview,
+            baOverview = baOverview,
+            runtimeNowMs = runtimeNowMs,
             text = testTextBundle(),
             colors =
                 HomePageContentColors(

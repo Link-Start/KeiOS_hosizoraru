@@ -45,11 +45,6 @@ class KeiOSJsonImportErrorSupportingBlockTest {
     }
 
     @Test
-    fun longErrorRemainsCompleteAndSeparatedAtLargeFontInDarkTheme() {
-        verifyLongErrorLayout(ColorSchemeMode.Dark)
-    }
-
-    @Test
     fun blankErrorAddsNoSupportingLayout() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {

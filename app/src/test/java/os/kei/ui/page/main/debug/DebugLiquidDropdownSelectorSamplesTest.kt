@@ -40,7 +40,6 @@ import os.kei.ui.page.main.widget.sheet.SnapshotMenuPanelTestTag
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -245,21 +244,7 @@ class DebugLiquidDropdownSelectorSamplesTest {
         val radioRoleMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
         val selectedRadioMatcher =
             radioRoleMatcher and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
-
-        const val DROPDOWN_SAMPLES_SOURCE =
-            "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidDropdownSelectorSamples.kt"
     }
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 class DebugLiquidDropdownSelectorSamplesTestApp : Application()

@@ -4,19 +4,17 @@ import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlin.math.abs
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.testing.distinctRowCount
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -88,29 +86,12 @@ class HomeInfoPillCardLayoutTest {
         }
         composeRule.waitForIdle()
 
-        val rowCount = distinctRowCount(labels)
+        val rowCount = composeRule.distinctRowCount(labels)
         assertTrue(
             actual = rowCount <= maxRows,
             message = "Expected at most $maxRows rows, actual=$rowCount labels=$labels",
         )
     }
-
-    private fun distinctRowCount(labels: List<String>): Int {
-        val tolerancePx = with(composeRule.density) { 2.dp.toPx() }
-        return labels
-            .map(::boundsFor)
-            .map { bounds -> bounds.center.y }
-            .fold(mutableListOf<Float>()) { rows, centerY ->
-                if (rows.none { rowY -> abs(rowY - centerY) <= tolerancePx }) rows += centerY
-                rows
-            }.size
-    }
-
-    private fun boundsFor(text: String): Rect =
-        composeRule
-            .onNodeWithText(text, useUnmergedTree = true)
-            .fetchSemanticsNode()
-            .boundsInRoot
 }
 
 class HomeInfoPillCardLayoutTestApp : Application()

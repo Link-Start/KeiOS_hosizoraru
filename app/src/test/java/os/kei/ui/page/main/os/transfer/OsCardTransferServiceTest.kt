@@ -24,48 +24,68 @@ class OsCardTransferServiceTest {
         const val DEPRECATED_DEFAULT_APPS_CARD_ID = "builtin-settings-default-apps"
         const val DEPRECATED_APP_LANGUAGE_CARD_ID = "builtin-settings-app-language"
         const val DEPRECATED_RUNNING_SERVICES_CARD_ID = "builtin-settings-running-services"
+
+        val DEFAULTS = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
+
+        fun googleBuiltIn(defaults: OsGoogleSystemServiceConfig = DEFAULTS): OsActivityShortcutCard =
+            builtInActivityShortcutCard(
+                id = BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID,
+                title = "Google Settings",
+                subtitle = "Google entry",
+                appName = "Google Settings",
+                packageName = "com.google.android.gms",
+                className = "com.google.android.gms.app.settings.GoogleSettingsLink",
+                intentAction = "android.intent.action.VIEW",
+                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
+                defaults = defaults,
+            )
+
+        fun extraDimBuiltIn(defaults: OsGoogleSystemServiceConfig = DEFAULTS): OsActivityShortcutCard =
+            builtInActivityShortcutCard(
+                id = BUILTIN_EXTRA_DIM_CARD_ID,
+                title = "Extra dim",
+                subtitle = "Reduce bright colors",
+                appName = "Android Settings",
+                packageName = "com.android.settings",
+                className = "com.android.settings.Settings\$ReduceBrightColorsSettingsActivity",
+                intentAction = "android.settings.REDUCE_BRIGHT_COLORS_SETTINGS",
+                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
+                defaults = defaults,
+            )
     }
 
     @Test
-    fun `parse root detects activity card export schema`() {
-        val root =
-            parseOsCardImportRoot(
-                """
-                {
-                  "schema": "$OS_ACTIVITY_CARD_EXPORT_SCHEMA",
-                  "itemCount": 1,
-                  "items": [
-                    {"id":"activity-1","packageName":"com.android.settings","className":"SettingsActivity"}
-                  ]
-                }
-                """.trimIndent(),
-            )
+    fun `parse root detects activity and shell card export schemas`() {
+        listOf(
+            Triple(
+                OS_ACTIVITY_CARD_EXPORT_SCHEMA,
+                """{"id":"activity-1","packageName":"com.android.settings","className":"SettingsActivity"}""",
+                OsCardImportFileKind.Activity,
+            ),
+            Triple(
+                OS_SHELL_CARD_EXPORT_SCHEMA,
+                """{"id":"shell-1","command":"id","runOutput":"uid=0"}""",
+                OsCardImportFileKind.Shell,
+            ),
+        ).forEach { (schema, itemJson, expectedKind) ->
+            val root =
+                parseOsCardImportRoot(
+                    """
+                    {
+                      "schema": "$schema",
+                      "itemCount": 1,
+                      "items": [
+                        $itemJson
+                      ]
+                    }
+                    """.trimIndent(),
+                )
 
-        assertEquals(OsCardImportFileKind.Activity, root.fileKind)
-        assertEquals(1, root.sourceCount)
-        assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, root.schemaVersion)
-        assertFalse(root.isLegacyFormat)
-    }
-
-    @Test
-    fun `parse root detects shell card export schema`() {
-        val root =
-            parseOsCardImportRoot(
-                """
-                {
-                  "schema": "$OS_SHELL_CARD_EXPORT_SCHEMA",
-                  "itemCount": 1,
-                  "items": [
-                    {"id":"shell-1","command":"id","runOutput":"uid=0"}
-                  ]
-                }
-                """.trimIndent(),
-            )
-
-        assertEquals(OsCardImportFileKind.Shell, root.fileKind)
-        assertEquals(1, root.sourceCount)
-        assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, root.schemaVersion)
-        assertFalse(root.isLegacyFormat)
+            assertEquals(expectedKind, root.fileKind, schema)
+            assertEquals(1, root.sourceCount, schema)
+            assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, root.schemaVersion, schema)
+            assertFalse(root.isLegacyFormat, schema)
+        }
     }
 
     @Test
@@ -213,30 +233,8 @@ class OsCardTransferServiceTest {
     @Test
     fun `built in activity migration appends missing cards`() {
         val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
-        val google =
-            builtInActivityShortcutCard(
-                id = BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID,
-                title = "Google Settings",
-                subtitle = "Google entry",
-                appName = "Google Settings",
-                packageName = "com.google.android.gms",
-                className = "com.google.android.gms.app.settings.GoogleSettingsLink",
-                intentAction = "android.intent.action.VIEW",
-                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
-                defaults = defaults,
-            )
-        val extraDim =
-            builtInActivityShortcutCard(
-                id = BUILTIN_EXTRA_DIM_CARD_ID,
-                title = "Extra dim",
-                subtitle = "Reduce bright colors",
-                appName = "Android Settings",
-                packageName = "com.android.settings",
-                className = "com.android.settings.Settings\$ReduceBrightColorsSettingsActivity",
-                intentAction = "android.settings.REDUCE_BRIGHT_COLORS_SETTINGS",
-                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
-                defaults = defaults,
-            )
+        val google = googleBuiltIn(defaults)
+        val extraDim = extraDimBuiltIn(defaults)
         val fullScreenExtras =
             listOf(
                 ShortcutIntentExtra(
@@ -320,18 +318,7 @@ class OsCardTransferServiceTest {
                     defaults = defaults,
                 )
             }
-        val kept =
-            builtInActivityShortcutCard(
-                id = BUILTIN_EXTRA_DIM_CARD_ID,
-                title = "Extra dim",
-                subtitle = "Reduce bright colors",
-                appName = "Android Settings",
-                packageName = "com.android.settings",
-                className = "com.android.settings.Settings\$ReduceBrightColorsSettingsActivity",
-                intentAction = "android.settings.REDUCE_BRIGHT_COLORS_SETTINGS",
-                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
-                defaults = defaults,
-            )
+        val kept = extraDimBuiltIn(defaults)
 
         val migrated =
             OsActivityShortcutCardStore.migrateBuiltInActivityShortcutCards(
@@ -377,19 +364,7 @@ class OsCardTransferServiceTest {
 
     @Test
     fun `built in activity migration deduplicates upgraded Google settings card`() {
-        val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
-        val google =
-            builtInActivityShortcutCard(
-                id = BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID,
-                title = "Google Settings",
-                subtitle = "Google entry",
-                appName = "Google Settings",
-                packageName = "com.google.android.gms",
-                className = "com.google.android.gms.app.settings.GoogleSettingsLink",
-                intentAction = "android.intent.action.VIEW",
-                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
-                defaults = defaults,
-            )
+        val google = googleBuiltIn()
         val legacy =
             OsActivityShortcutCard(
                 id = "legacy-google-system-service",
@@ -417,19 +392,7 @@ class OsCardTransferServiceTest {
 
     @Test
     fun `built in activity migration upgrades legacy Google settings card`() {
-        val defaults = OsGoogleSystemServiceConfig(intentFlags = "FLAG_ACTIVITY_NEW_TASK")
-        val google =
-            builtInActivityShortcutCard(
-                id = BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID,
-                title = "Google Settings",
-                subtitle = "Google entry",
-                appName = "Google Settings",
-                packageName = "com.google.android.gms",
-                className = "com.google.android.gms.app.settings.GoogleSettingsLink",
-                intentAction = "android.intent.action.VIEW",
-                defaultIntentFlags = "FLAG_ACTIVITY_NEW_TASK",
-                defaults = defaults,
-            )
+        val google = googleBuiltIn()
         val legacy =
             OsActivityShortcutCard(
                 id = "legacy-google-system-service",

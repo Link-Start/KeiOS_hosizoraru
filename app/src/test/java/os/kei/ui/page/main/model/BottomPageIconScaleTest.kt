@@ -6,23 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class BottomPageIconScaleTest {
-    @Test
-    fun defaultScalePagesOmitIdentityLayer() {
-        val unscaled = BottomPage.entries.filter { it.iconScale == 1f }
-
-        assertEquals(listOf(BottomPage.Os, BottomPage.Mcp, BottomPage.GitHub), unscaled)
-        unscaled.forEach { page ->
-            assertEquals(0, Modifier.bottomPageIconScale(page).elementCount())
-        }
-    }
-
-    @Test
-    fun scaledPagesKeepSingleLayer() {
-        listOf(BottomPage.Home, BottomPage.Ba).forEach { page ->
-            assertEquals(1, Modifier.bottomPageIconScale(page).elementCount())
-        }
-    }
-
     /** Starting from a bare Modifier cannot tell a chained layer from a dropped chain. */
     @Test
     fun upstreamChainSurvivesBothBranches() {

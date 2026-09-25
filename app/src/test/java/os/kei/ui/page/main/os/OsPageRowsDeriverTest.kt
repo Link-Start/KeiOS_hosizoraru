@@ -79,16 +79,17 @@ class OsPageRowsDeriverTest {
         assertEquals(listOf(R.string.os_top_info_topic_device_identity), state.groupedTopInfoRows.map { it.titleRes })
         assertEquals(false, state.deriving)
     }
+}
 
-    private fun collapsedFlags(): OsPageExpansionFlags {
-        return OsPageExpansionFlags(
-            topInfoExpanded = false,
-            systemTableExpanded = false,
-            secureTableExpanded = false,
-            globalTableExpanded = false,
-            androidPropsExpanded = false,
-            javaPropsExpanded = false,
-            linuxEnvExpanded = false
-        )
-    }
+/** Every OS page section collapsed; shared with [OsPageRowsStateLoaderTest]. */
+internal fun collapsedFlags(): OsPageExpansionFlags {
+    return OsPageExpansionFlags(
+        topInfoExpanded = false,
+        systemTableExpanded = false,
+        secureTableExpanded = false,
+        globalTableExpanded = false,
+        androidPropsExpanded = false,
+        javaPropsExpanded = false,
+        linuxEnvExpanded = false
+    )
 }

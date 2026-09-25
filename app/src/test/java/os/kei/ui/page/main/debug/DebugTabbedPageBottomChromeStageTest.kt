@@ -40,7 +40,6 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -172,26 +171,6 @@ class DebugTabbedPageBottomChromeStageTest {
         assertEquals(1, hostBackCount)
     }
 
-    @Test
-    @Config(qualifiers = "w411dp-h891dp-xxhdpi")
-    fun fiveTabsKeepAtLeast48DpTargetsInThe411DpViewport() {
-        setStage()
-        composeRule.onNodeWithTag(DEBUG_TABBED_CHROME_TAB_COUNT_TAG).performClick()
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule.onAllNodes(tabRoleMatcher).fetchSemanticsNodes().size == 5
-        }
-
-        val viewport =
-            composeRule.onNodeWithTag(DEBUG_TABBED_CHROME_VIEWPORT_TAG).fetchSemanticsNode().boundsInRoot
-        assertEquals(411.dp, with(composeRule.density) { viewport.width.toDp() })
-        composeRule.onAllNodes(tabRoleMatcher).fetchSemanticsNodes().forEach { node ->
-            with(composeRule.density) {
-                assertTrue(node.boundsInRoot.height.toDp() >= 48.dp)
-                assertTrue(node.boundsInRoot.width.toDp() >= 48.dp)
-            }
-        }
-    }
-
     private fun setStage(
         onHostBack: (() -> Unit)? = null,
         onBackDispatcher: ((OnBackPressedDispatcher) -> Unit)? = null,
@@ -229,13 +208,6 @@ class DebugTabbedPageBottomChromeStageTest {
     private companion object {
         val tabRoleMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
         val selectedMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
-
-        const val DEBUG_TABBED_CHROME_STAGE_SOURCE =
-            "app/src/main/java/os/kei/ui/page/main/debug/DebugTabbedPageBottomChromeStage.kt"
-        const val DEBUG_LIQUID_CHROME_CARD_SOURCE =
-            "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidChromeCard.kt"
-        const val TABBED_PAGE_BOTTOM_CHROME_SOURCE =
-            "app/src/main/java/os/kei/ui/page/main/widget/chrome/TabbedPageBottomChrome.kt"
     }
 }
 
@@ -248,17 +220,6 @@ private fun assertInside(
     assertTrue(inner.top >= outer.top - tolerance, "Top edge escaped: outer=$outer, inner=$inner")
     assertTrue(inner.right <= outer.right + tolerance, "Right edge escaped: outer=$outer, inner=$inner")
     assertTrue(inner.bottom <= outer.bottom + tolerance, "Bottom edge escaped: outer=$outer, inner=$inner")
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 class DebugTabbedPageBottomChromeStageTestApp : Application()

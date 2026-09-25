@@ -7,21 +7,14 @@ import os.kei.core.privilege.PrivilegeMode
 
 class SettingsPrivilegedAppListAccessStateTest {
     @Test
-    fun `root package query keeps root mode in settings state`() {
-        val state = resolvePrivilegedAppListAccessState(PrivilegeMode.Root, 317)
+    fun `root and shizuku package queries keep their mode in settings state`() {
+        listOf(PrivilegeMode.Root to 317, PrivilegeMode.Shizuku to 241).forEach { (privilegeMode, count) ->
+            val state = resolvePrivilegedAppListAccessState(privilegeMode, count)
 
-        assertEquals(SettingsAppListAccessMode.Privileged, state?.mode)
-        assertEquals(PrivilegeMode.Root, state?.privilegeMode)
-        assertEquals(317, state?.detectedCount)
-    }
-
-    @Test
-    fun `shizuku package query keeps shizuku mode in settings state`() {
-        val state = resolvePrivilegedAppListAccessState(PrivilegeMode.Shizuku, 241)
-
-        assertEquals(SettingsAppListAccessMode.Privileged, state?.mode)
-        assertEquals(PrivilegeMode.Shizuku, state?.privilegeMode)
-        assertEquals(241, state?.detectedCount)
+            assertEquals(SettingsAppListAccessMode.Privileged, state?.mode, "$privilegeMode")
+            assertEquals(privilegeMode, state?.privilegeMode, "$privilegeMode")
+            assertEquals(count, state?.detectedCount, "$privilegeMode")
+        }
     }
 
     @Test

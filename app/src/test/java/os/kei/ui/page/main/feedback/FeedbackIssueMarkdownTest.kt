@@ -25,20 +25,8 @@ class FeedbackIssueMarkdownTest {
 
     @Test
     fun browserIssueUrlPrefillsIssueFormFields() {
-        val deviceInfo = FeedbackDeviceInfo(
-            appVersionName = "1.4.5",
-            appVersionCode = 10405021,
-            packageName = "os.kei.debug",
-            buildType = "debug",
-            androidRelease = "17",
-            sdkInt = 37,
-            manufacturer = "Google",
-            model = "sdk_gphone16k_arm64",
-            abis = "arm64-v8a",
-            installSource = "Android Studio"
-        )
         val body = FeedbackIssueMarkdown.buildBody(
-            deviceInfo = deviceInfo,
+            deviceInfo = DEVICE,
             logPreview = "Authorization: Bearer ghp_abcdefghijklmnopqrstuvwxyz1234567890",
             logPreviewTruncated = false
         )
@@ -47,7 +35,7 @@ class FeedbackIssueMarkdownTest {
             FeedbackIssueMarkdown.buildBrowserIssueUrl(
                 title = "[Bug]: retry crash",
                 body = body,
-                deviceInfo = deviceInfo
+                deviceInfo = DEVICE
             )
         )
 
@@ -61,21 +49,8 @@ class FeedbackIssueMarkdownTest {
 
     @Test
     fun bodyMarkdownKeepsHeadingsAndFencesAlignedWithMultilineLogs() {
-        val deviceInfo = FeedbackDeviceInfo(
-            appVersionName = "1.4.5",
-            appVersionCode = 10405021,
-            packageName = "os.kei.debug",
-            buildType = "debug",
-            androidRelease = "17",
-            sdkInt = 37,
-            manufacturer = "Google",
-            model = "sdk_gphone16k_arm64",
-            abis = "arm64-v8a",
-            installSource = "Android Studio"
-        )
-
         val body = FeedbackIssueMarkdown.buildBody(
-            deviceInfo = deviceInfo,
+            deviceInfo = DEVICE,
             logPreview = "first log line\nsecond log line",
             logPreviewTruncated = true
         )
@@ -98,5 +73,20 @@ class FeedbackIssueMarkdownTest {
                 URLDecoder.decode(key, Charsets.UTF_8.name()) to
                         URLDecoder.decode(value, Charsets.UTF_8.name())
             }
+    }
+
+    private companion object {
+        val DEVICE = FeedbackDeviceInfo(
+            appVersionName = "1.4.5",
+            appVersionCode = 10405021,
+            packageName = "os.kei.debug",
+            buildType = "debug",
+            androidRelease = "17",
+            sdkInt = 37,
+            manufacturer = "Google",
+            model = "sdk_gphone16k_arm64",
+            abis = "arm64-v8a",
+            installSource = "Android Studio"
+        )
     }
 }

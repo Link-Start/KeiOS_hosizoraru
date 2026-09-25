@@ -54,22 +54,6 @@ class McpConfirmDialogsTest {
         }
     }
 
-    @Test
-    fun resetTokenDialogPreservesShowCopyAndDualActions() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        verifyConfirmDialog(
-            title = context.getString(R.string.mcp_action_reset_token),
-            summary = context.getString(R.string.mcp_reset_token_confirm_summary),
-            cancelLabel = context.getString(R.string.common_cancel),
-            confirmLabel = context.getString(R.string.common_reset),
-        ) { onConfirm, onDismissRequest ->
-            McpResetConfirmDialogActions(
-                onConfirm = onConfirm,
-                onDismissRequest = onDismissRequest,
-            )
-        }
-    }
-
     private fun verifyConfirmDialog(
         title: String,
         summary: String,

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.about.section
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertContains
+import os.kei.ui.testing.repoRoot
 /**
  * The release card documents a line, so it is pinned to one.
  *
@@ -33,28 +34,12 @@ class AboutReleaseCardContentTest {
 
 }
 
-private data class ReleaseLocaleExpectation(
-    val path: String,
-    val headings: Map<String, String>,
-    val outcomeFragments: List<String>,
-)
-
 private fun aboutReleaseResourceFiles(): List<File> {
-    val projectRoot = locateProjectRoot()
+    val projectRoot = repoRoot()
     return listOf(
         "app/src/main/res/values/strings_about.xml",
         "app/src/main/res/values-zh-rCN/strings_about.xml",
         "app/src/main/res/values-en/strings_about.xml",
         "app/src/main/res/values-ja/strings_about.xml",
     ).map(projectRoot::resolve)
-}
-
-private fun locateProjectRoot(): File {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    return requireNotNull(
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .firstOrNull { directory -> File(directory, "settings.gradle.kts").isFile },
-    ) {
-        "Unable to locate the KeiOS project root from $workingDirectory"
-    }
 }

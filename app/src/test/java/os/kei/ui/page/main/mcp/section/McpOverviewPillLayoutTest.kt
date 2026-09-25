@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,6 +19,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.mcp.state.McpOverviewPills
 import os.kei.ui.page.main.widget.core.AppOverviewPill
+import os.kei.ui.testing.boundsOf
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -71,12 +71,12 @@ class McpOverviewPillLayoutTest {
         }
         composeRule.waitForIdle()
 
-        val serviceBounds = boundsFor(service)
-        val networkBounds = boundsFor(network)
-        val clientBounds = boundsFor(clients)
-        val endpointBounds = boundsFor(endpoint)
-        val tokenBounds = boundsFor(token)
-        val statusBounds = boundsFor("未运行")
+        val serviceBounds = composeRule.boundsOf(service)
+        val networkBounds = composeRule.boundsOf(network)
+        val clientBounds = composeRule.boundsOf(clients)
+        val endpointBounds = composeRule.boundsOf(endpoint)
+        val tokenBounds = composeRule.boundsOf(token)
+        val statusBounds = composeRule.boundsOf("未运行")
         val tolerancePx = with(composeRule.density) { 2.dp.toPx() }
 
         assertSameRow(serviceBounds, networkBounds, tolerancePx)
@@ -97,12 +97,6 @@ class McpOverviewPillLayoutTest {
     }
 
     private fun pill(label: String) = AppOverviewPill(label = label, color = Color(0xFF2563EB))
-
-    private fun boundsFor(text: String): Rect =
-        composeRule
-            .onNodeWithText(text, useUnmergedTree = true)
-            .fetchSemanticsNode()
-            .boundsInRoot
 
     private fun assertSameRow(first: Rect, second: Rect, tolerancePx: Float) {
         assertTrue(

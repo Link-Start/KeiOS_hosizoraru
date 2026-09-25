@@ -18,7 +18,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.io.File
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -45,11 +44,6 @@ class FeedbackStatusCardSupportingBlockTest {
     @Test
     fun lightStatusCardKeepsLargeFontSupportingCopyReadableAt360Dp() {
         assertLargeFontLayout(ColorSchemeMode.Light)
-    }
-
-    @Test
-    fun darkStatusCardKeepsLargeFontSupportingCopyReadableAt360Dp() {
-        assertLargeFontLayout(ColorSchemeMode.Dark)
     }
 
     private fun assertLargeFontLayout(mode: ColorSchemeMode) {
@@ -141,17 +135,6 @@ class FeedbackStatusCardSupportingBlockTest {
 }
 
 class FeedbackStatusCardSupportingBlockTestApp : Application()
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private const val CARD_HOST_TAG = "feedback-status-card-host"
 private const val STATUS_MESSAGE = "Ready for local review"

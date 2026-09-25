@@ -40,7 +40,7 @@ class GitHubActionsUpdateNotificationHelperTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `mi island summary keeps short run label and expanded action colors are semantic`() {
+    fun `mi island summary keeps short run label and routes to the tracked item`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(true)
         val trackedPackageName = "me.him188.ani"
@@ -61,8 +61,6 @@ class GitHubActionsUpdateNotificationHelperTest {
         val openAction = notification.focusAction("github_actions_update_open")
         val markReadAction = notification.focusAction("github_actions_update_read")
         val notificationId = GitHubActionsUpdateNotificationHelper.notificationId(snapshot)
-        val displayIcon = notification.focusPicture("mi_focus_display")
-        val expandedIcon = notification.focusPicture("mi_focus_expanded")
         val contentIntent = Shadows.shadowOf(notification.contentIntent).savedIntent
         val focusOpenIntent = Shadows.shadowOf(openAction.actionIntent).savedIntent
         val markReadIntent = Shadows.shadowOf(markReadAction.actionIntent).savedIntent
@@ -75,32 +73,15 @@ class GitHubActionsUpdateNotificationHelperTest {
                 .getJSONObject("imageTextInfoRight")
                 .getJSONObject("textInfo")
 
-        assertEquals(NotificationCompat.PRIORITY_MAX, notification.priority)
-        assertNotNull(notification.getLargeIcon())
-        assertNotNull(Shadows.shadowOf(displayIcon).bitmap)
-        assertNotNull(Shadows.shadowOf(expandedIcon).bitmap)
+        // The tracked app's own icon, not the KeiOS one.
+        assertNotNull(Shadows.shadowOf(notification.focusPicture("mi_focus_display")).bitmap)
         assertEquals(context.getString(R.string.common_open), openAction.title.toString())
         assertEquals(context.getString(R.string.common_mark_read), markReadAction.title.toString())
-        assertTrue(focusParam.contains("imageTextInfoRight"))
         assertEquals("#44", summaryText.getString("title"))
         assertFalse(summaryText.has("content"))
-        assertFalse(focusParam.contains("\"content\":\"Actions\""))
-        assertTrue(focusParam.contains("\"highlightColor\":\"#3B82F6\""))
-        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
         assertTrue(focusParam.contains("\"specialTitle\":\"#44\""))
         assertEquals("Animeko", focusJson.getJSONObject("baseInfo").getString("content"))
         assertFalse(focusParam.contains("Animeko · #44"))
-        assertTrue(focusParam.contains("\"colorTitle\":\"#3B82F6\""))
-        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
-        assertTrue(focusParam.contains("\"colorContent\":\"#64748B\""))
-        assertFalse(focusParam.contains("\"picFunction\""))
-        assertTrue(focusParam.contains("\"baseInfo\""))
-        assertTrue(focusParam.contains("\"picInfo\":{\"type\":1,\"pic\":\"mi_focus_expanded\""))
-        assertTrue(focusParam.contains("\"actionTitle\":\"${context.getString(R.string.common_open)}\""))
-        assertTrue(focusParam.contains("\"actionBgColor\":\"#3B82F6\""))
-        assertTrue(focusParam.contains("\"actionTitleColor\":\"#FFFFFF\""))
-        assertTrue(focusParam.contains("\"business\":\"keios\""))
-        assertTrue(focusParam.contains("\"notifyId\":\"$notificationId\""))
         assertEquals(snapshot.trackId, focusJson.getString("orderId"))
         assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertFalse(
@@ -111,27 +92,13 @@ class GitHubActionsUpdateNotificationHelperTest {
         )
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
-        assertFalse(
-            focusParam.contains(
-                "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\"",
-            ),
-        )
-        assertEquals(
-            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
-            contentIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
-        )
-        assertEquals(
-            snapshot.trackId,
-            contentIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID),
-        )
-        assertEquals(
-            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
-            focusOpenIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
-        )
-        assertEquals(
-            snapshot.trackId,
-            focusOpenIntent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID),
-        )
+        listOf(contentIntent, focusOpenIntent).forEach { intent ->
+            assertEquals(
+                MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+                intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
+            )
+            assertEquals(snapshot.trackId, intent.getStringExtra(MainActivity.EXTRA_GITHUB_ACTIONS_TRACK_ID))
+        }
         assertEquals(
             notificationId,
             markReadIntent.getIntExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, -1),

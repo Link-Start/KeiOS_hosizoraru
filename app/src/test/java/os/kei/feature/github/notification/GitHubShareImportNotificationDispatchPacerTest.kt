@@ -19,25 +19,15 @@ import kotlin.test.assertEquals
 
 class GitHubShareImportNotificationDispatchPacerTest {
     @Test
-    fun `terminal delivery waits for the notification manager safety window`() {
+    fun `delivery waits out the notification manager safety window and no longer`() {
         val pacer = GitHubShareImportNotificationDispatchPacer(
             minimumIntervalMs = 400L,
         )
 
         pacer.markDispatched(atElapsedRealtimeMs = 1_000L)
 
-        assertEquals(250L, pacer.delayUntilReady(atElapsedRealtimeMs = 1_150L))
-    }
-
-    @Test
-    fun `delivery proceeds immediately after the notification manager safety window`() {
-        val pacer = GitHubShareImportNotificationDispatchPacer(
-            minimumIntervalMs = 400L,
-        )
-
-        pacer.markDispatched(atElapsedRealtimeMs = 1_000L)
-
-        assertEquals(0L, pacer.delayUntilReady(atElapsedRealtimeMs = 1_400L))
+        assertEquals(250L, pacer.delayUntilReady(atElapsedRealtimeMs = 1_150L), "inside the window")
+        assertEquals(0L, pacer.delayUntilReady(atElapsedRealtimeMs = 1_400L), "at its end")
     }
 }
 

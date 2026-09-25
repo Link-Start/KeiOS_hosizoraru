@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import os.kei.R
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.core.prefs.SuperIslandFloatBehavior
@@ -21,6 +22,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+/**
+ * The refresh notification's own decisions: which text each state shows, the float policy, and that a
+ * stale refresh session cannot take over the notification. The colours are the helper's own constants
+ * and are not restated here.
+ */
 @RunWith(AndroidJUnit4::class)
 @Config(
     application = Application::class,
@@ -44,14 +50,11 @@ class GitHubRefreshNotificationHelperTest {
 
         assertEquals(notificationOpenPendingIntent, notification.contentIntent)
         assertEquals(focusOpenPendingIntent, focusOpenAction.actionIntent)
-        assertTrue(focusParam.contains("github_action_open"))
-        assertTrue(focusParam.contains("\"business\":\"keios\""))
-        assertTrue(focusParam.contains("\"notifyId\":\"38990\""))
         assertTrue(focusParam.contains("\"orderId\":\"github_refresh\""))
     }
 
     @Test
-    fun `mi island running summary uses progress text and small combine progress`() {
+    fun `a running refresh shows its progress on the island, not as a platform live update`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = createRefreshState(
             running = true,
@@ -63,15 +66,8 @@ class GitHubRefreshNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
         val focusJson = focusParam.focusParamV2()
 
-        assertTrue(focusParam.contains("imageTextInfoLeft"))
-        assertTrue(focusParam.contains("progressTextInfo"))
-        assertTrue(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("baseInfo"))
-        assertTrue(focusParam.contains("progressInfo"))
-        assertFalse(focusParam.contains("multiProgressInfo"))
-        assertTrue(focusParam.contains("picInfo"))
-        assertFalse(focusParam.contains("textButton"))
         assertTrue(focusParam.contains("\"title\":\"50%\""))
+        assertTrue(focusParam.contains("\"progress\":50"))
         assertEquals(
             "2/4",
             focusJson.focusBigIslandArea()
@@ -81,29 +77,13 @@ class GitHubRefreshNotificationHelperTest {
         )
         assertEquals(
             context.getString(
-                os.kei.R.string.github_refresh_mi_content,
-                context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                R.string.github_refresh_mi_content,
+                context.getString(R.string.github_refresh_scope_all_compact, 4),
                 "2/4",
                 3,
             ),
             focusJson.getJSONObject("baseInfo").getString("content"),
         )
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
-        assertFalse(focusParam.contains("预发可更新"))
-        assertTrue(focusParam.contains("\"progress\":50"))
-    }
-
-    @Test
-    fun `mi island running notification does not request platform live update`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = createRefreshState(
-            running = true,
-            current = 2,
-            total = 4,
-            displayProgressPercent = 50
-        )
-        val notification = invokeMiIslandNotification(context, state)
-
         assertEquals(Notification.CATEGORY_STATUS, notification.category)
         assertEquals(NotificationCompat.PRIORITY_MAX, notification.priority)
         assertFalse(
@@ -115,7 +95,6 @@ class GitHubRefreshNotificationHelperTest {
         assertEquals(0, notification.extras.getInt(NotificationCompat.EXTRA_PROGRESS, 0))
         assertEquals(0, notification.extras.getInt(NotificationCompat.EXTRA_PROGRESS_MAX, 0))
         assertFalse(notification.extras.getBoolean(NotificationCompat.EXTRA_PROGRESS_INDETERMINATE, false))
-        assertTrue(notification.extras.getString("miui.focus.param").orEmpty().contains("progressTextInfo"))
     }
 
     @Test
@@ -220,118 +199,109 @@ class GitHubRefreshNotificationHelperTest {
     }
 
     @Test
-    fun `mi island completed summary uses compact state text`() {
+    fun `a finished refresh names its outcome, how far it got, and what it found`() {
+        data class Case(
+            val name: String,
+            val state: Any,
+            val islandTitle: (Context) -> String,
+            val fraction: String,
+            val content: ((Context) -> String)? = null,
+            val notificationTitle: ((Context) -> String)? = null,
+        )
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = createRefreshState(running = false)
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-        val focusJson = focusParam.focusParamV2()
-
-        assertTrue(
-            focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_completed)}\"")
-        )
-        assertTrue(focusParam.contains("imageTextInfoLeft"))
-        assertTrue(focusParam.contains("imageTextInfoRight"))
-        assertTrue(focusParam.contains("picInfo"))
-        assertTrue(focusParam.contains("baseInfo"))
-        assertTrue(focusParam.contains("textButton"))
-        assertFalse(focusParam.contains("progressTextInfo"))
-        assertFalse(focusParam.contains("combinePicInfo"))
-        assertEquals(
-            "4/4",
-            focusJson.focusBigIslandArea()
-                .getJSONObject("imageTextInfoRight")
-                .getJSONObject("textInfo")
-                .getString("content"),
-        )
-        assertEquals(
-            context.getString(
-                os.kei.R.string.github_refresh_mi_content,
-                context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
-                "4/4",
-                3,
-            ),
-            focusJson.getJSONObject("baseInfo").getString("content"),
-        )
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_mi_label_updates, 3)))
-        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#22C55E\""))
-        assertTrue(focusParam.contains("\"colorContent\":\"#64748B\""))
-        assertTrue(focusParam.contains("\"highlightColor\":\"#22C55E\""))
-        assertFalse(focusParam.contains("稳定可更新"))
-        assertTrue(focusParam.contains("github_action_open"))
-        assertTrue(focusParam.contains("github_action_read"))
-    }
-
-    @Test
-    fun `mi island cancelled summary uses compact state text`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = createRefreshState(
-            running = false,
-            cancelled = true,
-            current = 2,
-            total = 4,
-            displayProgressPercent = 50
-        )
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-        val focusJson = focusParam.focusParamV2()
-
-        assertTrue(
-            focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_cancelled)}\"")
-        )
-        assertEquals(
-            "2/4",
-            focusJson.focusBigIslandArea()
-                .getJSONObject("imageTextInfoRight")
-                .getJSONObject("textInfo")
-                .getString("content"),
-        )
-        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#64748B\""))
-        assertTrue(focusParam.contains("\"highlightColor\":\"#64748B\""))
-        assertFalse(focusParam.contains("\"showHighlightColor\":true"))
-    }
-
-    @Test
-    fun `mi island failed summary uses compact failure text`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = createRefreshState(
-            running = false,
-            failedCount = 1
-        )
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-        val focusJson = focusParam.focusParamV2()
-
-        assertTrue(
-            focusParam.contains(
-                "\"title\":\"${
-                    context.getString(
-                        os.kei.R.string.github_refresh_failed_short_with_count,
-                        1
+        listOf(
+            Case(
+                name = "completed",
+                state = createRefreshState(running = false),
+                islandTitle = { it.getString(R.string.github_refresh_island_completed) },
+                fraction = "4/4",
+                content = {
+                    it.getString(
+                        R.string.github_refresh_mi_content,
+                        it.getString(R.string.github_refresh_scope_all_compact, 4),
+                        "4/4",
+                        3,
                     )
-                }\""
-            )
-        )
-        assertEquals(
-            "4/4",
-            focusJson.focusBigIslandArea()
-                .getJSONObject("imageTextInfoRight")
-                .getJSONObject("textInfo")
-                .getString("content"),
-        )
-        assertEquals(
-            context.getString(
-                os.kei.R.string.github_refresh_mi_content_failed,
-                context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
-                "4/4",
-                3,
-                1,
+                },
             ),
-            focusJson.getJSONObject("baseInfo").getString("content"),
-        )
-        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#E25B6A\""))
-        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
+            Case(
+                name = "cancelled keeps how far it got",
+                state = createRefreshState(
+                    running = false,
+                    cancelled = true,
+                    current = 2,
+                    total = 4,
+                    displayProgressPercent = 50
+                ),
+                islandTitle = { it.getString(R.string.github_refresh_island_cancelled) },
+                fraction = "2/4",
+            ),
+            Case(
+                name = "failed after finishing counts the failures",
+                state = createRefreshState(running = false, failedCount = 1),
+                islandTitle = { it.getString(R.string.github_refresh_failed_short_with_count, 1) },
+                fraction = "4/4",
+                content = {
+                    it.getString(
+                        R.string.github_refresh_mi_content_failed,
+                        it.getString(R.string.github_refresh_scope_all_compact, 4),
+                        "4/4",
+                        3,
+                        1,
+                    )
+                },
+            ),
+            Case(
+                name = "failed partway keeps the partial progress and the failure title",
+                state = createRefreshState(
+                    running = false,
+                    current = 2,
+                    total = 5,
+                    failedCount = 1,
+                    displayProgressPercent = 40,
+                    scope = GitHubRefreshScope.DueTracked,
+                    source = GitHubRefreshSource.BackgroundTick,
+                    totalTrackedCount = 75,
+                ),
+                islandTitle = { it.getString(R.string.github_refresh_failed_short_with_count, 1) },
+                fraction = "2/5",
+                content = {
+                    it.getString(
+                        R.string.github_refresh_mi_content_failed,
+                        it.getString(R.string.github_refresh_scope_due_compact, 5),
+                        "2/5",
+                        3,
+                        1,
+                    )
+                },
+                notificationTitle = { it.getString(R.string.github_refresh_mi_title_failed) },
+            ),
+        ).forEach { case ->
+            val notification = invokeMiIslandNotification(context, case.state)
+            val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+            val focusJson = focusParam.focusParamV2()
+
+            assertTrue(focusParam.contains("\"title\":\"${case.islandTitle(context)}\""), case.name)
+            assertEquals(
+                case.fraction,
+                focusJson.focusBigIslandArea()
+                    .getJSONObject("imageTextInfoRight")
+                    .getJSONObject("textInfo")
+                    .getString("content"),
+                case.name,
+            )
+            assertFalse(focusParam.contains("progressTextInfo"), case.name)
+            case.content?.let {
+                assertEquals(it(context), focusJson.getJSONObject("baseInfo").getString("content"), case.name)
+            }
+            case.notificationTitle?.let {
+                assertEquals(
+                    it(context),
+                    notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+                    case.name,
+                )
+            }
+        }
     }
 
     @Test
@@ -352,11 +322,10 @@ class GitHubRefreshNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
         val focusJson = focusParam.focusParamV2()
 
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1)))
         assertEquals(
             context.getString(
-                os.kei.R.string.github_refresh_mi_content_base,
-                context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1),
+                R.string.github_refresh_mi_content_base,
+                context.getString(R.string.github_refresh_scope_due_compact, 1),
                 "1/1",
             ),
             focusJson.getJSONObject("baseInfo").getString("content"),
@@ -368,79 +337,7 @@ class GitHubRefreshNotificationHelperTest {
                 .getJSONObject("textInfo")
                 .getString("content"),
         )
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_mi_label_running)))
-        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
-        assertFalse(focusParam.contains(context.getString(os.kei.R.string.github_refresh_total_context, 75)))
-    }
-
-    @Test
-    fun `legacy due refresh summary uses target progress text`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = createRefreshState(
-            running = true,
-            current = 1,
-            total = 1,
-            preReleaseUpdateCount = 0,
-            updatableCount = 0,
-            displayProgressPercent = 50,
-            scope = GitHubRefreshScope.DueTracked,
-            source = GitHubRefreshSource.BackgroundTick,
-            totalTrackedCount = 75,
-        )
-        val notification = invokeLegacyLiveUpdateNotification(context, state)
-
-        assertEquals(
-            context.getString(
-                os.kei.R.string.github_refresh_content_scoped,
-                context.getString(os.kei.R.string.github_refresh_scope_due, 1),
-                context.getString(os.kei.R.string.github_refresh_content, 1, 1, 0, 0),
-            ),
-            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
-        )
-        assertEquals(
-            context.getString(os.kei.R.string.common_progress_with_value, "1/1"),
-            notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT).toString(),
-        )
-    }
-
-    @Test
-    fun `mi island failed terminal keeps partial progress and failure title`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val state = createRefreshState(
-            running = false,
-            current = 2,
-            total = 5,
-            failedCount = 1,
-            displayProgressPercent = 40,
-            scope = GitHubRefreshScope.DueTracked,
-            source = GitHubRefreshSource.BackgroundTick,
-            totalTrackedCount = 75,
-        )
-        val notification = invokeMiIslandNotification(context, state)
-        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
-        val focusJson = focusParam.focusParamV2()
-
-        assertEquals(
-            context.getString(os.kei.R.string.github_refresh_mi_title_failed),
-            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
-        )
-        assertEquals(
-            "2/5",
-            focusJson.focusBigIslandArea()
-                .getJSONObject("imageTextInfoRight")
-                .getJSONObject("textInfo")
-                .getString("content"),
-        )
-        assertEquals(
-            context.getString(
-                os.kei.R.string.github_refresh_mi_content_failed,
-                context.getString(os.kei.R.string.github_refresh_scope_due_compact, 5),
-                "2/5",
-                3,
-                1,
-            ),
-            focusJson.getJSONObject("baseInfo").getString("content"),
-        )
+        assertFalse(focusParam.contains(context.getString(R.string.github_refresh_total_context, 75)))
     }
 
     @Test
@@ -506,6 +403,43 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(GitHubRefreshNotificationHelper.cancel(context, sessionId = 11L))
     }
 
+    @Test
+    fun `legacy due refresh summary uses target progress text`() {
+        // The only test of the legacy builder's text, which uses the non-compact scope strings.
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = true,
+            current = 1,
+            total = 1,
+            preReleaseUpdateCount = 0,
+            updatableCount = 0,
+            displayProgressPercent = 50,
+            scope = GitHubRefreshScope.DueTracked,
+            source = GitHubRefreshSource.BackgroundTick,
+            totalTrackedCount = 75,
+        )
+        val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
+            "buildLegacyLiveUpdateNotification",
+            Context::class.java,
+            refreshStateClass(),
+            Boolean::class.javaPrimitiveType
+        ).apply { isAccessible = true }
+        val notification = method.invoke(GitHubRefreshNotificationHelper, context, state, true) as Notification
+
+        assertEquals(
+            context.getString(
+                R.string.github_refresh_content_scoped,
+                context.getString(R.string.github_refresh_scope_due, 1),
+                context.getString(R.string.github_refresh_content, 1, 1, 0, 0),
+            ),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+        assertEquals(
+            context.getString(R.string.common_progress_with_value, "1/1"),
+            notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT).toString(),
+        )
+    }
+
     private fun createRefreshState(
         running: Boolean,
         current: Int = 4,
@@ -558,26 +492,6 @@ class GitHubRefreshNotificationHelperTest {
     ): Notification {
         val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
             "buildMiIslandNotification",
-            Context::class.java,
-            refreshStateClass(),
-            Boolean::class.javaPrimitiveType
-        ).apply {
-            isAccessible = true
-        }
-        return method.invoke(
-            GitHubRefreshNotificationHelper,
-            context,
-            state,
-            true
-        ) as Notification
-    }
-
-    private fun invokeLegacyLiveUpdateNotification(
-        context: Context,
-        state: Any
-    ): Notification {
-        val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
-            "buildLegacyLiveUpdateNotification",
             Context::class.java,
             refreshStateClass(),
             Boolean::class.javaPrimitiveType

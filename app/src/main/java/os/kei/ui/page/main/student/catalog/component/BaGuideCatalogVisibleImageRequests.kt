@@ -16,44 +16,51 @@ internal fun buildBaGuideCatalogVisibleImageRequestUrls(
     beforeCount: Int = baGuideCatalogVisibleImagePreloadBeforeCount(visibleItemIndices.size),
     afterCount: Int = baGuideCatalogVisibleImagePreloadAfterCount(visibleItemIndices.size),
     limit: Int = BA_GUIDE_CATALOG_VISIBLE_IMAGE_REQUEST_LIMIT,
-): List<String> {
-    if (displayedEntries.isEmpty() || visibleItemIndices.isEmpty() || limit <= 0) return emptyList()
-    val visibleEntryIndices =
-        buildBaGuideVisibleEntryIndices(
-            displayedEntryCount = displayedEntries.size,
-            visibleItemIndices = visibleItemIndices,
-            entryStartIndex = entryStartIndex,
-        )
-    if (visibleEntryIndices.isEmpty()) return emptyList()
+): List<String> =
+    collectBaGuideVisibleWindow(
+        visibleEntryIndices =
+            buildBaGuideVisibleEntryIndices(
+                displayedEntryCount = displayedEntries.size,
+                visibleItemIndices = visibleItemIndices,
+                entryStartIndex = entryStartIndex,
+            ),
+        beforeCount = beforeCount,
+        afterCount = afterCount,
+        limit = limit,
+    ) { index -> displayedEntries.getOrNull(index)?.iconUrl?.trim()?.ifBlank { null } }
 
-    val urls = linkedSetOf<String>()
+/**
+ * The keys to request around what is on screen, most urgent first: every visible entry in order, then one
+ * step further out at a time, before and after alternately, up to [beforeCount] and [afterCount] steps.
+ *
+ * [keyOf] returns null for an entry that has nothing to request, and equal keys count once, so [limit]
+ * caps distinct requests rather than entries.
+ */
+internal fun <T : Any> collectBaGuideVisibleWindow(
+    visibleEntryIndices: List<Int>,
+    beforeCount: Int,
+    afterCount: Int,
+    limit: Int,
+    keyOf: (Int) -> T?,
+): List<T> {
+    if (visibleEntryIndices.isEmpty() || limit <= 0) return emptyList()
+    val keys = linkedSetOf<T>()
 
-    fun addEntry(index: Int) {
-        if (urls.size >= limit) return
-        val url = displayedEntries.getOrNull(index)?.iconUrl?.trim().orEmpty()
-        if (url.isNotBlank()) {
-            urls.add(url)
-        }
+    fun add(index: Int) {
+        if (keys.size < limit) keyOf(index)?.let(keys::add)
     }
 
-    visibleEntryIndices.forEach(::addEntry)
-
-    val firstVisibleEntryIndex = visibleEntryIndices.first()
-    val lastVisibleEntryIndex = visibleEntryIndices.last()
-    val safeBeforeCount = beforeCount.coerceAtLeast(0)
-    val safeAfterCount = afterCount.coerceAtLeast(0)
-    val maxDistance = max(safeBeforeCount, safeAfterCount)
-    for (distance in 1..maxDistance) {
-        if (urls.size >= limit) break
-        if (distance <= safeBeforeCount) {
-            addEntry(firstVisibleEntryIndex - distance)
-        }
-        if (urls.size >= limit) break
-        if (distance <= safeAfterCount) {
-            addEntry(lastVisibleEntryIndex + distance)
-        }
+    visibleEntryIndices.forEach(::add)
+    val firstVisible = visibleEntryIndices.first()
+    val lastVisible = visibleEntryIndices.last()
+    val safeBefore = beforeCount.coerceAtLeast(0)
+    val safeAfter = afterCount.coerceAtLeast(0)
+    for (distance in 1..max(safeBefore, safeAfter)) {
+        if (keys.size >= limit) break
+        if (distance <= safeBefore) add(firstVisible - distance)
+        if (distance <= safeAfter) add(lastVisible + distance)
     }
-    return urls.toList()
+    return keys.toList()
 }
 
 internal fun buildBaGuideVisibleEntryIndices(

@@ -16,44 +16,19 @@ internal fun buildBaGuideStudentBgmVisiblePrewarmEntries(
     beforeCount: Int = baGuideStudentBgmVisiblePrewarmBeforeCount(visibleItemIndices.size),
     afterCount: Int = baGuideStudentBgmVisiblePrewarmAfterCount(visibleItemIndices.size),
     limit: Int = STUDENT_BGM_VISIBLE_PREWARM_LIMIT,
-): List<BaGuideCatalogEntry> {
-    if (displayedEntries.isEmpty() || visibleItemIndices.isEmpty() || limit <= 0) return emptyList()
-    val visibleEntryIndices =
-        buildBaGuideVisibleEntryIndices(
-            displayedEntryCount = displayedEntries.size,
-            visibleItemIndices = visibleItemIndices,
-            entryStartIndex = entryStartIndex,
-        )
-    if (visibleEntryIndices.isEmpty()) return emptyList()
-
-    val indices = linkedSetOf<Int>()
-
-    fun addEntryIndex(index: Int) {
-        if (indices.size >= limit) return
-        if (index in displayedEntries.indices) {
-            indices += index
-        }
-    }
-
-    visibleEntryIndices.forEach(::addEntryIndex)
-
-    val firstVisibleEntryIndex = visibleEntryIndices.first()
-    val lastVisibleEntryIndex = visibleEntryIndices.last()
-    val safeBeforeCount = beforeCount.coerceAtLeast(0)
-    val safeAfterCount = afterCount.coerceAtLeast(0)
-    val maxDistance = max(safeBeforeCount, safeAfterCount)
-    for (distance in 1..maxDistance) {
-        if (indices.size >= limit) break
-        if (distance <= safeBeforeCount) {
-            addEntryIndex(firstVisibleEntryIndex - distance)
-        }
-        if (indices.size >= limit) break
-        if (distance <= safeAfterCount) {
-            addEntryIndex(lastVisibleEntryIndex + distance)
-        }
-    }
-    return indices.map { index -> displayedEntries[index] }
-}
+): List<BaGuideCatalogEntry> =
+    collectBaGuideVisibleWindow(
+        visibleEntryIndices =
+            buildBaGuideVisibleEntryIndices(
+                displayedEntryCount = displayedEntries.size,
+                visibleItemIndices = visibleItemIndices,
+                entryStartIndex = entryStartIndex,
+            ),
+        beforeCount = beforeCount,
+        afterCount = afterCount,
+        limit = limit,
+    ) { index -> index.takeIf { it in displayedEntries.indices } }
+        .map(displayedEntries::get)
 
 internal fun baGuideStudentBgmVisiblePrewarmBeforeCount(viewportItemCount: Int): Int =
     max(STUDENT_BGM_VISIBLE_PREWARM_MIN_BEFORE, viewportItemCount.coerceAtLeast(1) / 2)

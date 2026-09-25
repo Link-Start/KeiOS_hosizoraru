@@ -1,51 +1,32 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import org.junit.Test
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 
+/**
+ * The window order and the mapping from lazy items to entries are shared with the icon requests and
+ * tested once, in BaGuideCatalogVisibleImageRequestsTest. What differs here is what counts as one
+ * request: an entry, not an icon URL.
+ */
 class BaGuideStudentBgmVisibleRequestsTest {
     @Test
-    fun `visible prewarm prioritizes current rows then nearby rows`() {
-        val entries = (0 until 12).map { index -> catalogEntry(index) }
+    fun `prewarm counts entries, so blank and shared icon urls are still prewarmed`() {
+        val entries =
+            listOf("shared", "", "shared", "own", "").mapIndexed { index, iconUrl ->
+                testCatalogEntry(contentId = index.toLong(), iconUrl = iconUrl)
+            }
 
         val selected =
             buildBaGuideStudentBgmVisiblePrewarmEntries(
                 displayedEntries = entries,
-                visibleItemIndices = listOf(4, 5),
-                entryStartIndex = 1,
-                beforeCount = 2,
-                afterCount = 3,
-                limit = 7,
-            )
-
-        assertEquals(
-            listOf(3L, 4L, 2L, 5L, 1L, 6L, 7L),
-            selected.map { entry -> entry.contentId },
-        )
-    }
-
-    @Test
-    fun `visible prewarm ignores header and out of range items`() {
-        val entries = (0 until 3).map { index -> catalogEntry(index) }
-
-        val selected =
-            buildBaGuideStudentBgmVisiblePrewarmEntries(
-                displayedEntries = entries,
-                visibleItemIndices = listOf(0, 1, 2, 9),
-                entryStartIndex = 1,
+                visibleItemIndices = listOf(1, 2),
+                entryStartIndex = 0,
                 beforeCount = 1,
-                afterCount = 1,
+                afterCount = 2,
                 limit = 8,
             )
 
-        assertEquals(
-            listOf(0L, 1L, 2L),
-            selected.map { entry -> entry.contentId },
-        )
+        assertEquals(listOf(1L, 2L, 0L, 3L, 4L), selected.map { entry -> entry.contentId })
     }
-
-    private fun catalogEntry(index: Int): BaGuideCatalogEntry =
-        testCatalogEntry(contentId = index.toLong(), iconUrl = "student-$index")
 }

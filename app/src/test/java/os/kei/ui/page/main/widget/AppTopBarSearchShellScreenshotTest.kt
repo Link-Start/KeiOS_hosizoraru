@@ -25,6 +25,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import os.kei.ui.testing.KeiOSScreenshotOptions
 
 /**
  * The search-shell baseline is the only design-system screenshot containing a [
@@ -93,6 +94,6 @@ class AppTopBarSearchShellScreenshotTest {
         composeRule.waitForIdle()
         composeRule
             .onRoot()
-            .captureRoboImage(filePath = "src/test/screenshots/design-system/topbar_search_shell_light.png")
+            .captureRoboImage(filePath = "src/test/screenshots/design-system/topbar_search_shell_light.png", roborazziOptions = KeiOSScreenshotOptions)
     }
 }

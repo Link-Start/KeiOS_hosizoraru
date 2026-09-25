@@ -71,6 +71,7 @@ import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import os.kei.ui.testing.KeiOSScreenshotOptions
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -100,7 +101,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun appCardHeaderLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/app_card_header_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/app_card_header_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -136,7 +137,7 @@ class AppDesignSystemScreenshotTest {
         qualifiers = "w411dp-h891dp-xxhdpi +night",
     )
     fun appOverviewCardDark() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/app_overview_card_dark.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/app_overview_card_dark.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
                     Box(
@@ -192,7 +193,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun listBodySkeletonLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/app_list_body_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/app_list_body_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -227,7 +228,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun settingsGroupCardLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/settings_group_card_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/settings_group_card_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -266,7 +267,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun catalogEntryCardLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/catalog_entry_card_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/catalog_entry_card_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -303,7 +304,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun aboutAppCardLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/about_app_card_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/about_app_card_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -328,7 +329,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun aboutAppCardCollapsedLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/about_app_card_collapsed_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/about_app_card_collapsed_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -353,7 +354,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun aboutReleaseCardLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/about_release_card_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/about_release_card_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -377,7 +378,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun githubAssetRowCompactLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/github_asset_row_compact_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_asset_row_compact_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -414,7 +415,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun githubDecisionAssistSummaryLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/github_decision_assist_summary_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_decision_assist_summary_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Column(
@@ -446,7 +447,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun githubStarImportControlsLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_controls_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_controls_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -539,7 +540,7 @@ class AppDesignSystemScreenshotTest {
                         packageName = "io.github.miuzarte.scrcpyforandroid",
                     ),
             )
-        captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_candidate_card_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/github_star_import_candidate_card_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -566,7 +567,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun controlClusterLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/control_cluster_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/control_cluster_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(
@@ -626,7 +627,7 @@ class AppDesignSystemScreenshotTest {
 
     @Test
     fun liquidGlassActionMenuLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/liquid_glass_action_menu_light.png") {
+        captureRoboImage(filePath = "src/test/screenshots/design-system/liquid_glass_action_menu_light.png", roborazziOptions = KeiOSScreenshotOptions) {
             CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(

@@ -10,63 +10,47 @@ import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 
 class GitHubRefreshHistoryRetryTargetsTest {
     @Test
-    fun `partial failure retries only failed targets`() {
-        val record =
-            createRecord(
-                outcome = GitHubRefreshHistoryOutcome.Completed,
-                targetTrackIds = listOf("ok-a", "failed-a", "failed-b"),
-                failedCount = 2,
-                failureTrackIds = listOf("failed-a", "failed-b", "failed-a"),
-            )
-
-        assertEquals(
-            listOf("failed-a", "failed-b"),
-            record.refreshHistoryRetryTargetIds(),
-        )
-    }
-
-    @Test
-    fun `cancelled record retries original batch targets`() {
-        val record =
-            createRecord(
-                outcome = GitHubRefreshHistoryOutcome.Cancelled,
-                targetTrackIds = listOf("target-a", "target-b", "target-a"),
-                completedCount = 1,
-            )
-
-        assertEquals(
-            listOf("target-a", "target-b"),
-            record.refreshHistoryRetryTargetIds(),
-        )
-    }
-
-    @Test
-    fun `cancelled record prefers original batch targets when failure summaries exist`() {
-        val record =
-            createRecord(
-                outcome = GitHubRefreshHistoryOutcome.Cancelled,
-                targetTrackIds = listOf("target-a", "target-b", "target-c"),
-                completedCount = 1,
-                failedCount = 1,
-                failureTrackIds = listOf("target-b"),
-            )
-
-        assertEquals(
-            listOf("target-a", "target-b", "target-c"),
-            record.refreshHistoryRetryTargetIds(),
-        )
-    }
-
-    @Test
-    fun `successful record has no retry targets`() {
-        val record =
-            createRecord(
-                outcome = GitHubRefreshHistoryOutcome.Completed,
-                targetTrackIds = listOf("target-a"),
-                failedCount = 0,
-            )
-
-        assertEquals(emptyList(), record.refreshHistoryRetryTargetIds())
+    fun `a retry targets what the record left undone`() {
+        listOf(
+            "a partial failure retries only the failed targets, once each" to
+                (
+                    createRecord(
+                        outcome = GitHubRefreshHistoryOutcome.Completed,
+                        targetTrackIds = listOf("ok-a", "failed-a", "failed-b"),
+                        failedCount = 2,
+                        failureTrackIds = listOf("failed-a", "failed-b", "failed-a"),
+                    ) to listOf("failed-a", "failed-b")
+                ),
+            "a cancelled record retries its original batch, once each" to
+                (
+                    createRecord(
+                        outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                        targetTrackIds = listOf("target-a", "target-b", "target-a"),
+                        completedCount = 1,
+                    ) to listOf("target-a", "target-b")
+                ),
+            "a cancelled record prefers its batch even when failures were recorded" to
+                (
+                    createRecord(
+                        outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                        targetTrackIds = listOf("target-a", "target-b", "target-c"),
+                        completedCount = 1,
+                        failedCount = 1,
+                        failureTrackIds = listOf("target-b"),
+                    ) to listOf("target-a", "target-b", "target-c")
+                ),
+            "a successful record has nothing to retry" to
+                (
+                    createRecord(
+                        outcome = GitHubRefreshHistoryOutcome.Completed,
+                        targetTrackIds = listOf("target-a"),
+                        failedCount = 0,
+                    ) to emptyList()
+                ),
+        ).forEach { (case, recordAndExpected) ->
+            val (record, expected) = recordAndExpected
+            assertEquals(expected, record.refreshHistoryRetryTargetIds(), case)
+        }
     }
 
     private fun createRecord(

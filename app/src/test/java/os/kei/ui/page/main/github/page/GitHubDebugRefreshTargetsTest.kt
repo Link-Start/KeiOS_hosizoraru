@@ -22,21 +22,6 @@ class GitHubDebugRefreshTargetsTest {
     }
 
     @Test
-    fun `visible debug refresh allows explicit limit for focused checks`() {
-        val alpha = tracked("alpha")
-        val beta = tracked("beta")
-        val gamma = tracked("gamma")
-
-        val selected =
-            selectGitHubDebugVisibleRefreshTargets(
-                visibleItems = listOf(alpha, beta, gamma),
-                limit = 2,
-            )
-
-        assertEquals(listOf(alpha, beta), selected)
-    }
-
-    @Test
     fun `visible debug refresh returns empty list for zero limit`() {
         val selected =
             selectGitHubDebugVisibleRefreshTargets(

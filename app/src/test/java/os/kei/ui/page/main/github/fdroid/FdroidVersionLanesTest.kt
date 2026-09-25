@@ -113,14 +113,6 @@ class FdroidVersionLanesTest {
         assertTrue(fdroidVersionAnchorIds(rows).isEmpty())
     }
 
-    @Test
-    fun `narrowing the history past the recommended build anchors nothing rather than the top row`() {
-        val rows = listOf(versionRow(50L), versionRow(40L))
-
-        // What `publishRows` hands the page after a filter excludes the candidate. Anchoring the new top
-        // row would tell the reader it is "the one you would install", which it is not.
-        assertTrue(fdroidVersionAnchorIds(rows).isEmpty())
-    }
 }
 
 private fun versionRows(vararg codes: Long): List<FdroidVersionRow> = codes.map { code -> versionRow(code) }

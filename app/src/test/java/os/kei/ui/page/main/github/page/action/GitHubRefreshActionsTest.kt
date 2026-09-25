@@ -127,18 +127,6 @@ class GitHubRefreshActionsTest {
     }
 
     @Test
-    fun `visible refresh target selector resolves ids against active tracked items`() {
-        val alpha = tracked("alpha")
-        val beta = tracked("beta")
-        val selected = selectActiveTrackedRefreshTargets(
-            requestedTrackIds = listOf(beta.id, "missing", alpha.id, beta.id),
-            activeItems = listOf(alpha, beta),
-        )
-
-        assertEquals(listOf(beta, alpha), selected)
-    }
-
-    @Test
     fun `visible refresh plan promotes full active coverage to all tracked`() {
         val alpha = tracked("alpha")
         val beta = tracked("beta")

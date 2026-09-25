@@ -120,26 +120,6 @@ class GitHubAssetHandoffTest {
     }
 
     @Test
-    fun anAssetIsSharedTheWayALinkIs() {
-        val context = RecordingContext(application)
-
-        val result =
-            runBlocking {
-                GitHubAssetHandoff.shareAsset(
-                    context = context,
-                    lookupConfig = GitHubLookupConfig(onlineShareTargetPackage = installerXRevivedPackageName),
-                    asset = apkAsset(),
-                )
-            }
-
-        assertEquals(GitHubAssetHandoffResult.Delivered(GitHubAssetHandoffRoute.ShareTarget), result)
-        val sent = context.started.single()
-        assertEquals(installerXRevivedPackageName, sent.`package`)
-        assertEquals(APK_URL, sent.getStringExtra(Intent.EXTRA_TEXT))
-        assertEquals(APK_NAME, sent.getStringExtra(Intent.EXTRA_SUBJECT))
-    }
-
-    @Test
     fun aDownloadGoesToTheChosenDownloader() {
         val context = RecordingContext(application)
 

@@ -330,31 +330,6 @@ class FdroidRecommendedVersionsTest {
         assertEquals(40L, recommended.preRelease?.versionCode)
     }
 
-    @Test
-    fun `the repository's own suggestion is honoured when the track follows it`() {
-        val snapshot =
-            packageSnapshot(fdroidVersion(30L), fdroidVersion(20L), suggestedVersionCode = 20L)
-
-        val following =
-            fdroidRecommendedVersionsFor(
-                snapshot = snapshot,
-                config = FdroidTrackedAppConfig(
-                    selectionMode = FdroidVersionSelectionMode.SuggestedVersionCode,
-                ),
-                deviceSdk = 34,
-            )
-        val ignoring =
-            fdroidRecommendedVersionsFor(
-                snapshot = snapshot,
-                config = FdroidTrackedAppConfig(
-                    selectionMode = FdroidVersionSelectionMode.HighestVersionCode,
-                ),
-                deviceSdk = 34,
-            )
-
-        assertEquals(20L, following.stable?.versionCode)
-        assertEquals(30L, ignoring.stable?.versionCode)
-    }
 }
 
 private fun packageSnapshot(

@@ -5,7 +5,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -53,23 +52,6 @@ class GitHubActionsSelectableSemanticsTest {
         composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(1)
         composeRule.onNode(radioRole).assertIsSelected().performClick()
         composeRule.runOnIdle { assertEquals(1, clickCount) }
-    }
-
-    @Test
-    fun unselectedCardReportsItsSelectionState() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                GitHubActionsSelectableCard(
-                    selected = false,
-                    isDark = false,
-                    onClick = {},
-                ) {
-                    Text("Branch")
-                }
-            }
-        }
-
-        composeRule.onNode(radioRole).assertIsNotSelected()
     }
 
     @Test

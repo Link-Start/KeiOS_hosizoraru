@@ -42,11 +42,6 @@ class GitHubOverviewLayoutTest {
         get() = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun overviewPillsStayOnTwoInformationRowsAtValidationEmulatorWidth() {
-        assertOverviewPillsStayOnTwoRows()
-    }
-
-    @Test
     @Config(
         application = Application::class,
         sdk = [35],

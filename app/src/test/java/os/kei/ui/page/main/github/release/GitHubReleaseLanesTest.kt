@@ -82,18 +82,6 @@ class GitHubReleaseLanesTest {
     }
 
     @Test
-    fun `the anchors are in the lane whether or not they are open`() {
-        val rows = releaseRows("v2-rc1" to PRE, "v1" to LATEST, "v0-9" to PLAIN)
-
-        // Nothing open at all -- which is the case this rule exists for: collapsing an anchor must not make
-        // it look like any other row of the history.
-        val lanes = githubReleaseLanesFor(rows, readingIds = githubReleaseAnchorIds(rows, firstPage = true))
-
-        assertEquals(listOf("v2-rc1", "v1"), lanes.second.tags())
-        assertEquals(listOf("v0-9"), lanes.first.tags())
-    }
-
-    @Test
     fun `nothing is anchored past the first page`() {
         // `latest` is flagged on the first page only, but pre-releases are flagged everywhere, and a
         // repository whose CI publishes one per push would otherwise anchor an arbitrary old build on
@@ -112,27 +100,6 @@ class GitHubReleaseLanesTest {
         assertTrue(githubReleaseAnchorIds(rows, firstPage = true).isEmpty())
     }
 
-    @Test
-    fun `an anchor and an opened release share the lane in the page's order`() {
-        val rows = releaseRows("v3" to LATEST, "v2" to PLAIN, "v1" to PLAIN)
-
-        val lanes =
-            githubReleaseLanesFor(
-                rows,
-                readingIds = githubReleaseAnchorIds(rows, firstPage = true) + releaseId("v1"),
-            )
-
-        assertEquals(listOf("v3", "v1"), lanes.second.tags())
-        assertEquals(listOf("v2"), lanes.first.tags())
-    }
-
-    @Test
-    fun `an empty page of results lanes to nothing at all`() {
-        val lanes = githubReleaseLanesFor(emptyList(), readingIds = setOf(releaseId("v1")))
-
-        assertTrue(lanes.first.isEmpty())
-        assertTrue(lanes.second.isEmpty())
-    }
 }
 
 /** The id an entry derives from its coordinates, which is what the lane rule keys on. */

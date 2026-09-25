@@ -14,43 +14,8 @@ import os.kei.core.json.optArray
 import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
-import os.kei.feature.github.model.FdroidIndexFormat
 
 object FdroidIndexV2Parser {
-    fun parseIndex(
-        repoUrl: String,
-        rawJson: String
-    ): Result<FdroidRepositorySnapshot> = runCatching {
-        val root = rawJson.parseJsonObjectOrNull()
-            ?: error("F-Droid index-v2 JSON is invalid")
-        val normalizedRepoUrl = repoUrl.trim().trimEnd('/')
-        require(normalizedRepoUrl.isNotBlank()) { "F-Droid repository URL is blank" }
-        val repo = root.optObject("repo") ?: JsonObject(emptyMap())
-        val packagesObject = root.optObject("packages") ?: JsonObject(emptyMap())
-        val packages = packagesObject.entries
-            .mapNotNull { entry ->
-                val packageName = entry.key.trim()
-                val packageObject = entry.value.jsonObjectOrNull() ?: return@mapNotNull null
-                val snapshot = packageObject.toPackageSnapshot(
-                    repoUrl = normalizedRepoUrl,
-                    packageName = packageName
-                )
-                snapshot.packageName to snapshot
-            }
-            .sortedBy { it.first }
-            .toMap()
-        FdroidRepositorySnapshot(
-            repoUrl = normalizedRepoUrl,
-            format = FdroidIndexFormat.V2,
-            repoName = repo.localizedString("name"),
-            repoDescription = repo.localizedString("description"),
-            timestampMillis = repo.longValue("timestamp")
-                ?: root.longValue("timestamp"),
-            mirrors = repo.mirrorUrls(),
-            packages = packages
-        )
-    }
-
     fun parsePackage(
         repoUrl: String,
         packageName: String,
@@ -158,18 +123,6 @@ object FdroidIndexV2Parser {
         }
         return stringListValue("signer")
             .ifEmpty { stringListValue("signerSha256") }
-    }
-
-    private fun JsonObject.mirrorUrls(): List<String> {
-        return optArray("mirrors")
-            ?.mapNotNull { element ->
-                when {
-                    element is JsonPrimitive -> element.contentOrNull?.trim()
-                    element is JsonObject -> element.optString("url").trim()
-                    else -> null
-                }?.takeIf { it.isNotBlank() }
-            }
-            .orEmpty()
     }
 
     private fun JsonObject.antiFeatureSnapshots(): List<FdroidAntiFeatureSnapshot> {

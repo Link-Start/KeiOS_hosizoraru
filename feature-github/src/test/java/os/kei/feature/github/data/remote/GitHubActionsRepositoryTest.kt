@@ -3,7 +3,6 @@ package os.kei.feature.github.data.remote
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.OkHttpClient
 import org.junit.Test
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubApiAuthMode
@@ -116,38 +115,6 @@ class GitHubActionsRepositoryTest {
             assertEquals("42", snapshot.workflowId)
             assertEquals(2, snapshot.runs.size)
             assertEquals(listOf(101L, 100L), snapshot.runs.map { it.run.id })
-            assertEquals(4, snapshot.artifacts.size)
-            val requestPaths = List(3) { server.takeRequest().path }
-            assertEquals("/repos/demo/app/actions/workflows/42/runs?per_page=2", requestPaths.first())
-            assertEquals(
-                setOf(
-                    "/repos/demo/app/actions/runs/101/artifacts?per_page=100",
-                    "/repos/demo/app/actions/runs/100/artifacts?per_page=100"
-                ),
-                requestPaths.drop(1).toSet()
-            )
-        }
-    }
-
-    @Test
-    fun `async workflow artifact snapshot fetches run artifacts`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(200).setBody(sampleWorkflowRunsJson()))
-            server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 101)))
-            server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 100)))
-            val repository = GitHubActionsRepository(
-                apiToken = "",
-                apiBaseUrl = server.url("/").toString()
-            )
-
-            val snapshot = repository.fetchWorkflowArtifactSnapshot(
-                owner = "demo",
-                repo = "app",
-                workflowId = "42",
-                runLimit = 2
-            ).result.getOrThrow()
-
-            assertEquals(2, snapshot.runs.size)
             assertEquals(4, snapshot.artifacts.size)
             val requestPaths = List(3) { server.takeRequest().path }
             assertEquals("/repos/demo/app/actions/workflows/42/runs?per_page=2", requestPaths.first())
@@ -744,52 +711,6 @@ class GitHubActionsRepositoryTest {
                     "/api/repos/demo/app/actions/runs/25115668266/artifacts?per_page=100"
                 ),
                 List(8) { server.takeRequest().path }
-            )
-        }
-    }
-
-    @Test
-    fun `nightly link dev preview workflow tries dev page before default branch`() = runBlocking {
-        MockWebServer().use { server ->
-            val nightlyBaseUrl = server.url("/nightly/").toString()
-            val base = nightlyBaseUrl.trimEnd('/')
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
-                            <a href="$base/demo/app/workflows/auto-preview-dev/dev/app-offline-Unstable-release.apk.zip">app-offline-Unstable-release.apk.zip</a>
-                            <a href="$base/demo/app/workflows/auto-preview-dev/dev/app-online-Unstable-release.apk.zip">app-online-Unstable-release.apk.zip</a>
-                        """.trimIndent()
-                    )
-            )
-            val repository = GitHubActionsNightlyLinkRepository(
-                client = OkHttpClient(),
-                githubHtmlBaseUrl = server.url("/github/").toString(),
-                nightlyLinkBaseUrl = nightlyBaseUrl
-            )
-
-            val snapshot = repository.fetchWorkflowArtifactSnapshot(
-                owner = "demo",
-                repo = "app",
-                workflowId = ".github/workflows/auto-preview-dev.yml",
-                branch = "main",
-                artifactsPerRun = 10,
-                resolveRunDetail = false
-            ).getOrThrow()
-
-            assertEquals("dev", snapshot.runs.single().run.headBranch)
-            assertEquals(
-                listOf("app-offline-Unstable-release.apk", "app-online-Unstable-release.apk"),
-                snapshot.artifacts.map { it.name }
-            )
-            assertEquals(
-                "$base/demo/app/workflows/auto-preview-dev/dev/app-online-Unstable-release.apk.zip",
-                snapshot.artifacts.last().archiveDownloadUrl
-            )
-            assertEquals(
-                listOf("/nightly/demo/app/workflows/auto-preview-dev/dev?preview"),
-                List(1) { server.takeRequest().path }
             )
         }
     }

@@ -52,10 +52,6 @@ class GitHubApkManifestReader(
         )
     }
 
-    fun parsePackageName(manifestBytes: ByteArray): Result<String> {
-        return inspectionEngine.parsePackageName(manifestBytes)
-    }
-
     suspend fun readAndroidManifestBytes(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,

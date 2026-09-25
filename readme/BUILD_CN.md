@@ -243,13 +243,13 @@ keios.github.forceGuest=false
 ### 运行方式
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest"
+./gradlew :feature-github:testDebugUnitTest --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest"
 ```
 
 一次性命令示例（不改本地配置文件）：
 
 ```bash
-./gradlew :app:testDebugUnitTest \
+./gradlew :feature-github:testDebugUnitTest \
   --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest" \
   -Dkeios.github.liveBenchmark=true \
   -Dkeios.github.api.token=ghp_xxx \

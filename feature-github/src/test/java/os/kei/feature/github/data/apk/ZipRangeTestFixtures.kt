@@ -11,11 +11,17 @@ import java.util.zip.ZipOutputStream
 
 internal object ZipRangeTestFixtures {
     fun zipWithManifest(manifestBytes: ByteArray): ByteArray {
+        return zipWithEntries("AndroidManifest.xml" to manifestBytes)
+    }
+
+    fun zipWithEntries(vararg entries: Pair<String, ByteArray>): ByteArray {
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
-            zip.putNextEntry(ZipEntry("AndroidManifest.xml"))
-            zip.write(manifestBytes)
-            zip.closeEntry()
+            entries.forEach { (entryName, bytes) ->
+                zip.putNextEntry(ZipEntry(entryName))
+                zip.write(bytes)
+                zip.closeEntry()
+            }
         }
         return output.toByteArray()
     }

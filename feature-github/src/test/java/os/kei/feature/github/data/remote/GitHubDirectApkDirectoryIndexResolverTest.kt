@@ -97,96 +97,70 @@ class GitHubDirectApkDirectoryIndexResolverTest {
         }
     }
 
-    @Test
-    fun `resolve apk url keeps standard variant from reference file`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(sceneIndexResponse())
-
-            val result = GitHubDirectApkDirectoryIndexResolver()
-                .resolve("${server.url("/scene9/")}scene_9.3.0%20Alpha9.apk")
-                .getOrThrow()
-
-            assertEquals("/scene9/", server.takeRequest().path)
-            assertEquals(
-                "${server.url("/scene9/")}scene_9.2.11.apk",
-                result?.downloadUrl
-            )
-        }
-    }
+    private data class VariantCase(
+        val name: String,
+        val referenceFile: String,
+        val localVersion: String = "",
+        val preferPreRelease: Boolean = false,
+        val expectedFile: String,
+        val expectedChannel: GitHubReleaseChannel? = null
+    )
 
     @Test
-    fun `resolve apk url keeps core variant from reference file`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(sceneIndexResponse())
-
-            val result = GitHubDirectApkDirectoryIndexResolver()
-                .resolve("${server.url("/scene9/")}scene_9.3.0%20Alpha9%28Core%20Edition%29.apk")
-                .getOrThrow()
-
-            assertEquals(
-                "${server.url("/scene9/")}scene_9.2.11%28Core%20Edition%29.apk",
-                result?.downloadUrl
+    fun `resolve keeps the variant of the reference file or local version`() = runBlocking {
+        val coreStable = "scene_9.2.11%28Core%20Edition%29.apk"
+        val corePreRelease = "scene_9.3.0%20Alpha12%28Core%20Edition%29.apk"
+        val cases = listOf(
+            VariantCase(
+                name = "apk url keeps standard variant from reference file",
+                referenceFile = "scene_9.3.0%20Alpha9.apk",
+                expectedFile = "scene_9.2.11.apk"
+            ),
+            VariantCase(
+                name = "apk url keeps core variant from reference file",
+                referenceFile = "scene_9.3.0%20Alpha9%28Core%20Edition%29.apk",
+                expectedFile = coreStable
+            ),
+            VariantCase(
+                name = "apk url keeps core variant and can prefer pre-release",
+                referenceFile = "scene_9.3.0%20Alpha9%28Core%20Edition%29.apk",
+                preferPreRelease = true,
+                expectedFile = corePreRelease,
+                expectedChannel = GitHubReleaseChannel.ALPHA
+            ),
+            VariantCase(
+                name = "directory index can use local core variant",
+                referenceFile = "",
+                localVersion = "9.3.0 Alpha9 Core Edition",
+                expectedFile = coreStable
+            ),
+            VariantCase(
+                name = "directory index can use local core variant with pre-release preference",
+                referenceFile = "",
+                localVersion = "9.3.0 Alpha9 Core Edition",
+                preferPreRelease = true,
+                expectedFile = corePreRelease,
+                expectedChannel = GitHubReleaseChannel.ALPHA
             )
-        }
-    }
+        )
 
-    @Test
-    fun `resolve apk url keeps core variant and can prefer pre-release`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(sceneIndexResponse())
+        cases.forEach { case ->
+            MockWebServer().use { server ->
+                server.enqueue(sceneIndexResponse())
+                val directoryUrl = server.url("/scene9/").toString()
 
-            val result = GitHubDirectApkDirectoryIndexResolver()
-                .resolve(
-                    rawUrl = "${server.url("/scene9/")}scene_9.3.0%20Alpha9%28Core%20Edition%29.apk",
-                    preferPreRelease = true
-                )
-                .getOrThrow()
+                val result = GitHubDirectApkDirectoryIndexResolver()
+                    .resolve(
+                        rawUrl = directoryUrl + case.referenceFile,
+                        localVersion = case.localVersion,
+                        preferPreRelease = case.preferPreRelease
+                    )
+                    .getOrThrow()
 
-            assertEquals(
-                "${server.url("/scene9/")}scene_9.3.0%20Alpha12%28Core%20Edition%29.apk",
-                result?.downloadUrl
-            )
-            assertEquals(GitHubReleaseChannel.ALPHA, result?.channel)
-        }
-    }
-
-    @Test
-    fun `resolve directory index can use local core variant`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(sceneIndexResponse())
-
-            val result = GitHubDirectApkDirectoryIndexResolver()
-                .resolve(
-                    rawUrl = server.url("/scene9/").toString(),
-                    localVersion = "9.3.0 Alpha9 Core Edition"
-                )
-                .getOrThrow()
-
-            assertEquals(
-                "${server.url("/scene9/")}scene_9.2.11%28Core%20Edition%29.apk",
-                result?.downloadUrl
-            )
-        }
-    }
-
-    @Test
-    fun `resolve directory index can use local core variant with pre-release preference`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(sceneIndexResponse())
-
-            val result = GitHubDirectApkDirectoryIndexResolver()
-                .resolve(
-                    rawUrl = server.url("/scene9/").toString(),
-                    localVersion = "9.3.0 Alpha9 Core Edition",
-                    preferPreRelease = true
-                )
-                .getOrThrow()
-
-            assertEquals(
-                "${server.url("/scene9/")}scene_9.3.0%20Alpha12%28Core%20Edition%29.apk",
-                result?.downloadUrl
-            )
-            assertEquals(GitHubReleaseChannel.ALPHA, result?.channel)
+                assertEquals("/scene9/", server.takeRequest().path, case.name)
+                assertEquals(directoryUrl + case.expectedFile, result?.downloadUrl, case.name)
+                case.expectedChannel?.let { assertEquals(it, result?.channel, case.name) }
+            }
         }
     }
 

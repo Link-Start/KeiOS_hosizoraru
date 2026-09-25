@@ -20,7 +20,7 @@ class FdroidRepositoryIndexClientTest {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader("Content-Type", "application/json")
-                    .setBody(indexFixture)
+                    .setBody(FdroidIndexV2Fixtures.index)
             )
 
             val snapshot = FdroidRepositoryIndexClient()
@@ -46,7 +46,7 @@ class FdroidRepositoryIndexClientTest {
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader("Content-Type", "application/json")
-                    .setBody(indexFixture)
+                    .setBody(FdroidIndexV2Fixtures.index)
             )
 
             val snapshot = FdroidRepositoryIndexClient()
@@ -214,89 +214,6 @@ class FdroidRepositoryIndexClientTest {
             assertTrue(result.isFailure)
         }
     }
-
-    private val indexFixture: String =
-        """
-        {
-          "repo": {
-            "name": {
-              "en-US": "IzzyOnDroid"
-            },
-            "timestamp": 1780000000000
-          },
-          "packages": {
-            "com.perol.pixez": {
-              "metadata": {
-                "name": {
-                  "en-US": "PixEz"
-                },
-                "summary": {
-                  "en-US": "Pixiv client"
-                },
-                "suggestedVersionCode": 10010040
-              },
-              "versions": {
-                "com.perol.pixez_10010040.apk": {
-                  "manifest": {
-                    "versionName": "0.9.104 wsv",
-                    "versionCode": 10010040
-                  },
-                  "file": {
-                    "name": "/repo/com.perol.pixez_10010040.apk",
-                    "sha256": "pixez-sha256"
-                  }
-                }
-              }
-            },
-            "dev.imranr.obtainium": {
-              "metadata": {
-                "name": {
-                  "en-US": "Obtainium"
-                },
-                "summary": {
-                  "en-US": "App updater"
-                },
-                "suggestedVersionCode": 200
-              },
-              "versions": {
-                "dev.imranr.obtainium_200.apk": {
-                  "manifest": {
-                    "versionName": "2.0",
-                    "versionCode": 200
-                  },
-                  "file": {
-                    "name": "/repo/dev.imranr.obtainium_200.apk",
-                    "sha256": "obtainium-sha256"
-                  }
-                }
-              }
-            },
-            "org.fdroid.fdroid": {
-              "metadata": {
-                "name": {
-                  "en-US": "F-Droid"
-                },
-                "summary": {
-                  "en-US": "App store"
-                },
-                "suggestedVersionCode": 1021051
-              },
-              "versions": {
-                "org.fdroid.fdroid_1021051.apk": {
-                  "manifest": {
-                    "versionName": "1.21.1",
-                    "versionCode": 1021051
-                  },
-                  "file": {
-                    "name": "/repo/org.fdroid.fdroid_1021051.apk",
-                    "sha256": "fdroid-sha256"
-                  }
-                }
-              }
-            }
-          }
-        }
-        """.trimIndent()
 
     private class InMemoryFdroidIndexCacheStore : FdroidRepositoryIndexCacheStore {
         private val records = linkedMapOf<FdroidRepoCacheRequestKey, FdroidRepoCacheRecord>()

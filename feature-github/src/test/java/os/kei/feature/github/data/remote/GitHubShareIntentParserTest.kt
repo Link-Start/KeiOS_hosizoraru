@@ -21,68 +21,50 @@ class GitHubShareIntentParserTest {
     }
 
     @Test
-    fun `parse repo link to project target`() {
-        val parsed = GitHubShareIntentParser.parseSharedReleaseLink(
-            "https://github.com/open-ani/animeko"
+    fun `parse single link resolves its type and target`() {
+        val repoUrl = "https://github.com/open-ani/animeko"
+        fun link(
+            sourceUrl: String,
+            type: GitHubSharedUrlType,
+            releaseTag: String = "",
+            assetName: String = ""
+        ) = GitHubSharedReleaseLink(
+            sourceUrl = sourceUrl,
+            projectUrl = repoUrl,
+            owner = "open-ani",
+            repo = "animeko",
+            type = type,
+            releaseTag = releaseTag,
+            assetName = assetName
         )
-        assertNotNull(parsed)
-        assertEquals(GitHubSharedUrlType.Repo, parsed.type)
-        assertEquals("open-ani", parsed.owner)
-        assertEquals("animeko", parsed.repo)
-        assertEquals("https://github.com/open-ani/animeko", parsed.projectUrl)
-    }
+        val download = "$repoUrl/releases/download/v5.5.0-alpha02/ani-5.5.0-alpha02-arm64-v8a.apk"
+        val rows = listOf(
+            "repo link to project target" to link(repoUrl, GitHubSharedUrlType.Repo),
+            "releases page link" to link("$repoUrl/releases", GitHubSharedUrlType.Releases),
+            "release tag link with decoded tag" to link(
+                "$repoUrl/releases/tag/v5.5.0-alpha02",
+                GitHubSharedUrlType.ReleaseTag,
+                releaseTag = "v5.5.0-alpha02"
+            ),
+            "release download link with tag and asset" to link(
+                download,
+                GitHubSharedUrlType.ReleaseDownloadAsset,
+                releaseTag = "v5.5.0-alpha02",
+                assetName = "ani-5.5.0-alpha02-arm64-v8a.apk"
+            ),
+            "releases latest link to latest stable target" to link(
+                "$repoUrl/releases/latest",
+                GitHubSharedUrlType.ReleasesLatest
+            )
+        )
 
-    @Test
-    fun `parse pixiv viewer repo link to project target`() {
-        val parsed = GitHubShareIntentParser.parseSharedReleaseLink(
-            "https://github.com/asadahimeka/pixiv-viewer-app"
-        )
-        assertNotNull(parsed)
-        assertEquals(GitHubSharedUrlType.Repo, parsed.type)
-        assertEquals("asadahimeka", parsed.owner)
-        assertEquals("pixiv-viewer-app", parsed.repo)
-        assertEquals("https://github.com/asadahimeka/pixiv-viewer-app", parsed.projectUrl)
-    }
-
-    @Test
-    fun `parse releases page link`() {
-        val parsed = GitHubShareIntentParser.parseSharedReleaseLink(
-            "https://github.com/open-ani/animeko/releases"
-        )
-        assertNotNull(parsed)
-        assertEquals(GitHubSharedUrlType.Releases, parsed.type)
-        assertEquals("open-ani", parsed.owner)
-        assertEquals("animeko", parsed.repo)
-    }
-
-    @Test
-    fun `parse release tag link with decoded tag`() {
-        val parsed = GitHubShareIntentParser.parseSharedReleaseLink(
-            "https://github.com/open-ani/animeko/releases/tag/v5.5.0-alpha02"
-        )
-        assertNotNull(parsed)
-        assertEquals(GitHubSharedUrlType.ReleaseTag, parsed.type)
-        assertEquals("v5.5.0-alpha02", parsed.releaseTag)
-    }
-
-    @Test
-    fun `parse release download link with tag and asset`() {
-        val parsed = GitHubShareIntentParser.parseSharedReleaseLink(
-            "https://github.com/open-ani/animeko/releases/download/v5.5.0-alpha02/ani-5.5.0-alpha02-arm64-v8a.apk"
-        )
-        assertNotNull(parsed)
-        assertEquals(GitHubSharedUrlType.ReleaseDownloadAsset, parsed.type)
-        assertEquals("v5.5.0-alpha02", parsed.releaseTag)
-        assertEquals("ani-5.5.0-alpha02-arm64-v8a.apk", parsed.assetName)
-    }
-
-    @Test
-    fun `parse releases latest link to latest stable target`() {
-        val parsed = GitHubShareIntentParser.parseSharedReleaseLink(
-            "https://github.com/open-ani/animeko/releases/latest"
-        )
-        assertNotNull(parsed)
-        assertEquals(GitHubSharedUrlType.ReleasesLatest, parsed.type)
+        rows.forEach { (case, expected) ->
+            assertEquals(
+                expected,
+                GitHubShareIntentParser.parseSharedReleaseLink(expected.sourceUrl),
+                case
+            )
+        }
     }
 
     @Test

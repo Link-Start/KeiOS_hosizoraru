@@ -10,16 +10,14 @@ import org.junit.Test
 import os.kei.feature.github.data.apk.BinaryManifestFixture
 import os.kei.feature.github.data.apk.RemoteZipEntryReader
 import os.kei.feature.github.data.apk.ZipRangeTestFixtures.rangeDispatcher
+import os.kei.feature.github.data.apk.ZipRangeTestFixtures.zipWithEntries
+import os.kei.feature.github.data.apk.ZipRangeTestFixtures.zipWithStoredEntry
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
-import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
-import java.util.zip.CRC32
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -33,7 +31,7 @@ class GitHubApkManifestReaderTest {
                 versionCode = 7_304_647L,
             ),
         )
-        val releaseZip = zipWithStoredEntry("manager.apk", managerApk)
+        val releaseZip = zipWithStoredEntry(entryName = "manager.apk", bytes = managerApk)
         MockWebServer().use { server ->
             server.dispatcher = rangeDispatcher(releaseZip)
             val reader = GitHubApkManifestReader(
@@ -247,37 +245,10 @@ class GitHubApkManifestReaderTest {
     }
 
     private fun apkWithManifestAndNativeLib(manifestBytes: ByteArray): ByteArray {
-        val output = ByteArrayOutputStream()
-        ZipOutputStream(output).use { zip ->
-            zip.putNextEntry(ZipEntry("AndroidManifest.xml"))
-            zip.write(manifestBytes)
-            zip.closeEntry()
-            zip.putNextEntry(ZipEntry("lib/arm64-v8a/libfixture.so"))
-            zip.write(byteArrayOf(1, 2, 3, 4))
-            zip.closeEntry()
-        }
-        return output.toByteArray()
-    }
-
-    private fun zipWithStoredEntry(
-        name: String,
-        bytes: ByteArray,
-    ): ByteArray {
-        val crc = CRC32().apply { update(bytes) }
-        val output = ByteArrayOutputStream()
-        ZipOutputStream(output).use { zip ->
-            zip.putNextEntry(
-                ZipEntry(name).apply {
-                    method = ZipEntry.STORED
-                    size = bytes.size.toLong()
-                    compressedSize = bytes.size.toLong()
-                    this.crc = crc.value
-                },
-            )
-            zip.write(bytes)
-            zip.closeEntry()
-        }
-        return output.toByteArray()
+        return zipWithEntries(
+            "AndroidManifest.xml" to manifestBytes,
+            "lib/arm64-v8a/libfixture.so" to byteArrayOf(1, 2, 3, 4)
+        )
     }
 
     private class FakeManifestInfoCache : GitHubApkManifestInfoCache {

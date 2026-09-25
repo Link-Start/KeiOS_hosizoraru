@@ -272,13 +272,13 @@ Notes:
 ### Run
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest"
+./gradlew :feature-github:testDebugUnitTest --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest"
 ```
 
 One-off CLI example (without editing local properties):
 
 ```bash
-./gradlew :app:testDebugUnitTest \
+./gradlew :feature-github:testDebugUnitTest \
   --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest" \
   -Dkeios.github.liveBenchmark=true \
   -Dkeios.github.api.token=ghp_xxx \

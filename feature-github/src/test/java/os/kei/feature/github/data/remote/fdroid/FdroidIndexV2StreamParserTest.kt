@@ -14,7 +14,7 @@ class FdroidIndexV2StreamParserTest {
     fun `searchIndex parses only matching packages from repository index`() = runBlocking {
         val snapshot = FdroidIndexV2StreamParser.searchIndex(
             repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-            reader = StringReader(indexFixture),
+            reader = StringReader(FdroidIndexV2Fixtures.index),
             query = "Pixiv",
             packageName = "",
             limit = 12
@@ -32,7 +32,7 @@ class FdroidIndexV2StreamParserTest {
     fun `searchIndex can stop early for exact package lookup`() = runBlocking {
         val snapshot = FdroidIndexV2StreamParser.searchIndex(
             repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-            reader = StringReader(indexFixture),
+            reader = StringReader(FdroidIndexV2Fixtures.index),
             query = "",
             packageName = "com.perol.pixez",
             limit = 12
@@ -43,33 +43,26 @@ class FdroidIndexV2StreamParserTest {
     }
 
     @Test
-    fun `searchIndex exact package stop remains scoped to packages object`() = runBlocking {
-        val snapshot = FdroidIndexV2StreamParser.searchIndex(
-            repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-            reader = StringReader(indexWithRepoAfterPackagesFixture),
-            query = "",
-            packageName = "com.perol.pixez",
-            limit = 12
-        ).getOrThrow()
+    fun `searchIndex exact stop remains scoped to packages object`() = runBlocking {
+        val cases = listOf(
+            // name to (query, packageName)
+            "exact package" to ("" to "com.perol.pixez"),
+            "exact app name" to ("PixEz" to "")
+        )
 
-        assertEquals("Late Repo", snapshot.repoName)
-        assertEquals(listOf("com.perol.pixez"), snapshot.packages.keys.toList())
-        assertEquals(1, snapshot.packageCount)
-    }
+        cases.forEach { (case, lookup) ->
+            val snapshot = FdroidIndexV2StreamParser.searchIndex(
+                repoUrl = "https://apt.izzysoft.de/fdroid/repo",
+                reader = StringReader(indexWithRepoAfterPackagesFixture),
+                query = lookup.first,
+                packageName = lookup.second,
+                limit = 12
+            ).getOrThrow()
 
-    @Test
-    fun `searchIndex exact app name stop remains scoped to packages object`() = runBlocking {
-        val snapshot = FdroidIndexV2StreamParser.searchIndex(
-            repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-            reader = StringReader(indexWithRepoAfterPackagesFixture),
-            query = "PixEz",
-            packageName = "",
-            limit = 12
-        ).getOrThrow()
-
-        assertEquals("Late Repo", snapshot.repoName)
-        assertEquals(listOf("com.perol.pixez"), snapshot.packages.keys.toList())
-        assertEquals(1, snapshot.packageCount)
+            assertEquals("Late Repo", snapshot.repoName, case)
+            assertEquals(listOf("com.perol.pixez"), snapshot.packages.keys.toList(), case)
+            assertEquals(1, snapshot.packageCount, case)
+        }
     }
 
     @Test
@@ -78,7 +71,7 @@ class FdroidIndexV2StreamParserTest {
             assertFailsWith<CancellationException> {
                 FdroidIndexV2StreamParser.searchIndex(
                     repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-                    reader = CancellingReader(indexFixture, cancelAfterChars = 96),
+                    reader = CancellingReader(FdroidIndexV2Fixtures.index, cancelAfterChars = 96),
                     query = "PixEz",
                     packageName = "",
                     limit = 12
@@ -91,7 +84,7 @@ class FdroidIndexV2StreamParserTest {
     fun `loadPackages scans one repo while materializing only requested packages`() = runBlocking {
         val snapshot = FdroidIndexV2StreamParser.loadPackages(
             repoUrl = "https://apt.izzysoft.de/fdroid/repo",
-            reader = StringReader(indexFixture),
+            reader = StringReader(FdroidIndexV2Fixtures.index),
             packageNames = setOf("dev.imranr.obtainium", "com.perol.pixez")
         ).getOrThrow()
 
@@ -102,105 +95,6 @@ class FdroidIndexV2StreamParserTest {
         )
         assertNull(snapshot.packageSnapshot("org.fdroid.fdroid"))
     }
-
-    private val indexFixture: String =
-        """
-        {
-          "repo": {
-            "name": {
-              "en-US": "IzzyOnDroid"
-            },
-            "description": {
-              "en-US": "Third-party F-Droid repository"
-            },
-            "timestamp": 1780000000000
-          },
-          "packages": {
-            "org.fdroid.fdroid": {
-              "metadata": {
-                "name": {
-                  "en-US": "F-Droid"
-                },
-                "summary": {
-                  "en-US": "App store"
-                },
-                "suggestedVersionCode": 1021051
-              },
-              "versions": {
-                "org.fdroid.fdroid_1021051.apk": {
-                  "manifest": {
-                    "versionName": "1.21.1",
-                    "versionCode": 1021051
-                  },
-                  "file": {
-                    "name": "/repo/org.fdroid.fdroid_1021051.apk",
-                    "sha256": "fdroid-sha256"
-                  }
-                }
-              }
-            },
-            "com.perol.pixez": {
-              "metadata": {
-                "name": {
-                  "en-US": "PixEz"
-                },
-                "summary": {
-                  "en-US": "A third-party Pixiv flutter client that supports viewing ugoira"
-                },
-                "categories": [
-                  "Graphics",
-                  "Internet"
-                ],
-                "antiFeatures": [
-                  "NonFreeNet",
-                  "NonFreeComp"
-                ],
-                "suggestedVersionCode": 10010040
-              },
-              "versions": {
-                "com.perol.pixez_10010040.apk": {
-                  "manifest": {
-                    "versionName": "0.9.104 wsv",
-                    "versionCode": 10010040,
-                    "usesSdk": {
-                      "minSdkVersion": 24,
-                      "targetSdkVersion": 35
-                    }
-                  },
-                  "file": {
-                    "name": "/repo/com.perol.pixez_10010040.apk",
-                    "sha256": "pixez-sha256",
-                    "size": 1234567
-                  }
-                }
-              }
-            },
-            "dev.imranr.obtainium": {
-              "metadata": {
-                "name": {
-                  "en-US": "Obtainium"
-                },
-                "summary": {
-                  "en-US": "App updater"
-                },
-                "suggestedVersionCode": 200
-              },
-              "versions": {
-                "dev.imranr.obtainium_200.apk": {
-                  "manifest": {
-                    "versionName": "2.0",
-                    "versionCode": 200
-                  },
-                  "file": {
-                    "name": "/repo/dev.imranr.obtainium_200.apk",
-                    "sha256": "obtainium-sha256"
-                  }
-                }
-              }
-            }
-          }
-        }
-        """.trimIndent()
 
     private val indexWithRepoAfterPackagesFixture: String =
         """

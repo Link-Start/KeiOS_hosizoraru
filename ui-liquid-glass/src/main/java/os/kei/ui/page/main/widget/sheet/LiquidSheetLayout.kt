@@ -51,21 +51,6 @@ internal fun liquidSheetSmoothStep(value: Float): Float {
     return x * x * (3f - 2f * x)
 }
 
-internal fun liquidSheetMaxVisibleHeightPx(
-    windowHeightPx: Float,
-    topInsetPx: Float,
-): Float = (windowHeightPx - topInsetPx).coerceAtLeast(0f)
-
-internal fun liquidSheetVisibleHeightFraction(
-    visibleHeightPx: Float,
-    maxVisibleHeightPx: Float,
-): Float =
-    if (visibleHeightPx > 0f && maxVisibleHeightPx > 0f) {
-        (visibleHeightPx / maxVisibleHeightPx).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
-
 /**
  * The area outside the sheet: tap to dismiss, and nothing gets through.
  *

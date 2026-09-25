@@ -34,20 +34,6 @@ const val APP_FLOATING_DOCK_BADGE_CAP = 99
 const val APP_FLOATING_DOCK_BADGE_DOT = "•"
 
 /**
- * Formats a single count, or null when there is nothing to report.
- *
- * Zero is deliberately null rather than "0": a badge means "attend to this", and there is nothing to
- * attend to. Negative counts are treated as absent rather than clamped, because a negative here is a
- * bug upstream and rendering "0" would hide it.
- */
-fun appFloatingDockBadgeLabel(count: Int): String? =
-    when {
-        count <= 0 -> null
-        count > APP_FLOATING_DOCK_BADGE_CAP -> "$APP_FLOATING_DOCK_BADGE_CAP+"
-        else -> count.toString()
-    }
-
-/**
  * Summarises the badges a collapsed dock hides into a single honest label.
  *
  * Already-capped inputs stay capped: "99+" plus anything is still "at least 99", so the result keeps

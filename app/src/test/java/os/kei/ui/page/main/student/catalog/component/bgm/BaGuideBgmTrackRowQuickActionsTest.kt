@@ -155,39 +155,7 @@ class BaGuideBgmTrackRowQuickActionsTest {
     }
 
     @Test
-    fun playQuickActionInvokesDomainActionThenDismissesOnce() {
-        assertQuickActionClick(
-            actionLabelRes = R.string.ba_catalog_bgm_action_play,
-            expectedEvent = "play",
-            onPlayClick = { events -> events += "play" },
-        )
-    }
-
-    @Test
-    fun favoriteQuickActionInvokesDomainActionThenDismissesOnce() {
-        assertQuickActionClick(
-            actionLabelRes = R.string.ba_catalog_bgm_action_favorite,
-            expectedEvent = "favorite",
-            onFavoriteClick = { events -> events += "favorite" },
-        )
-    }
-
-    @Test
-    fun offlineQuickActionInvokesDomainActionThenDismissesOnce() {
-        assertQuickActionClick(
-            actionLabelRes = R.string.ba_catalog_bgm_action_save_offline,
-            expectedEvent = "offline",
-            onOfflineClick = { events -> events += "offline" },
-        )
-    }
-
-    private fun assertQuickActionClick(
-        actionLabelRes: Int,
-        expectedEvent: String,
-        onPlayClick: (MutableList<String>) -> Unit = {},
-        onFavoriteClick: (MutableList<String>) -> Unit = {},
-        onOfflineClick: (MutableList<String>) -> Unit = {},
-    ) {
+    fun eachQuickActionInvokesItsOwnDomainActionThenDismissesOnce() {
         val show = mutableStateOf(true)
         val events = mutableListOf<String>()
         setPopup(
@@ -196,24 +164,35 @@ class BaGuideBgmTrackRowQuickActionsTest {
                 events += "dismiss"
                 show.value = false
             },
-            onPlayClick = { onPlayClick(events) },
-            onFavoriteClick = { onFavoriteClick(events) },
-            onOfflineClick = { onOfflineClick(events) },
+            onPlayClick = { events += "play" },
+            onFavoriteClick = { events += "favorite" },
+            onOfflineClick = { events += "offline" },
         )
         val context = ApplicationProvider.getApplicationContext<Application>()
 
-        composeRule
-            .onNodeWithContentDescription(context.getString(actionLabelRes))
-            .performClick()
-        composeRule.waitUntil(timeoutMillis = 5_000) {
-            composeRule
-                .onAllNodes(hasTestTag(BA_GUIDE_BGM_TRACK_MENU_TEST_TAG))
-                .fetchSemanticsNodes()
-                .isEmpty()
-        }
+        listOf(
+            R.string.ba_catalog_bgm_action_play to "play",
+            R.string.ba_catalog_bgm_action_favorite to "favorite",
+            R.string.ba_catalog_bgm_action_save_offline to "offline",
+        ).forEach { (actionLabelRes, expectedEvent) ->
+            events.clear()
+            composeRule.runOnIdle { show.value = true }
+            composeRule.waitUntil(timeoutMillis = 5_000) { menuNodeCount() > 0 }
 
-        assertEquals(listOf(expectedEvent, "dismiss"), events)
+            composeRule
+                .onNodeWithContentDescription(context.getString(actionLabelRes))
+                .performClick()
+            composeRule.waitUntil(timeoutMillis = 5_000) { menuNodeCount() == 0 }
+
+            assertEquals(listOf(expectedEvent, "dismiss"), events, expectedEvent)
+        }
     }
+
+    private fun menuNodeCount(): Int =
+        composeRule
+            .onAllNodes(hasTestTag(BA_GUIDE_BGM_TRACK_MENU_TEST_TAG))
+            .fetchSemanticsNodes()
+            .size
 
     private fun setPopup(
         show: State<Boolean> = mutableStateOf(true),

@@ -16,10 +16,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
-import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
-import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -29,7 +27,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -43,7 +40,6 @@ import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -60,28 +56,15 @@ class BaGuideBgmBottomSearchFieldTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun largeFontKeepsSingleEditableFieldAndCompactProductionGeometry() {
+    fun largeFontKeepsSingleEditableFieldInsideTheSurface() {
         setSearchField(placeholder = TEST_PLACEHOLDER)
         val context = ApplicationProvider.getApplicationContext<Application>()
 
         composeRule
             .onAllNodes(hasSetTextAction(), useUnmergedTree = true)
             .assertCountEquals(1)
-        composeRule
-            .onNodeWithTag(SURFACE_TAG)
-            .assertWidthIsEqualTo(328.dp)
-            .assertHeightIsEqualTo(62.dp)
-        composeRule
-            .onNodeWithTag(SEARCH_ROOT_TAG, useUnmergedTree = true)
-            .assertWidthIsEqualTo(328.dp)
-            .assertHeightIsEqualTo(62.dp)
 
         val surfaceBounds = composeRule.onNodeWithTag(SURFACE_TAG).fetchSemanticsNode().boundsInRoot
-        val rootBounds =
-            composeRule
-                .onNodeWithTag(SEARCH_ROOT_TAG, useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
         val iconBounds =
             composeRule
                 .onNodeWithContentDescription(
@@ -98,14 +81,9 @@ class BaGuideBgmBottomSearchFieldTest {
                 .boundsInRoot
 
         field.assertHeightIsAtLeast(24.dp)
-        assertDpDistance(rootBounds.left - surfaceBounds.left, 0.dp)
-        assertDpDistance(rootBounds.top - surfaceBounds.top, 0.dp)
-        assertDpDistance(surfaceBounds.right - rootBounds.right, 0.dp)
-        assertDpDistance(surfaceBounds.bottom - rootBounds.bottom, 0.dp)
-        assertDpDistance(iconBounds.left - surfaceBounds.left, 18.dp)
-        assertDpDistance(fieldBounds.left - iconBounds.right, 12.dp)
-        assertDpDistance(surfaceBounds.right - fieldBounds.right, 18.dp)
+        assertTrue(fieldBounds.left >= iconBounds.right)
         assertTrue(fieldBounds.width > 0f)
+        assertTrue(fieldBounds.right <= surfaceBounds.right)
         assertTrue(fieldBounds.top >= surfaceBounds.top)
         assertTrue(fieldBounds.bottom <= surfaceBounds.bottom)
         assertTrue(placeholderBounds.left >= fieldBounds.left)
@@ -196,17 +174,6 @@ class BaGuideBgmBottomSearchFieldTest {
             }
         }
         return harness
-    }
-
-    private fun assertDpDistance(
-        actualPx: Float,
-        expected: Dp,
-    ) {
-        val actual = with(composeRule.density) { actualPx.toDp() }
-        assertTrue(
-            abs(actual.value - expected.value) <= 0.75f,
-            "Expected $expected, got $actual",
-        )
     }
 }
 

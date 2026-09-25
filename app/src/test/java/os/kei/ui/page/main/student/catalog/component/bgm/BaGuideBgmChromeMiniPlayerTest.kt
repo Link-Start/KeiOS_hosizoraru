@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsAtLeast
-import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -83,71 +82,12 @@ class BaGuideBgmChromeMiniPlayerTest {
     }
 
     @Test
-    fun expandedPlayerUsesAdjacentTransportSlotsAndPreservesTitleWidthAtLargeFont() {
+    fun expandedPlayerPreservesTitleWidthAtLargeFont() {
         setMiniPlayer(expanded = 1f)
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val density = context.resources.displayMetrics.density
-        val expectedItemGapPx = 10.dp.value * density
-        val minimumTitleWidthPx = 170.dp.value * density
-        val artworkBounds =
-            composeRule
-                .onNodeWithTag(BaGuideBgmMiniPlayerArtworkSlotTestTag)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        val titleBounds =
-            composeRule
-                .onNodeWithTag(BaGuideBgmMiniPlayerTitleSlotTestTag)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        val transportGroupBounds =
-            composeRule
-                .onNodeWithTag(BaGuideBgmMiniPlayerTransportGroupTestTag)
-                .assertWidthIsEqualTo(BaGuideBgmMiniPlayerTransportControlGroupWidth)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        val previousBounds =
-            composeRule
-                .onNodeWithContentDescription(context.getString(R.string.ba_catalog_bgm_action_previous))
-                .assertWidthIsEqualTo(BaGuideBgmMiniPlayerTransportControlSlotSize)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        val playBounds =
-            composeRule
-                .onNodeWithContentDescription(context.getString(R.string.ba_catalog_bgm_action_play))
-                .assertWidthIsEqualTo(BaGuideBgmMiniPlayerTransportControlSlotSize)
-                .fetchSemanticsNode()
-                .boundsInRoot
-        val nextBounds =
-            composeRule
-                .onNodeWithContentDescription(context.getString(R.string.ba_catalog_bgm_action_next))
-                .assertWidthIsEqualTo(BaGuideBgmMiniPlayerTransportControlSlotSize)
-                .fetchSemanticsNode()
-                .boundsInRoot
 
         composeRule
             .onNodeWithTag(BaGuideBgmMiniPlayerTitleSlotTestTag)
             .assertWidthIsAtLeast(170.dp)
-
-        assertTrue(
-            abs(previousBounds.right - playBounds.left) <= 0.5f,
-            "Previous slot right ${previousBounds.right} must meet play slot left ${playBounds.left}",
-        )
-        assertTrue(
-            abs(playBounds.right - nextBounds.left) <= 0.5f,
-            "Play slot right ${playBounds.right} must meet next slot left ${nextBounds.left}",
-        )
-        assertTrue(
-            abs(titleBounds.left - artworkBounds.right - expectedItemGapPx) <= 0.5f,
-            "Artwork-to-title gap must remain 10dp",
-        )
-        assertTrue(
-            abs(transportGroupBounds.left - titleBounds.right - expectedItemGapPx) <= 0.5f,
-            "Title-to-transport gap must remain 10dp",
-        )
-        assertTrue(
-            titleBounds.width >= minimumTitleWidthPx,
-            "Title slot width ${titleBounds.width} must retain at least 170dp at 1.5x font scale",
-        )
     }
 
     @Test

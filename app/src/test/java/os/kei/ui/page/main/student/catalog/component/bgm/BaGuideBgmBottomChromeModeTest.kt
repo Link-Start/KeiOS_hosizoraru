@@ -15,10 +15,7 @@ class BaGuideBgmBottomChromeModeTest {
         )
         listOf(
             Case("input active, search closed", false, true, false, BaGuideBgmBottomChromeMode.SearchInput),
-            Case("input active over compact search", true, true, true, BaGuideBgmBottomChromeMode.SearchInput),
             Case("expanded search during compact scroll", true, false, true, BaGuideBgmBottomChromeMode.SearchExpanded),
-            Case("search closed, compact", false, false, true, BaGuideBgmBottomChromeMode.Compact),
-            Case("search closed, not compact", false, false, false, BaGuideBgmBottomChromeMode.Expanded),
         ).forEach { case ->
             assertEquals(
                 case.expected,

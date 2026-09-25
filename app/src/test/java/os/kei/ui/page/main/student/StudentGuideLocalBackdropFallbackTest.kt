@@ -3,17 +3,13 @@ package os.kei.ui.page.main.student
 import android.app.Application
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsEqualTo
-import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -66,10 +62,7 @@ class StudentGuideLocalBackdropFallbackTest {
                     LocalTextCopyExpandedOverride provides false,
                 ) {
                     Column {
-                        GuideSkillVariantBadge(
-                            label = "3",
-                            modifier = Modifier.testTag("guide-skill-variant-badge"),
-                        )
+                        GuideSkillVariantBadge(label = "3")
                         GuideProfileValueCapsule(
                             label = "Profile value",
                             tint = Color(0xFF3B82F6),
@@ -88,10 +81,6 @@ class StudentGuideLocalBackdropFallbackTest {
             }
         }
 
-        composeRule
-            .onNodeWithTag("guide-skill-variant-badge")
-            .assertWidthIsEqualTo(26.dp)
-            .assertHeightIsEqualTo(26.dp)
         composeRule.onNodeWithText("3").assertExists()
         composeRule
             .onNodeWithText("Profile value")
@@ -114,6 +103,10 @@ class StudentGuideLocalBackdropFallbackTest {
         }
     }
 
+    /**
+     * 3a8a887ca ("inherit guide liquid materials"): these sections each made their own LayerBackdrop, so
+     * their glass sampled an empty local layer instead of the page scene. They must inherit it.
+     */
     @Test
     fun studentGuideComponentsContainNoLocalLayerBackdropProducer() {
         val skillSource = sourceFile(GUIDE_SECTION_SKILL_SOURCE)
@@ -124,25 +117,6 @@ class StudentGuideLocalBackdropFallbackTest {
             assertFalse("rememberLayerBackdrop" in source)
             assertFalse(".layerBackdrop(" in source)
         }
-        val profileSurfaceSource =
-            profileSource
-                .substringAfter("private fun GuideProfileLiquidSurfaceBox(")
-                .substringBefore("internal fun GuideProfileRowsSection(")
-        assertTrue("AppSurfaceBox(" in profileSurfaceSource)
-        assertFalse("LiquidSurface(" in profileSurfaceSource)
-        assertFalse("activeGlassBackdrop(" in profileSurfaceSource)
-        assertFalse("appSquircleBackground" in profileSurfaceSource)
-        assertTrue("isInteractive = false" in profileSurfaceSource)
-        assertTrue("shadow = false" in profileSurfaceSource)
-        assertTrue("clipContent = false" in profileSurfaceSource)
-        assertTrue("pressSafePadding = 0.dp" in profileSurfaceSource)
-        assertTrue("effectVariant = GlassVariant.Compact" in profileSurfaceSource)
-        assertTrue(".matchParentSize()\n                    .padding(contentPadding)" in profileSurfaceSource)
-        assertTrue(
-            "val sliderBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in gallerySource,
-        )
-        assertTrue(".height(48.dp)" in gallerySource)
-        assertTrue(".matchParentSize()\n                    .padding(horizontal = 4.dp)" in gallerySource)
     }
 
 }

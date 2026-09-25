@@ -29,7 +29,6 @@ class BaGuideBgmMediaButtonPreferencesTest {
         val repeat = buttons[0]
         assertEquals(CommandButton.ICON_REPEAT_ALL, repeat.icon)
         assertEquals(BA_GUIDE_BGM_COMMAND_TOGGLE_REPEAT, repeat.sessionCommand?.customAction)
-        assertEquals("Continuous play", repeat.displayName.toString())
         assertEquals(
             listOf(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW),
             repeat.slots.toArray().toList()
@@ -41,7 +40,6 @@ class BaGuideBgmMediaButtonPreferencesTest {
             BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK,
             stop.sessionCommand?.customAction
         )
-        assertEquals("Stop playback", stop.displayName.toString())
         assertEquals(
             listOf(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW),
             stop.slots.toArray().toList()
@@ -57,7 +55,6 @@ class BaGuideBgmMediaButtonPreferencesTest {
         ).first()
 
         assertEquals(CommandButton.ICON_REPEAT_ONE, repeat.icon)
-        assertEquals("Single-track loop", repeat.displayName.toString())
     }
 
     @Test

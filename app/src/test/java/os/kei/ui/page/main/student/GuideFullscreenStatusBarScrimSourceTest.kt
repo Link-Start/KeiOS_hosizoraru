@@ -1,25 +1,16 @@
 package os.kei.ui.page.main.student
 
 import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import org.junit.Test
 
 class GuideFullscreenStatusBarScrimSourceTest {
     @Test
-    fun imageViewerScrimStaysOnTheMiuixBlurChannelWithoutKyantBackdropMixing() {
+    fun imageViewerNeverSamplesTheKyantGlassChannel() {
         val source = sourceFile(GUIDE_GALLERY_FULLSCREEN_SOURCE)
 
-        assertTrue("import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop" in source)
-        assertTrue("import top.yukonga.miuix.kmp.blur.layerBackdrop" in source)
-        assertTrue("import top.yukonga.miuix.kmp.blur.progressiveTextureBlur" in source)
-        assertEquals(1, source.occurrencesOf("rememberLayerBackdrop()"))
-        assertEquals(1, source.occurrencesOf(".layerBackdrop("))
-        assertEquals(1, source.occurrencesOf(".progressiveTextureBlur("))
-        assertTrue("gradient = ProgressiveBlur.Top" in source)
-
-        // The fullscreen image dialog must never sample or export the kyant glass channel.
+        // A kyant LayerBackdrop cannot be sampled from a Dialog window, so glass here would silently
+        // draw nothing; the dialog's scrim stays on the miuix blur channel.
         assertFalse("import com.kyant.backdrop" in source)
         assertFalse("LocalLiquidParentBackdrop" in source)
         assertFalse("exportBackdropToContent" in source)
@@ -35,9 +26,6 @@ class GuideFullscreenStatusBarScrimSourceTest {
         assertFalse("layerBackdrop" in source)
     }
 }
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

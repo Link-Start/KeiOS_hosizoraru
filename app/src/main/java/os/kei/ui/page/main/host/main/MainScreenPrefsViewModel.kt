@@ -13,6 +13,7 @@ import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
@@ -185,6 +186,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     fun updateSuperIslandFloatBehavior(value: SuperIslandFloatBehavior) {
         launchRepositoryUpdate {
             setSuperIslandFloatBehavior(value)
+        }
+    }
+
+    fun updateSuperIslandAutoClose(value: SuperIslandAutoClose) {
+        launchRepositoryUpdate {
+            setSuperIslandAutoClose(value)
         }
     }
 

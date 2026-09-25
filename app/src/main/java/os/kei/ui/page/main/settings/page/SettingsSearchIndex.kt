@@ -122,6 +122,7 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val notifyGroupLabel = resolveString(R.string.settings_group_notify_title)
     val superIslandStyleLabel = resolveString(R.string.settings_super_island_style_title)
     val superIslandFloatBehaviorLabel = resolveString(R.string.settings_super_island_float_behavior_title)
+    val superIslandAutoCloseLabel = resolveString(R.string.settings_super_island_auto_close_title)
     val superIslandBypassLabel = resolveString(R.string.settings_super_island_bypass_title)
     val superIslandRestoreDelayLabel = resolveString(R.string.settings_super_island_restore_delay_title)
 
@@ -348,6 +349,7 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     notifyGroupLabel,
                     superIslandStyleLabel,
                     superIslandFloatBehaviorLabel,
+                    superIslandAutoCloseLabel,
                     superIslandBypassLabel,
                     superIslandRestoreDelayLabel,
                 ),

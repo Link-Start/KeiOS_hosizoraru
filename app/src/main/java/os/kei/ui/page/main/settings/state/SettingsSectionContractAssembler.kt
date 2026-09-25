@@ -8,6 +8,7 @@ import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionActions
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionState
 import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSectionActions
@@ -68,6 +69,7 @@ internal fun rememberSettingsSectionContractBundle(
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
     superIslandFloatBehavior: SuperIslandFloatBehavior,
+    superIslandAutoClose: SuperIslandAutoClose,
     superIslandBypassRestrictionEnabled: Boolean,
     superIslandRestoreDelayMs: Int,
     ignoringBatteryOptimizations: Boolean,
@@ -103,6 +105,7 @@ internal fun rememberSettingsSectionContractBundle(
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     onSuperIslandFloatBehaviorChanged: (SuperIslandFloatBehavior) -> Unit,
+    onSuperIslandAutoCloseChanged: (SuperIslandAutoClose) -> Unit,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     onSuperIslandRestoreDelayMsChanged: (Int) -> Unit,
     onOpenBatteryOptimizationSettings: () -> Unit,
@@ -307,12 +310,14 @@ internal fun rememberSettingsSectionContractBundle(
         remember(
             superIslandNotificationEnabled,
             superIslandFloatBehavior,
+            superIslandAutoClose,
             superIslandBypassRestrictionEnabled,
             superIslandRestoreDelayMs,
         ) {
             SettingsNotifySectionState(
                 superIslandNotificationEnabled = superIslandNotificationEnabled,
                 superIslandFloatBehavior = superIslandFloatBehavior,
+                superIslandAutoClose = superIslandAutoClose,
                 superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
                 superIslandRestoreDelayMs = superIslandRestoreDelayMs,
             )
@@ -321,12 +326,14 @@ internal fun rememberSettingsSectionContractBundle(
         remember(
             onSuperIslandNotificationChanged,
             onSuperIslandFloatBehaviorChanged,
+            onSuperIslandAutoCloseChanged,
             onSuperIslandBypassRestrictionChanged,
             onSuperIslandRestoreDelayMsChanged,
         ) {
             SettingsNotifySectionActions(
                 onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
                 onSuperIslandFloatBehaviorChanged = onSuperIslandFloatBehaviorChanged,
+                onSuperIslandAutoCloseChanged = onSuperIslandAutoCloseChanged,
                 onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
                 onSuperIslandRestoreDelayMsChanged = onSuperIslandRestoreDelayMsChanged,
             )

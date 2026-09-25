@@ -6,6 +6,7 @@ import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckReason
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckStatus
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
@@ -143,6 +144,7 @@ internal data class SettingsComponentEffectsSectionActions(
 internal data class SettingsNotifySectionState(
     val superIslandNotificationEnabled: Boolean,
     val superIslandFloatBehavior: SuperIslandFloatBehavior,
+    val superIslandAutoClose: SuperIslandAutoClose,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
 )
@@ -150,6 +152,7 @@ internal data class SettingsNotifySectionState(
 internal data class SettingsNotifySectionActions(
     val onSuperIslandNotificationChanged: (Boolean) -> Unit,
     val onSuperIslandFloatBehaviorChanged: (SuperIslandFloatBehavior) -> Unit,
+    val onSuperIslandAutoCloseChanged: (SuperIslandAutoClose) -> Unit,
     val onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     val onSuperIslandRestoreDelayMsChanged: (Int) -> Unit,
 )

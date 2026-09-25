@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS
@@ -71,6 +72,21 @@ internal fun SettingsNotifySection(
             SuperIslandFloatBehavior.SummaryOnly ->
                 stringResource(R.string.settings_super_island_float_behavior_summary_summary_only)
         }
+    var autoCloseExpanded by remember { mutableStateOf(false) }
+    var autoCloseAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val autoCloseOptions =
+        listOf(
+            SuperIslandAutoClose.Never to stringResource(R.string.settings_super_island_auto_close_never),
+            SuperIslandAutoClose.FiveMinutes to stringResource(R.string.settings_super_island_auto_close_5m),
+            SuperIslandAutoClose.FifteenMinutes to stringResource(R.string.settings_super_island_auto_close_15m),
+            SuperIslandAutoClose.ThirtyMinutes to stringResource(R.string.settings_super_island_auto_close_30m),
+            SuperIslandAutoClose.OneHour to stringResource(R.string.settings_super_island_auto_close_1h),
+            SuperIslandAutoClose.ThreeHours to stringResource(R.string.settings_super_island_auto_close_3h),
+            SuperIslandAutoClose.TwelveHours to stringResource(R.string.settings_super_island_auto_close_12h),
+        )
+    val selectedAutoCloseIndex =
+        autoCloseOptions.indexOfFirst { it.first == state.superIslandAutoClose }.coerceAtLeast(0)
+    val selectedAutoCloseLabel = autoCloseOptions[selectedAutoCloseIndex].second
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_notify_header),
         title = stringResource(R.string.settings_group_notify_title),
@@ -117,6 +133,40 @@ internal fun SettingsNotifySection(
                     floatBehaviorExpanded = false
                 },
                 onAnchorBoundsChange = { floatBehaviorAnchorBounds = it },
+                enabled = state.superIslandNotificationEnabled,
+                variant = GlassVariant.SheetAction,
+                popupMaxWidth = 260.dp,
+                popupMatchAnchorWidth = true,
+            )
+        }
+        SettingsPickerItem(
+            title = stringResource(R.string.settings_super_island_auto_close_title),
+            summary =
+                if (state.superIslandAutoClose == SuperIslandAutoClose.Never) {
+                    stringResource(R.string.settings_super_island_auto_close_summary_never)
+                } else {
+                    stringResource(R.string.settings_super_island_auto_close_summary_timed, selectedAutoCloseLabel)
+                },
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_super_island_auto_close_scope),
+        ) {
+            AppDropdownSelector(
+                selectedText = selectedAutoCloseLabel,
+                options = autoCloseOptions.map { it.second },
+                selectedIndex = selectedAutoCloseIndex,
+                expanded = autoCloseExpanded && state.superIslandNotificationEnabled,
+                anchorBounds = autoCloseAnchorBounds,
+                onExpandedChange = { expanded ->
+                    autoCloseExpanded = expanded && state.superIslandNotificationEnabled
+                },
+                onSelectedIndexChange = { selectedIndex ->
+                    autoCloseOptions
+                        .getOrNull(selectedIndex)
+                        ?.first
+                        ?.let(actions.onSuperIslandAutoCloseChanged)
+                    autoCloseExpanded = false
+                },
+                onAnchorBoundsChange = { autoCloseAnchorBounds = it },
                 enabled = state.superIslandNotificationEnabled,
                 variant = GlassVariant.SheetAction,
                 popupMaxWidth = 260.dp,

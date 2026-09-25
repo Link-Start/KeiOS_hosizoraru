@@ -36,6 +36,7 @@ import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
@@ -113,7 +114,9 @@ fun SettingsPage(
     superIslandNotificationEnabled: Boolean,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     superIslandFloatBehavior: SuperIslandFloatBehavior,
+    superIslandAutoClose: SuperIslandAutoClose,
     onSuperIslandFloatBehaviorChanged: (SuperIslandFloatBehavior) -> Unit,
+    onSuperIslandAutoCloseChanged: (SuperIslandAutoClose) -> Unit,
     superIslandBypassRestrictionEnabled: Boolean,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     superIslandRestoreDelayMs: Int,
@@ -232,7 +235,9 @@ fun SettingsPage(
             superIslandNotificationEnabled = superIslandNotificationEnabled,
             onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
             superIslandFloatBehavior = superIslandFloatBehavior,
+            superIslandAutoClose = superIslandAutoClose,
             onSuperIslandFloatBehaviorChanged = onSuperIslandFloatBehaviorChanged,
+            onSuperIslandAutoCloseChanged = onSuperIslandAutoCloseChanged,
             superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
             onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
             superIslandRestoreDelayMs = superIslandRestoreDelayMs,

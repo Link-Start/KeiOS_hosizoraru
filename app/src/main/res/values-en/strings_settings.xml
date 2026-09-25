@@ -191,6 +191,17 @@
     <string name="settings_super_island_float_behavior_summary_start_only">Pop once when refresh starts. Progress and final states stay in the summary.</string>
     <string name="settings_super_island_float_behavior_summary_summary_only">Only update the Super Island summary for every state. Best for low interruption.</string>
     <string name="settings_super_island_float_behavior_scope">Affects MCP, GitHub, BA, and future notifications that reuse the Super Island template.</string>
+    <string name="settings_super_island_auto_close_title">Super Island auto-close</string>
+    <string name="settings_super_island_auto_close_never">Never</string>
+    <string name="settings_super_island_auto_close_5m">5 minutes</string>
+    <string name="settings_super_island_auto_close_15m">15 minutes</string>
+    <string name="settings_super_island_auto_close_30m">30 minutes</string>
+    <string name="settings_super_island_auto_close_1h">1 hour</string>
+    <string name="settings_super_island_auto_close_3h">3 hours</string>
+    <string name="settings_super_island_auto_close_12h">12 hours</string>
+    <string name="settings_super_island_auto_close_summary_never">The Super Island and its focus notification stay until they are updated or cleared.</string>
+    <string name="settings_super_island_auto_close_summary_timed">The system closes the Super Island and its focus notification after %1$s.</string>
+    <string name="settings_super_island_auto_close_scope">Affects MCP, BA, GitHub Actions and other Super Island notifications; GitHub refresh notifications keep their own short timeout.</string>
     <string name="settings_battery_optimization_title">Battery optimization</string>
     <string name="settings_battery_optimization_summary_ignored">This app is allowed to ignore battery optimization, improving MCP keepalive and background notifications.</string>
     <string name="settings_battery_optimization_summary_restricted">System battery optimization is active, so background keepalive and real-time notifications may be reclaimed more often.</string>

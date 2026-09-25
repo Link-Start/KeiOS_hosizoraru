@@ -191,6 +191,17 @@
     <string name="settings_super_island_float_behavior_summary_start_only">更新開始時に一度表示します。進捗と終了状態は概要表示のままです。</string>
     <string name="settings_super_island_float_behavior_summary_summary_only">すべての状態で Super Island の概要だけを更新します。低割り込み向けです。</string>
     <string name="settings_super_island_float_behavior_scope">MCP、GitHub、BA、および今後 Super Island テンプレートを再利用する通知に反映されます。</string>
+    <string name="settings_super_island_auto_close_title">Super Island の自動終了</string>
+    <string name="settings_super_island_auto_close_never">しない</string>
+    <string name="settings_super_island_auto_close_5m">5 分</string>
+    <string name="settings_super_island_auto_close_15m">15 分</string>
+    <string name="settings_super_island_auto_close_30m">30 分</string>
+    <string name="settings_super_island_auto_close_1h">1 時間</string>
+    <string name="settings_super_island_auto_close_3h">3 時間</string>
+    <string name="settings_super_island_auto_close_12h">12 時間</string>
+    <string name="settings_super_island_auto_close_summary_never">Super Island とフォーカス通知は、更新または消去されるまで表示されます。</string>
+    <string name="settings_super_island_auto_close_summary_timed">Super Island とフォーカス通知は %1$s 後にシステムによって閉じられます。</string>
+    <string name="settings_super_island_auto_close_scope">MCP、BA、GitHub Actions などの Super Island 通知に反映されます。GitHub の更新通知は独自の短いタイムアウトを保ちます。</string>
     <string name="settings_battery_optimization_title">バッテリー最適化</string>
     <string name="settings_battery_optimization_summary_ignored">このアプリはバッテリー最適化を無視できます。MCP 常駐とバックグラウンド通知が安定しやすくなります。</string>
     <string name="settings_battery_optimization_summary_restricted">システムのバッテリー最適化が有効です。バックグラウンド常駐やリアルタイム通知が回収されやすくなります。</string>

@@ -7,6 +7,7 @@ import os.kei.core.ext.showToast
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
 import os.kei.ui.page.main.settings.state.SettingsPageUiState
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
@@ -58,7 +59,9 @@ internal fun rememberSettingsPageSectionContracts(
     superIslandNotificationEnabled: Boolean,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     superIslandFloatBehavior: SuperIslandFloatBehavior,
+    superIslandAutoClose: SuperIslandAutoClose,
     onSuperIslandFloatBehaviorChanged: (SuperIslandFloatBehavior) -> Unit,
+    onSuperIslandAutoCloseChanged: (SuperIslandAutoClose) -> Unit,
     superIslandBypassRestrictionEnabled: Boolean,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     superIslandRestoreDelayMs: Int,
@@ -96,6 +99,7 @@ internal fun rememberSettingsPageSectionContracts(
         gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
         superIslandNotificationEnabled = superIslandNotificationEnabled,
         superIslandFloatBehavior = superIslandFloatBehavior,
+        superIslandAutoClose = superIslandAutoClose,
         superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
         superIslandRestoreDelayMs = superIslandRestoreDelayMs,
         ignoringBatteryOptimizations = batteryOptimizationState.ignoringBatteryOptimizations,
@@ -149,6 +153,7 @@ internal fun rememberSettingsPageSectionContracts(
         onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
         onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
         onSuperIslandFloatBehaviorChanged = onSuperIslandFloatBehaviorChanged,
+        onSuperIslandAutoCloseChanged = onSuperIslandAutoCloseChanged,
         onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
         onSuperIslandRestoreDelayMsChanged = onSuperIslandRestoreDelayMsChanged,
         onOpenBatteryOptimizationSettings = {

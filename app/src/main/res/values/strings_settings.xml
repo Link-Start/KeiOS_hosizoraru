@@ -195,6 +195,17 @@
     <string name="settings_super_island_float_behavior_summary_start_only">刷新开始时弹出一次，后续进度与结束状态保持摘要态。</string>
     <string name="settings_super_island_float_behavior_summary_summary_only">所有状态只更新超级岛摘要，适合全程低打扰。</string>
     <string name="settings_super_island_float_behavior_scope">影响 MCP、GitHub、BA 与后续复用超级岛模板的通知。</string>
+    <string name="settings_super_island_auto_close_title">超级岛自动关闭</string>
+    <string name="settings_super_island_auto_close_never">永不</string>
+    <string name="settings_super_island_auto_close_5m">5 分钟</string>
+    <string name="settings_super_island_auto_close_15m">15 分钟</string>
+    <string name="settings_super_island_auto_close_30m">30 分钟</string>
+    <string name="settings_super_island_auto_close_1h">1 小时</string>
+    <string name="settings_super_island_auto_close_3h">3 小时</string>
+    <string name="settings_super_island_auto_close_12h">12 小时</string>
+    <string name="settings_super_island_auto_close_summary_never">超级岛和焦点通知会一直保留，直到被更新或清除。</string>
+    <string name="settings_super_island_auto_close_summary_timed">超级岛和焦点通知在 %1$s 后由系统关闭。</string>
+    <string name="settings_super_island_auto_close_scope">影响 MCP、BA、GitHub Actions 等超级岛通知；GitHub 刷新通知保留自己的短时关闭。</string>
     <string name="settings_battery_optimization_title">电池优化</string>
     <string name="settings_battery_optimization_summary_ignored">当前已加入忽略电池优化名单，MCP 常驻与后台通知会更稳定。</string>
     <string name="settings_battery_optimization_summary_restricted">当前仍受系统电池优化限制，后台保活与实时通知可能更容易被系统回收。</string>

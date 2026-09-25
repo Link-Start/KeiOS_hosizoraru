@@ -10,36 +10,23 @@ import kotlin.test.assertTrue
 
 class BackNavigationRuntimeTest {
     @Test
-    fun `root pager back navigates to home before route pop`() {
-        val action = resolveMainBackNavigationAction(
-            backStackSize = 1,
-            targetPageIndex = 3,
-            homePageIndex = 0
-        )
-
-        assertEquals(MainBackNavigationAction.NavigateHome, action)
-    }
-
-    @Test
-    fun `route stack pop has priority over root pager home navigation`() {
-        val action = resolveMainBackNavigationAction(
-            backStackSize = 2,
-            targetPageIndex = 3,
-            homePageIndex = 0
-        )
-
-        assertEquals(MainBackNavigationAction.PopRoute, action)
-    }
-
-    @Test
-    fun `home page root lets system handle final back`() {
-        val action = resolveMainBackNavigationAction(
-            backStackSize = 1,
-            targetPageIndex = 0,
-            homePageIndex = 0
-        )
-
-        assertEquals(MainBackNavigationAction.None, action)
+    fun `main back pops the route first, then returns to home, then leaves back to the system`() {
+        listOf(
+            Triple("root pager off home navigates home", 1 to 3, MainBackNavigationAction.NavigateHome),
+            Triple("a pushed route pops before the pager moves", 2 to 3, MainBackNavigationAction.PopRoute),
+            Triple("home at the root lets the system finish", 1 to 0, MainBackNavigationAction.None),
+        ).forEach { (name, state, expected) ->
+            val (backStackSize, targetPageIndex) = state
+            assertEquals(
+                expected,
+                resolveMainBackNavigationAction(
+                    backStackSize = backStackSize,
+                    targetPageIndex = targetPageIndex,
+                    homePageIndex = 0,
+                ),
+                name,
+            )
+        }
     }
 
     @Test
@@ -121,137 +108,79 @@ class BackNavigationRuntimeTest {
     }
 
     @Test
-    fun `aosp policy enables compose predictive local back`() {
-        val mode = resolveBackNavigationHandlerMode(
-            policy = PredictiveBackOemCompat.Policy(
-                frameworkAnimationsEnabled = true,
-                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
-                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
-                romFamily = PredictiveBackOemCompat.RomFamily.Aosp
-            ),
-            transitionAnimationsEnabled = true,
-            predictiveBackAnimationsEnabled = true
-        )
-
-        assertEquals(BackNavigationHandlerMode.ComposePredictive, mode)
-    }
-
-    @Test
-    fun `hyperos policy keeps local back commit only`() {
-        val mode = resolveBackNavigationHandlerMode(
-            policy = PredictiveBackOemCompat.Policy(
-                frameworkAnimationsEnabled = true,
-                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
-                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
-                romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
-            ),
-            transitionAnimationsEnabled = true,
-            predictiveBackAnimationsEnabled = true
-        )
-
-        assertEquals(BackNavigationHandlerMode.CommitOnly, mode)
-    }
-
-    @Test
-    fun `disabled animation setting keeps local back commit only`() {
-        val mode = resolveBackNavigationHandlerMode(
-            policy = PredictiveBackOemCompat.Policy(
-                frameworkAnimationsEnabled = false,
-                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
-                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
-                romFamily = PredictiveBackOemCompat.RomFamily.Aosp
-            ),
-            transitionAnimationsEnabled = false,
-            predictiveBackAnimationsEnabled = true
-        )
-
-        assertEquals(BackNavigationHandlerMode.CommitOnly, mode)
-    }
-
-    @Test
-    fun `activity root uses framework finish when predictive back is enabled`() {
-        val mode = resolveActivityBackHandlerMode(
-            policy = PredictiveBackOemCompat.Policy(
-                frameworkAnimationsEnabled = true,
-                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
-                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
-                romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
-            ),
-            transitionAnimationsEnabled = true,
-            predictiveBackAnimationsEnabled = false,
-            needsInterception = false
-        )
-
-        assertEquals(ActivityBackHandlerMode.FrameworkFinish, mode)
-        assertFalse(
-            shouldInstallActivityBackCallback(
-                policy = PredictiveBackOemCompat.Policy(
-                    frameworkAnimationsEnabled = true,
-                    localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
-                    activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
-                    romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
+    fun `local back uses compose predictive back only on a compose pipeline with animations on`() {
+        listOf(
+            Triple("aosp policy", policy(ComposePredictive, FrameworkFinish, animations = true), true)
+                to BackNavigationHandlerMode.ComposePredictive,
+            Triple("hyperos policy", policy(CommitOnly, FrameworkFinish, animations = true, rom = HyperOs), true)
+                to BackNavigationHandlerMode.CommitOnly,
+            Triple("disabled animation setting", policy(CommitOnly, CommitCallback, animations = false), false)
+                to BackNavigationHandlerMode.CommitOnly,
+        ).forEach { (case, expected) ->
+            val (name, policy, transitionAnimationsEnabled) = case
+            assertEquals(
+                expected,
+                resolveBackNavigationHandlerMode(
+                    policy = policy,
+                    transitionAnimationsEnabled = transitionAnimationsEnabled,
+                    predictiveBackAnimationsEnabled = true,
                 ),
-                transitionAnimationsEnabled = true,
-                predictiveBackAnimationsEnabled = false,
-                needsInterception = false
+                name,
             )
-        )
+        }
     }
 
     @Test
-    fun `activity root installs callback for local interception`() {
-        val policy = PredictiveBackOemCompat.Policy(
-            frameworkAnimationsEnabled = true,
-            localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
-            activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
-            romFamily = PredictiveBackOemCompat.RomFamily.Aosp
+    fun `the activity root installs a callback only to intercept or when predictive back is off`() {
+        data class Case(
+            val name: String,
+            val policy: PredictiveBackOemCompat.Policy,
+            val predictiveBackAnimationsEnabled: Boolean,
+            val needsInterception: Boolean,
+            val expected: ActivityBackHandlerMode,
         )
-
-        assertEquals(
-            ActivityBackHandlerMode.CommitCallback,
-            resolveActivityBackHandlerMode(
-                policy = policy,
-                transitionAnimationsEnabled = true,
-                predictiveBackAnimationsEnabled = true,
-                needsInterception = true
-            )
-        )
-        assertTrue(
-            shouldInstallActivityBackCallback(
-                policy = policy,
-                transitionAnimationsEnabled = true,
-                predictiveBackAnimationsEnabled = true,
-                needsInterception = true
-            )
-        )
-    }
-
-    @Test
-    fun `disabled predictive back setting keeps activity root callback`() {
-        val policy = PredictiveBackOemCompat.Policy(
-            frameworkAnimationsEnabled = false,
-            localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
-            activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
-            romFamily = PredictiveBackOemCompat.RomFamily.Aosp
-        )
-
-        assertEquals(
-            ActivityBackHandlerMode.CommitCallback,
-            resolveActivityBackHandlerMode(
-                policy = policy,
-                transitionAnimationsEnabled = true,
+        listOf(
+            Case(
+                "framework finish when nothing intercepts",
+                policy(CommitOnly, FrameworkFinish, animations = true, rom = HyperOs),
                 predictiveBackAnimationsEnabled = false,
-                needsInterception = false
-            )
-        )
-        assertTrue(
-            shouldInstallActivityBackCallback(
-                policy = policy,
-                transitionAnimationsEnabled = true,
+                needsInterception = false,
+                expected = ActivityBackHandlerMode.FrameworkFinish,
+            ),
+            Case(
+                "local interception needs the callback",
+                policy(ComposePredictive, FrameworkFinish, animations = true),
+                predictiveBackAnimationsEnabled = true,
+                needsInterception = true,
+                expected = ActivityBackHandlerMode.CommitCallback,
+            ),
+            Case(
+                "disabled predictive back setting keeps the callback",
+                policy(CommitOnly, CommitCallback, animations = false),
                 predictiveBackAnimationsEnabled = false,
-                needsInterception = false
+                needsInterception = false,
+                expected = ActivityBackHandlerMode.CommitCallback,
+            ),
+        ).forEach { case ->
+            val mode =
+                resolveActivityBackHandlerMode(
+                    policy = case.policy,
+                    transitionAnimationsEnabled = true,
+                    predictiveBackAnimationsEnabled = case.predictiveBackAnimationsEnabled,
+                    needsInterception = case.needsInterception,
+                )
+            assertEquals(case.expected, mode, case.name)
+            assertEquals(
+                case.expected == ActivityBackHandlerMode.CommitCallback,
+                shouldInstallActivityBackCallback(
+                    policy = case.policy,
+                    transitionAnimationsEnabled = true,
+                    predictiveBackAnimationsEnabled = case.predictiveBackAnimationsEnabled,
+                    needsInterception = case.needsInterception,
+                ),
+                case.name,
             )
-        )
+        }
     }
 
     @Test
@@ -322,6 +251,24 @@ class BackNavigationRuntimeTest {
     }
 
     private companion object {
+        val ComposePredictive = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive
+        val CommitOnly = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly
+        val FrameworkFinish = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish
+        val CommitCallback = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback
+        val HyperOs = PredictiveBackOemCompat.RomFamily.HyperOs
+
+        fun policy(
+            local: PredictiveBackOemCompat.LocalBackPipeline,
+            activity: PredictiveBackOemCompat.ActivityBackPipeline,
+            animations: Boolean,
+            rom: PredictiveBackOemCompat.RomFamily = PredictiveBackOemCompat.RomFamily.Aosp,
+        ) = PredictiveBackOemCompat.Policy(
+            frameworkAnimationsEnabled = animations,
+            localBackPipeline = local,
+            activityBackPipeline = activity,
+            romFamily = rom,
+        )
+
         val testBackMotionConfig = BackGestureMotionConfig(
             translationFactor = 0.12f,
             contentFadeFactor = 0.2f,

@@ -495,50 +495,6 @@ class SegmentedDownloadClientTest {
             bufferSizeBytes = bufferSizeBytes,
         )
 
-    private fun byteRangeDispatcher(bytes: ByteArray): Dispatcher =
-        object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                return rangeResponse(bytes, request.getHeader("Range").orEmpty())
-            }
-        }
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        rangeHeader: String,
-    ): MockResponse {
-        if (rangeHeader.isBlank()) {
-            return MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Length", bytes.size)
-                .setBody(Buffer().write(bytes))
-        }
-        val parts = rangeHeader.removePrefix("bytes=").split("-", limit = 2)
-        return rangeResponse(
-            bytes = bytes,
-            start = parts[0].toInt(),
-            endInclusive = parts[1].toInt(),
-        )
-    }
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        start: Int,
-        endInclusive: Int,
-    ): MockResponse {
-        val safeEnd = endInclusive.coerceAtMost(bytes.lastIndex)
-        return MockResponse()
-            .setResponseCode(206)
-            .addHeader("Content-Range", "bytes $start-$safeEnd/${bytes.size}")
-            .setBody(Buffer().write(bytes.copyOfRange(start, safeEnd + 1)))
-    }
-
-    private fun MockWebServer.takeAllRequests(): List<RecordedRequest> =
-        buildList {
-            repeat(requestCount) {
-                add(takeRequest())
-            }
-        }
-
     private data class IntegrityCase(
         val size: Int,
         val partSizeBytes: Long,

@@ -10,7 +10,6 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
-import okio.Buffer
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -82,26 +81,6 @@ class SegmentedDownloadHttp2ConnectionTest {
                 client.dispatcher.executorService.shutdown()
             }
         }
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        rangeHeader: String?,
-    ): MockResponse {
-        if (rangeHeader.isNullOrBlank()) {
-            return MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Length", bytes.size)
-                .setBody(Buffer().write(bytes))
-        }
-        val parts = rangeHeader.removePrefix("bytes=").split("-", limit = 2)
-        val start = parts[0].toInt()
-        val endInclusive = parts[1].toInt().coerceAtMost(bytes.lastIndex)
-        return MockResponse()
-            .setResponseCode(206)
-            .addHeader("Content-Range", "bytes $start-$endInclusive/${bytes.size}")
-            .addHeader("Content-Length", endInclusive - start + 1)
-            .setBody(Buffer().write(bytes.copyOfRange(start, endInclusive + 1)))
-    }
 
     private data class ConnectionObservation(
         val physicalConnections: Int,

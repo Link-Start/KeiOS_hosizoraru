@@ -52,71 +52,50 @@ class RemoteByteRangeClientTest {
     }
 
     @Test
-    fun `range read rejects response length overflow`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(
+    fun `range read rejects malformed 206 bodies`() = runBlocking {
+        data class Case(val label: String, val response: MockResponse, val endInclusive: Long, val maxBytes: Long)
+        listOf(
+            Case(
+                "response length overflow",
                 MockResponse()
                     .setResponseCode(206)
                     .addHeader("Content-Range", "bytes 0-1/4")
                     .setBody(Buffer().write(byteArrayOf(0, 1, 2))),
-            )
-            val client = RemoteByteRangeClient(OkHttpClient(), Dispatchers.IO)
-
-            assertFailsWith<RemoteByteRangeProtocolException> {
-                client.read(
-                    request = Request.Builder().url(server.url("/asset")).build(),
-                    start = 0L,
-                    endInclusive = 1L,
-                    maxBytes = 2L,
-                )
-            }
-            Unit
-        }
-    }
-
-    @Test
-    fun `range read rejects a declared truncated response`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(
+                endInclusive = 1L,
+                maxBytes = 2L,
+            ),
+            Case(
+                "declared truncated response",
                 MockResponse()
                     .setResponseCode(206)
                     .addHeader("Content-Range", "bytes 0-2/4")
                     .setBody(Buffer().write(byteArrayOf(0, 1))),
-            )
-            val client = RemoteByteRangeClient(OkHttpClient(), Dispatchers.IO)
-
-            assertFailsWith<RemoteByteRangeProtocolException> {
-                client.read(
-                    request = Request.Builder().url(server.url("/asset")).build(),
-                    start = 0L,
-                    endInclusive = 2L,
-                    maxBytes = 3L,
-                )
-            }
-            Unit
-        }
-    }
-
-    @Test
-    fun `range read rejects a chunked truncated response`() = runBlocking {
-        MockWebServer().use { server ->
-            server.enqueue(
+                endInclusive = 2L,
+                maxBytes = 3L,
+            ),
+            Case(
+                "chunked truncated response",
                 MockResponse()
                     .setResponseCode(206)
                     .addHeader("Content-Range", "bytes 0-2/4")
                     .setChunkedBody(Buffer().write(byteArrayOf(0, 1)), 1),
-            )
-            val client = RemoteByteRangeClient(OkHttpClient(), Dispatchers.IO)
+                endInclusive = 2L,
+                maxBytes = 3L,
+            ),
+        ).forEach { case ->
+            MockWebServer().use { server ->
+                server.enqueue(case.response)
+                val client = RemoteByteRangeClient(OkHttpClient(), Dispatchers.IO)
 
-            assertFailsWith<RemoteByteRangeProtocolException> {
-                client.read(
-                    request = Request.Builder().url(server.url("/asset")).build(),
-                    start = 0L,
-                    endInclusive = 2L,
-                    maxBytes = 3L,
-                )
+                assertFailsWith<RemoteByteRangeProtocolException>(case.label) {
+                    client.read(
+                        request = Request.Builder().url(server.url("/asset")).build(),
+                        start = 0L,
+                        endInclusive = case.endInclusive,
+                        maxBytes = case.maxBytes,
+                    )
+                }
             }
-            Unit
         }
     }
 

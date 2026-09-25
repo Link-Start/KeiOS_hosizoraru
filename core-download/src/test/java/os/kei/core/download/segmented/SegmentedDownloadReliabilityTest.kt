@@ -218,32 +218,4 @@ class SegmentedDownloadReliabilityTest {
             bufferSizeBytes = 4,
             writeQueueCapacity = 1,
         )
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        rangeHeader: String,
-    ): MockResponse {
-        val parts = rangeHeader.removePrefix("bytes=").split("-", limit = 2)
-        return rangeResponse(bytes, parts[0].toInt(), parts[1].toInt())
-    }
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        start: Int,
-        endInclusive: Int,
-    ): MockResponse {
-        val safeEnd = endInclusive.coerceAtMost(bytes.lastIndex)
-        return MockResponse()
-            .setResponseCode(206)
-            .addHeader("Content-Range", "bytes $start-$safeEnd/${bytes.size}")
-            .addHeader("Content-Length", safeEnd - start + 1)
-            .setBody(Buffer().write(bytes.copyOfRange(start, safeEnd + 1)))
-    }
-
-    private fun MockWebServer.takeAllRequests(): List<RecordedRequest> =
-        buildList {
-            repeat(requestCount) {
-                add(takeRequest())
-            }
-        }
 }

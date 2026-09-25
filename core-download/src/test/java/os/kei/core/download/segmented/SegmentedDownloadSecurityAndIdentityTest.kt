@@ -182,48 +182,4 @@ class SegmentedDownloadSecurityAndIdentityTest {
             requireHttpsForParallel = false,
             bufferSizeBytes = 4,
         )
-
-    private fun byteRangeDispatcher(bytes: ByteArray): Dispatcher =
-        object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse =
-                rangeResponse(bytes, request.getHeader("Range").orEmpty())
-        }
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        rangeHeader: String,
-    ): MockResponse {
-        if (rangeHeader.isBlank()) {
-            return MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Length", bytes.size)
-                .setBody(Buffer().write(bytes))
-        }
-        val rangeParts = rangeHeader.removePrefix("bytes=").split("-", limit = 2)
-        return rangeResponse(
-            bytes = bytes,
-            start = rangeParts[0].toInt(),
-            endInclusive = rangeParts[1].toInt(),
-        )
-    }
-
-    private fun rangeResponse(
-        bytes: ByteArray,
-        start: Int,
-        endInclusive: Int,
-    ): MockResponse {
-        val safeEnd = endInclusive.coerceAtMost(bytes.lastIndex)
-        return MockResponse()
-            .setResponseCode(206)
-            .addHeader("Content-Range", "bytes $start-$safeEnd/${bytes.size}")
-            .addHeader("Content-Length", safeEnd - start + 1)
-            .setBody(Buffer().write(bytes.copyOfRange(start, safeEnd + 1)))
-    }
-
-    private fun MockWebServer.takeAllRequests(): List<RecordedRequest> =
-        buildList {
-            repeat(requestCount) {
-                add(takeRequest())
-            }
-        }
 }

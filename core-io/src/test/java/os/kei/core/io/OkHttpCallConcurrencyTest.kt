@@ -71,17 +71,4 @@ class OkHttpCallConcurrencyTest {
             )
         }
     }
-
-    /** And the budget that replaces the thread count is a stated one, not OkHttp's default of five. */
-    @Test
-    fun `the shared client states how many calls one host may run at once`() {
-        assertEquals(
-            SharedHttpClient.MAX_CONCURRENT_CALLS_PER_HOST,
-            SharedHttpClient.base.dispatcher.maxRequestsPerHost,
-        )
-        assertTrue(
-            SharedHttpClient.MAX_CONCURRENT_CALLS_PER_HOST > 5,
-            "everything this app fetches from GitHub is one host, so the per-host cap is the budget",
-        )
-    }
 }

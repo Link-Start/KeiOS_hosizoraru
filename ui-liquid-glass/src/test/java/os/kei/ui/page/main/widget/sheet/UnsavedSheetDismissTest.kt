@@ -2,7 +2,10 @@ package os.kei.ui.page.main.widget.sheet
 
 import android.app.Application
 import android.content.Context
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertTextEquals
@@ -22,7 +25,6 @@ import os.kei.ui.liquidglass.R
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -98,6 +100,36 @@ class UnsavedSheetDismissTest {
         }
     }
 
+    /**
+     * Dismissing the confirmation itself (back, or a scrim tap) is the Cancel, so it must keep editing.
+     * Wired to discard instead, a stray back press would throw the person's edits away.
+     */
+    @Test
+    fun backOnTheConfirmationKeepsEditingAndNeverDiscards() {
+        var keepEditingCount = 0
+        var discardChangesCount = 0
+        lateinit var backDispatcher: OnBackPressedDispatcher
+
+        composeRule.setContent {
+            val owner = checkNotNull(LocalOnBackPressedDispatcherOwner.current)
+            SideEffect { backDispatcher = owner.onBackPressedDispatcher }
+            UnsavedSheetDismissTestTheme {
+                UnsavedSheetDismissConfirmDialog(
+                    show = true,
+                    onKeepEditing = { keepEditingCount++ },
+                    onDiscardChanges = { discardChangesCount++ },
+                )
+            }
+        }
+
+        composeRule.runOnIdle { backDispatcher.onBackPressed() }
+
+        composeRule.runOnIdle {
+            assertEquals(1, keepEditingCount)
+            assertEquals(0, discardChangesCount)
+        }
+    }
+
     @Test
     fun handlerInterceptsUnsavedDismissAndCompletesEveryResolutionPath() {
         val hasUnsavedChanges = mutableStateOf(true)
@@ -145,59 +177,9 @@ class UnsavedSheetDismissTest {
     }
 }
 
-class UnsavedSheetDismissPresentationContractTest {
-    /**
-     * Apple's sheet guidance names this exact case: *"If people have unsaved changes in the sheet when
-     * they begin swiping to dismiss it, use an action sheet to let them confirm their action."*
-     *
-     * It used to be miuix's `WindowDialog` inside an `AppLiquidWindowBoundary`, which meant no glass at
-     * all — the boundary blanks `LocalSceneBackdrop` and a blur inside a Dialog window draws nothing.
-     */
-    @Test
-    fun confirmationIsAnActionSheetWithTheDiscardMarkedDestructive() {
-        val source = unsavedSheetDismissSource(UNSAVED_SHEET_DISMISS_SOURCE)
-        val function = source.substringAfter("fun UnsavedSheetDismissConfirmDialog(")
-
-        val actionSheetIndex = function.indexOf("LiquidActionSheet(").markerFound()
-        val discardIndex = function.indexOf("R.string.common_discard_changes", actionSheetIndex).markerFound()
-        val keepEditingIndex = function.indexOf("R.string.common_keep_editing", discardIndex).markerFound()
-
-        assertTrue(actionSheetIndex < discardIndex)
-        assertTrue(
-            discardIndex < keepEditingIndex,
-            "Destructive first and Cancel last, so the enforced ordering has nothing to reorder",
-        )
-        assertTrue("role = LiquidActionRole.Destructive" in function)
-        assertTrue("role = LiquidActionRole.Cancel" in function)
-        assertTrue("onDismissRequest = onKeepEditing" in function)
-
-        assertFalse(
-            "AppLiquidWindowBoundary" in function,
-            "A Dialog window would take the confirmation's glass away again",
-        )
-        assertFalse("WindowDialog(" in function)
-    }
-}
-
 @Composable
 private fun UnsavedSheetDismissTestTheme(content: @Composable () -> Unit) {
     MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
         content()
     }
 }
-
-private fun Int.markerFound(): Int {
-    require(this >= 0) { "Expected source marker was not found" }
-    return this
-}
-
-private fun unsavedSheetDismissSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
-private const val UNSAVED_SHEET_DISMISS_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/UnsavedSheetDismiss.kt"

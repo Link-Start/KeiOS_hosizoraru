@@ -15,92 +15,40 @@ import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.glass.AppLiquidWindowBoundary
 import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.preferredLiquidBackdrop
 import java.io.File
 import kotlin.test.assertFalse
+import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class WindowBackdropBoundaryContractTest {
+    /**
+     * The sheet and modal surfaces sample the scene through `drawBackdrop` and export their own surface.
+     * A second `layerBackdrop` producer on the same node records the element into the layer it samples,
+     * which the library documents as a draw loop and a RenderThread SIGSEGV — not something a Robolectric
+     * render reproduces. The gating and export themselves are behaviour, covered by
+     * LiquidGlassBottomSheetTest (no overlay host -> null backdrop; in the host -> the sheet's own) and
+     * LiquidGlassDialogTest.dialogReplacesInheritedParentBackdropWithItsOwnSurface.
+     */
     @Test
-    fun boundaryClearsInheritedWindowBackdropsAndExplicitFallbacks() {
-        val boundary = windowBoundarySource(WINDOW_BOUNDARY_SOURCE)
-        val resolver = windowBoundarySource(GLASS_RUNTIME_SOURCE)
-
-        assertTrue("LocalLiquidBackdropWindowBoundary provides true" in boundary)
-        assertTrue("LocalSceneBackdrop provides emptyBackdrop()" in boundary)
-        assertTrue("LocalLiquidParentBackdrop provides null" in boundary)
-        assertTrue("LocalLiquidParentBackdropOverridesFallback provides false" in boundary)
-        assertTrue("LocalLiquidDialogBackdrop provides null" in boundary)
-        assertTrue("fun AppLiquidWindowBoundary(content: @Composable () -> Unit)" in boundary)
-        assertTrue("LiquidBackdropWindowBoundary(content = content)" in boundary)
-        assertTrue(
-            "LocalLiquidParentBackdrop.current ?: LocalLiquidDialogBackdrop.current" in resolver,
-            "A window can consume a parent or dialog backdrop created inside its own boundary",
-        )
-        assertFalse("rememberLayerBackdrop" in boundary)
-        assertFalse(".layerBackdrop(" in boundary)
-        assertFalse(".drawBackdrop(" in boundary)
+    fun sampledSurfacesNeverAlsoProduceABackdrop() {
+        for (relativePath in listOf(LIQUID_SHEET_SURFACE_SOURCE, LIQUID_MODAL_SURFACE_SOURCE)) {
+            val surface = windowBoundarySource(relativePath)
+            assertTrue(".drawBackdrop(" in surface, "$relativePath no longer samples; update this guard")
+            assertFalse(".layerBackdrop(" in surface, "$relativePath: a second layerBackdrop after drawBackdrop is the documented draw loop")
+        }
     }
 
     /**
-     * The sheet no longer hides behind the boundary — it renders in the activity window, so it both
-     * may and must sample the real scene backdrop. What it still has to do is degrade to an opaque
-     * fill whenever that backdrop cannot be trusted: outside an overlay host, `LocalSceneBackdrop` is
-     * whatever the surrounding window provides, and in a preview or Robolectric harness that is
-     * `emptyBackdrop()`. Asking it for blur there produces a *transparent* sheet, not a blurred one.
+     * Every presentation republishes its own surface so controls inside cannot sample the page they float
+     * over. The alert is proved at runtime by LiquidGlassDialogTest; this is the only guard for the action
+     * sheet. Not going back to a Dialog window is the repo-wide ban in app's PlatformWindowSourceContractTest.
      */
     @Test
-    fun sheetSamplesTheSceneBackdropButFallsBackWithoutAnOverlayHost() {
-        val surface = windowBoundarySource(LIQUID_SHEET_SURFACE_SOURCE)
-
-        assertTrue("LocalSceneBackdrop.current" in surface)
-        assertTrue(".drawBackdrop(" in surface)
-        assertTrue("exportedBackdrop = sheetBackdrop," in surface)
-        assertTrue(
-            "LocalLiquidOverlayHost.current != null" in surface,
-            "Glass must be gated on actually being inside the overlay host",
-        )
-        assertTrue(
-            ".background(" in surface,
-            "The fallback must be an opaque fill, not a no-op backdrop",
-        )
-        assertFalse(
-            ".layerBackdrop(" in surface,
-            "A second layerBackdrop after drawBackdrop is the documented draw loop",
-        )
-    }
-
-    /**
-     * The whole presentation family — dialog, alert, action sheet — renders in the activity window
-     * through the overlay portal, and every one of them republishes its own surface so controls inside
-     * cannot sample the page they float over.
-     *
-     * Hosting any of these in a Dialog window is the regression to guard against: `LocalSceneBackdrop`
-     * is blanked there, so the card's blur draws nothing and it silently degrades to a flat fill. That
-     * is exactly how the old dialog ended up readable straight through.
-     */
-    @Test
-    fun modalPresentationsRenderInWindowAndRepublishTheirOwnSurface() {
-        val presentation = windowBoundarySource(LIQUID_MODAL_PRESENTATION_SOURCE)
-        val modalSurface = windowBoundarySource(LIQUID_MODAL_SURFACE_SOURCE)
-
-        assertTrue("LiquidOverlayPortal {" in presentation)
-        assertFalse("Dialog(" in presentation)
-
-        assertTrue("LocalSceneBackdrop.current" in modalSurface)
-        assertTrue("exportedBackdrop = cardBackdrop," in modalSurface)
-        assertTrue(
-            "LocalLiquidOverlayHost.current != null" in modalSurface,
-            "Glass must be gated on actually being inside the overlay host",
-        )
-        assertFalse(
-            ".layerBackdrop(" in modalSurface,
-            "A second layerBackdrop after drawBackdrop is the documented draw loop",
-        )
-
-        // Not going back to a Dialog window is the repo-wide ban in app's PlatformWindowSourceContractTest.
+    fun modalPresentationsRepublishTheirOwnSurface() {
         for (relativePath in LIQUID_MODAL_CONSUMER_SOURCES) {
             val consumer = windowBoundarySource(relativePath)
             assertTrue(
@@ -160,8 +108,20 @@ class WindowBackdropBoundaryRuntimeTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    /**
+     * A `LayerBackdrop` resolves its offset through shared `LayoutCoordinates`, and two windows have none,
+     * so nothing produced outside a window boundary may reach inside it: the page's scene, parent and dialog
+     * backdrops, and the "overrides fallback" flag, all arrive here set and must be cleared. Backdrops
+     * created inside the boundary are window-local and still resolve.
+     */
     @Test
-    fun resolverRejectsCapturedBackdropAndAcceptsWindowLocalProviders() {
+    fun boundaryClearsOuterBackdropsAndAcceptsWindowLocalProviders() {
+        var observedInside = false
+        var outerScene: Backdrop? = null
+        var innerScene: Backdrop? = null
+        var innerParent: Backdrop? = null
+        var innerDialog: Backdrop? = null
+        var innerOverridesFallback = true
         var explicitOnly: Backdrop? = null
         var expectedParent: Backdrop? = null
         var expectedDialog: Backdrop? = null
@@ -172,27 +132,50 @@ class WindowBackdropBoundaryRuntimeTest {
             val capturedPageBackdrop = rememberLayerBackdrop()
             val windowParentBackdrop = rememberLayerBackdrop()
             val windowDialogBackdrop = rememberLayerBackdrop()
+            outerScene = capturedPageBackdrop
 
-            AppLiquidWindowBoundary {
-                val explicitResolution = preferredLiquidBackdrop(capturedPageBackdrop)
-                SideEffect {
-                    explicitOnly = explicitResolution
-                    expectedParent = windowParentBackdrop
-                    expectedDialog = windowDialogBackdrop
-                }
-                CompositionLocalProvider(LocalLiquidParentBackdrop provides windowParentBackdrop) {
-                    val resolution = preferredLiquidBackdrop(capturedPageBackdrop)
-                    SideEffect { resolvedParent = resolution }
-                }
-                CompositionLocalProvider(LocalLiquidDialogBackdrop provides windowDialogBackdrop) {
-                    val resolution = preferredLiquidBackdrop(capturedPageBackdrop)
-                    SideEffect { resolvedDialog = resolution }
+            CompositionLocalProvider(
+                LocalSceneBackdrop provides capturedPageBackdrop,
+                LocalLiquidParentBackdrop provides capturedPageBackdrop,
+                LocalLiquidDialogBackdrop provides capturedPageBackdrop,
+                LocalLiquidParentBackdropOverridesFallback provides true,
+            ) {
+                AppLiquidWindowBoundary {
+                    val scene = LocalSceneBackdrop.current
+                    val parent = LocalLiquidParentBackdrop.current
+                    val dialog = LocalLiquidDialogBackdrop.current
+                    val overrides = LocalLiquidParentBackdropOverridesFallback.current
+                    val explicitResolution = preferredLiquidBackdrop(capturedPageBackdrop)
+                    SideEffect {
+                        observedInside = true
+                        innerScene = scene
+                        innerParent = parent
+                        innerDialog = dialog
+                        innerOverridesFallback = overrides
+                        explicitOnly = explicitResolution
+                        expectedParent = windowParentBackdrop
+                        expectedDialog = windowDialogBackdrop
+                    }
+                    CompositionLocalProvider(LocalLiquidParentBackdrop provides windowParentBackdrop) {
+                        val resolution = preferredLiquidBackdrop(capturedPageBackdrop)
+                        SideEffect { resolvedParent = resolution }
+                    }
+                    CompositionLocalProvider(LocalLiquidDialogBackdrop provides windowDialogBackdrop) {
+                        val resolution = preferredLiquidBackdrop(capturedPageBackdrop)
+                        SideEffect { resolvedDialog = resolution }
+                    }
                 }
             }
         }
 
         composeRule.waitForIdle()
         composeRule.runOnIdle {
+            assertTrue(observedInside)
+            assertNotSame(outerScene, innerScene, "the page's scene backdrop must not reach another window")
+            assertNull(innerParent)
+            assertNull(innerDialog)
+            assertFalse(innerOverridesFallback)
+            // An explicit backdrop captured outside is rejected too.
             assertNull(explicitOnly)
             assertSame(expectedParent, resolvedParent)
             assertSame(expectedDialog, resolvedDialog)
@@ -208,14 +191,8 @@ private fun windowBoundarySource(relativePath: String): String {
     }.readText()
 }
 
-private const val WINDOW_BOUNDARY_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidBackdropWindowBoundary.kt"
-private const val GLASS_RUNTIME_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/GlassEffectRuntime.kt"
 private const val LIQUID_SHEET_SURFACE_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheetSurface.kt"
-private const val LIQUID_MODAL_PRESENTATION_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidModalPresentation.kt"
 private const val LIQUID_MODAL_SURFACE_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidModalSurface.kt"
 private val LIQUID_MODAL_CONSUMER_SOURCES =

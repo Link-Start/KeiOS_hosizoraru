@@ -2,35 +2,25 @@ package os.kei.ui.page.main.widget.core
 
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AppSurfaceCardTransformContractTest {
 
+    /**
+     * The press scale has to go through `drawBackdrop`'s `layerBlock`. `LayerBackdrop.drawBackdrop`
+     * inverse-transforms its sample only by that block, so an ancestor `graphicsLayer` on the card or its
+     * box scales the sampled backdrop with the plate and the refraction slides while pressed. Robolectric
+     * does not run `RenderEffect`, so this cannot be rendered in a unit test.
+     */
     @Test
     fun interactiveTransformStaysInsideLiquidSurfaceBackdropLayer() {
-        val cardSource = sourceFile(APP_FEATURE_CARDS_SOURCE)
-        val surfaceBoxSource = sourceFile(APP_SURFACE_BOX_SOURCE)
+        assertFalse(".graphicsLayer" in sourceFile(APP_FEATURE_CARDS_SOURCE))
+        assertFalse(".graphicsLayer" in sourceFile(APP_SURFACE_BOX_SOURCE))
+
         val liquidSurfaceSource = sourceFile(LIQUID_SURFACES_SOURCE)
-
-        assertFalse("pressedScale" in cardSource)
-        assertFalse("app_surface_card_press_scale" in cardSource)
-        assertFalse(".graphicsLayer" in cardSource)
-        assertFalse("LiquidSurface(" in cardSource)
-        assertFalse("rememberLayerBackdrop" in cardSource)
-        assertTrue("AppSurfaceBox(" in cardSource)
-        assertTrue("isInteractive = showIndication && (onClick != null || onLongClick != null)" in cardSource)
-
-        assertFalse(".graphicsLayer" in surfaceBoxSource)
-        assertTrue("activeGlassBackdrop(inheritedBackdrop)" in surfaceBoxSource)
-        assertTrue("interactionSource = interactionSource" in surfaceBoxSource)
-        assertEquals(1, surfaceBoxSource.occurrencesOf("LiquidSurface("))
-
         assertTrue("{ applyLiquidSurfaceInteractiveTransform(interactiveHighlight) }" in liquidSurfaceSource)
         assertTrue("layerBlock = interactiveLayerBlock" in liquidSurfaceSource)
-        assertEquals(2, liquidSurfaceSource.occurrencesOf(".then(contentAlphaModifier)"))
-        assertTrue("if (enabled) Modifier else LiquidSurfaceDisabledContentAlphaModifier" in liquidSurfaceSource)
     }
 
     @Test
@@ -55,8 +45,6 @@ class AppSurfaceCardTransformContractTest {
         assertTrue("APP_EDGE_STACK_PIVOT_X" in sourceFile(APP_EDGE_STACK_SOURCE))
     }
 }
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

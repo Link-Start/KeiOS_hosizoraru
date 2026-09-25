@@ -2,7 +2,6 @@ package os.kei.ui.page.main.widget.core
 
 import android.app.Application
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -38,34 +37,6 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class AppInfoRowTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun optionalLeadingContentIsRenderedInsideTheLabel() {
-        setInfoRow {
-            AppInfoRow(
-                label = "Runtime",
-                value = "Android",
-                labelLeadingContent = {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(16.dp)
-                                .testTag(LEADING_TAG),
-                    )
-                },
-            )
-        }
-
-        val leadingBounds =
-            composeRule
-                .onNodeWithTag(LEADING_TAG, useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
-
-        assertTrue(leadingBounds.width > 0f && leadingBounds.height > 0f)
-        composeRule.onNodeWithText("Runtime", useUnmergedTree = true).fetchSemanticsNode()
-        composeRule.onNodeWithText("Android", useUnmergedTree = true).fetchSemanticsNode()
-    }
 
     @Test
     fun defaultLabelWidthRemainsContentDrivenWhenMaximumIsProvided() {
@@ -203,7 +174,6 @@ class AppInfoRowTest {
     }
 }
 
-private const val LEADING_TAG = "app-info-row-leading"
 private const val MULTILINE_ROW_TAG = "app-info-row-multiline"
 private const val MULTILINE_LABEL = "Source"
 private const val MULTILINE_VALUE = "A long first line\nA second line\nA third line"

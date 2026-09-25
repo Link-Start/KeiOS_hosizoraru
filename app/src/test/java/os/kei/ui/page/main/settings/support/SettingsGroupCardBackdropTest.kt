@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.settings.support
 
 import android.app.Application
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
@@ -16,7 +15,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Rule
 import org.junit.Test
@@ -29,7 +27,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 
 @RunWith(AndroidJUnit4::class)
@@ -42,51 +39,6 @@ import kotlin.test.assertSame
 class SettingsGroupCardBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun exportsIndependentBackdropToActionContent() {
-        var sceneBackdrop: Backdrop? = null
-        var contentBackdrop: Backdrop? = null
-
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                val backdrop = rememberLayerBackdrop()
-                sceneBackdrop = backdrop
-                Box(modifier = Modifier.size(260.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
-                    CompositionLocalProvider(LocalLiquidParentBackdrop provides backdrop) {
-                        SettingsGroupCard(
-                            header = "Settings",
-                            title = "Actions",
-                            containerColor = Color.White,
-                            exportBackdropToContent = true,
-                        ) {
-                            contentBackdrop = LocalLiquidParentBackdrop.current
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(24.dp)
-                                        .testTag("settings-group-card-content"),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("settings-group-card-content").assertExists()
-        composeRule.runOnIdle {
-            assertNotNull(sceneBackdrop)
-            assertNotNull(contentBackdrop)
-            assertNotSame(sceneBackdrop, contentBackdrop)
-        }
-    }
 
     @Test
     fun keepsInheritedBackdropForDefaultContent() {

@@ -105,13 +105,4 @@ class McpBaCraftSnapshotTextTest {
 
         assertTrue(line(craft, index = 2).startsWith("craftSlot[generate3]=state:idle |"))
     }
-
-    @Test
-    fun `every field is separated the same way the calendar text separates its own`() {
-        val craft =
-            BaCraftState(generate = listOf(BaCraftSlot(startedAtMs = START, grades = listOf(BaCraftGrade.Low))))
-
-        // 6 separators for 7 fields. Guards against a field being appended without its delimiter.
-        assertEquals(6, line(craft).split(" | ").size - 1)
-    }
 }

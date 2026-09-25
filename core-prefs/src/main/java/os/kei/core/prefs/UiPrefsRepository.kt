@@ -225,6 +225,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setSuperIslandAutoClose(value: SuperIslandAutoClose) {
+        updateAndPersist({ copy(superIslandAutoClose = value) }) {
+            UiPrefs.setSuperIslandAutoClose(value)
+        }
+    }
+
     suspend fun setSuperIslandFirstFloatEnabled(value: Boolean) {
         val behavior =
             if (value) {

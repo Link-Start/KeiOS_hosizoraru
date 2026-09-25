@@ -37,6 +37,7 @@ data class UiPrefsSnapshot(
     val nonHomeBackgroundSaturation: Float,
     val superIslandNotificationEnabled: Boolean,
     val superIslandFloatBehavior: SuperIslandFloatBehavior,
+    val superIslandAutoClose: SuperIslandAutoClose,
     val superIslandFirstFloatEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
@@ -66,6 +67,47 @@ enum class SuperIslandFloatBehavior(
     companion object {
         fun fromStorageId(raw: String?): SuperIslandFloatBehavior =
             entries.firstOrNull { it.storageId == raw } ?: StartAndFinish
+    }
+}
+
+/**
+ * How long HyperOS keeps a Super Island and its focus notification before closing them.
+ *
+ * One choice sets both protocol fields: `param_v2.timeout` in minutes, which the official guide
+ * (pId=2131) calls the notification's default disappearance time (default 720), and
+ * `param_island.islandTimeout` in seconds, the island's own (default 60 * 60). Without a value, the
+ * notification closed after 12 hours and its island after one, while GitHub refresh set its own.
+ *
+ * The protocol has no "never" value: per Xiaomi's FAQ `timeout = 0` means the default, and `-1`
+ * closes it after about five seconds. So [Never] is a long finite time, 35,000 minutes (about 24
+ * days), chosen so that neither field overflows a 32-bit millisecond count if the host converts
+ * it (35,000 min and 2,100,000 s are both under 2^31 ms). GitHub refresh keeps its own short
+ * timeouts: a refresh notification must go away.
+ */
+enum class SuperIslandAutoClose(
+    val storageId: String,
+    val minutes: Int,
+) {
+    Never("never", 35_000),
+    FiveMinutes("5m", 5),
+    FifteenMinutes("15m", 15),
+    ThirtyMinutes("30m", 30),
+    OneHour("1h", 60),
+    ThreeHours("3h", 180),
+    TwelveHours("12h", 720),
+    ;
+
+    /** `param_v2.timeout`, in minutes. */
+    val focusTimeoutMinutes: Int
+        get() = minutes
+
+    /** `param_island.islandTimeout`, in seconds. */
+    val islandTimeoutSeconds: Int
+        get() = minutes * 60
+
+    companion object {
+        fun fromStorageId(raw: String?): SuperIslandAutoClose =
+            entries.firstOrNull { it.storageId == raw } ?: Never
     }
 }
 
@@ -140,6 +182,7 @@ object UiPrefs {
     private const val KEY_SUPER_ISLAND_NOTIFICATION = "super_island_notification"
     private const val KEY_SUPER_ISLAND_FLOAT_BEHAVIOR = "super_island_float_behavior"
     private const val KEY_SUPER_ISLAND_FIRST_FLOAT = "super_island_first_float"
+    private const val KEY_SUPER_ISLAND_AUTO_CLOSE = "super_island_auto_close"
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
     private const val KEY_SUPER_ISLAND_RESTORE_DELAY_MS = "super_island_restore_delay_ms"
     private const val KEY_LOG_DEBUG = "log_debug"
@@ -424,6 +467,13 @@ object UiPrefs {
         kv().encode(KEY_SUPER_ISLAND_FIRST_FLOAT, value.firstFloatEnabled)
     }
 
+    fun getSuperIslandAutoClose(): SuperIslandAutoClose =
+        SuperIslandAutoClose.fromStorageId(kv().decodeString(KEY_SUPER_ISLAND_AUTO_CLOSE, null))
+
+    fun setSuperIslandAutoClose(value: SuperIslandAutoClose) {
+        kv().encode(KEY_SUPER_ISLAND_AUTO_CLOSE, value.storageId)
+    }
+
     fun isSuperIslandFirstFloatEnabled(defaultValue: Boolean = true): Boolean =
         getSuperIslandFloatBehavior(
             defaultValue =
@@ -600,6 +650,7 @@ object UiPrefs {
             nonHomeBackgroundSaturation = NON_HOME_BACKGROUND_SATURATION_DEFAULT,
             superIslandNotificationEnabled = false,
             superIslandFloatBehavior = SuperIslandFloatBehavior.StartAndFinish,
+            superIslandAutoClose = SuperIslandAutoClose.Never,
             superIslandFirstFloatEnabled = true,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
@@ -643,6 +694,7 @@ object UiPrefs {
             nonHomeBackgroundSaturation = getNonHomeBackgroundSaturation(),
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
             superIslandFloatBehavior = superIslandFloatBehavior,
+            superIslandAutoClose = getSuperIslandAutoClose(),
             superIslandFirstFloatEnabled = superIslandFloatBehavior.firstFloatEnabled,
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),
             superIslandRestoreDelayMs = getSuperIslandRestoreDelayMs(),

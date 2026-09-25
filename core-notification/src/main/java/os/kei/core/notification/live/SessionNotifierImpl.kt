@@ -36,11 +36,13 @@ class SessionNotifierImpl(
             "build ${decision.logSummary()}"
         )
         val floatBehavior = UiPrefs.getSuperIslandFloatBehavior()
+        val autoClose = UiPrefs.getSuperIslandAutoClose()
         AppLogger.d(TAG) {
             "buildDetail ${decision.logSummary()} server=${payload.serverName} " +
                 "notificationId=${payload.notificationId} running=${payload.running} " +
                 "ongoing=${payload.ongoing} behavior=${floatBehavior.storageId} " +
                 "firstFloat=${floatBehavior.firstFloatEnabled} finishFloat=${floatBehavior.finishFloatEnabled} " +
+                "autoClose=${autoClose.storageId} " +
                 "channel=${helper.resolveChannel(style)}"
         }
         val wrapped = NotificationPayload(
@@ -50,6 +52,8 @@ class SessionNotifierImpl(
                     miIslandOuterGlow = payload.outerGlow,
                     miIslandFirstFloat = floatBehavior.firstFloatEnabled,
                     miIslandFinishFloat = floatBehavior.finishFloatEnabled,
+                    miIslandFocusTimeoutMinutes = autoClose.focusTimeoutMinutes,
+                    miIslandTimeoutSeconds = autoClose.islandTimeoutSeconds,
                 ),
             environment = EnvironmentContext(
                 channelId = helper.resolveChannel(style),

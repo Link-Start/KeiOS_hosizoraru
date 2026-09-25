@@ -27,6 +27,19 @@
 实体机上的 HyperOS SystemUI 行为：首次加入读取 `islandFirstFloat`；同一超级岛的后续更新读取
 `enableFloat`。终态若继续请求 promoted ongoing，SystemUI 可能结束进度岛后只保留普通通知。
 
+### 自动关闭时间
+
+- `param_v2.timeout`：焦点通知的默认消失时间，单位分钟，默认 720（官方开发指南 pId=2131，
+  2026-01-29 核对）。
+- `param_island.islandTimeout`：岛自动消失时间，单位秒，默认 `60 * 60`。两者互不替代。
+- 协议没有“永不”值：官方 FAQ 说明 `timeout=0` 是使用默认值，`-1` 约 5 秒后消失。不要把 0 或 -1
+  当常驻开关。
+- KeiOS 用设置里的“超级岛自动关闭”（`SuperIslandAutoClose`，默认永不）同时写这两个字段，由
+  `SessionNotifierImpl` 传入 `MiIslandNotificationBuilder`，GitHub Actions 更新通知也读取它。
+  “永不”发送 35,000 分钟与 2,100,000 秒（约 24 天）：宿主若按 32 位毫秒换算，两者都不会溢出。
+  社区实现 HyperIsland 曾以 `Int.MAX_VALUE` 秒表示常驻，但通知的分钟字段没有同等依据。
+- GitHub 刷新通知保留自己的短时 `timeout`（运行中 6 分钟、结束后 1 分钟），不受该设置影响。
+
 ## 文字样式与颜色
 
 摘要态文字样式有限，优先靠短文本、图标和进度色表达状态：

@@ -199,6 +199,7 @@ object GitHubActionsUpdateNotificationHelper {
                     "track=${snapshot.trackId} run=${snapshot.runLabel}"
             }
             val trackedAppPicture = appIconBitmap?.let(MiFocusPictureSource::BitmapValue)
+            val autoClose = GitHubNotificationPreferences.superIslandAutoClose()
             MiFocusNotificationTemplate.build(
                 context = context,
                 spec =
@@ -214,6 +215,7 @@ object GitHubActionsUpdateNotificationHelper {
                                 ?: MiFocusPictureSource.Resource(ICON_RES_ID),
                         island =
                             MiFocusIslandSpec(
+                                timeoutSeconds = autoClose.islandTimeoutSeconds,
                                 bigTemplates =
                                     listOf(
                                         MiFocusIslandBigTemplate.ImageTextLeft(
@@ -283,6 +285,7 @@ object GitHubActionsUpdateNotificationHelper {
                         allowFloat = false,
                         islandFirstFloat = firstFloat,
                         updatable = true,
+                        timeoutMinutes = autoClose.focusTimeoutMinutes,
                         outerGlow = true,
                         ticker = title,
                         compactTicker = compactRunLabel,

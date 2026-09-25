@@ -161,6 +161,54 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
+    fun `auto close reaches both the focus timeout and the island timeout`() {
+        val cases = listOf(
+            // label, settings timeouts (minutes, seconds), expected param_v2.timeout, expected islandTimeout
+            listOf("never, as SuperIslandAutoClose.Never sends it", 35_000, 2_100_000),
+            listOf("five minutes", 5, 300),
+            listOf("unset leaves HyperOS's defaults", null, null),
+        )
+        cases.forEachIndexed { index, (label, minutes, seconds) ->
+            val openPendingIntent =
+                testPendingIntent(context, 541 + index * 10, "os.kei.test.OPEN_NOTIFICATION_TIMEOUT_$index")
+            val notification = build(
+                testNotificationPayload(
+                    LiveNotificationPayload(
+                        serverName = "KeiOS MCP",
+                        running = true,
+                        port = 8080,
+                        path = "/mcp",
+                        clients = 1,
+                        ongoing = true,
+                        onlyAlertOnce = true,
+                        openPendingIntent = openPendingIntent,
+                        stopPendingIntent = testPendingIntent(
+                            context,
+                            542 + index * 10,
+                            "os.kei.test.STOP_MCP_TIMEOUT_$index",
+                            broadcast = true,
+                        ),
+                        focusOpenPendingIntent = openPendingIntent,
+                        notificationId = 38989 + index,
+                        miFocusOrderId = "mcp_keepalive_timeout_$index"
+                    ),
+                    settings =
+                        UserSettings(
+                            miIslandOuterGlow = true,
+                            miIslandFocusTimeoutMinutes = minutes as Int?,
+                            miIslandTimeoutSeconds = seconds as Int?,
+                        ),
+                )
+            )
+            val focusJson = notification.focusJson()
+            val island = focusJson.getJSONObject("param_island")
+
+            assertEquals(minutes, focusJson.opt("timeout").takeUnless { it == null }, "$label: $focusJson")
+            assertEquals(seconds, island.opt("islandTimeout").takeUnless { it == null }, "$label: $island")
+        }
+    }
+
+    @Test
     fun `ba ap progress island title uses current ap value`() {
         val openPendingIntent = testPendingIntent(context, 601, "os.kei.test.OPEN_BA_AP")
         val notification = build(

@@ -330,6 +330,7 @@ class MiIslandNotificationBuilder(
             islandFirstFloat = payload.settings.miIslandFirstFloat
             enableFloat = resolvedAllowFloat
             updatable = presentation.focusUpdatable
+            timeout = payload.settings.miIslandFocusTimeoutMinutes
             business = MI_FOCUS_DEFAULT_BUSINESS
             notifyId = state.notificationId.takeIf { it > 0 }?.toString()
             orderId = state.miFocusOrderId
@@ -343,6 +344,7 @@ class MiIslandNotificationBuilder(
 
             island {
                 islandProperty = 1
+                islandTimeout = payload.settings.miIslandTimeoutSeconds
                 highlightColor = presentation.notificationAccentColor
                 bigIslandArea {
                     imageTextInfoLeft {

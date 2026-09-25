@@ -1,5 +1,6 @@
 package os.kei.feature.github.notification
 
+import os.kei.core.prefs.SuperIslandAutoClose
 import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.prefs.UiPrefs
 
@@ -14,6 +15,10 @@ internal object GitHubNotificationPreferences {
                     defaultValue = SuperIslandFloatBehavior.StartAndFinish,
                 )
             }.getOrDefault(SuperIslandFloatBehavior.StartAndFinish)
+
+    /** The Actions update's island closes after the user's choice; GitHub refresh keeps its own short timeouts. */
+    fun superIslandAutoClose(): SuperIslandAutoClose =
+        runCatching { UiPrefs.getSuperIslandAutoClose() }.getOrDefault(SuperIslandAutoClose.Never)
 
     fun isSuperIslandFirstFloatEnabled(): Boolean =
         superIslandFloatBehavior().firstFloatEnabled

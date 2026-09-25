@@ -14,7 +14,11 @@ data class NotificationPayload(
 data class UserSettings(
     val miIslandOuterGlow: Boolean,
     val miIslandFirstFloat: Boolean = true,
-    val miIslandFinishFloat: Boolean = true
+    val miIslandFinishFloat: Boolean = true,
+    /** `param_v2.timeout` in minutes; null leaves HyperOS's default (720). */
+    val miIslandFocusTimeoutMinutes: Int? = null,
+    /** `param_island.islandTimeout` in seconds; null leaves HyperOS's default (3600). */
+    val miIslandTimeoutSeconds: Int? = null
 )
 
 data class EnvironmentContext(

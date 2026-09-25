@@ -2,22 +2,91 @@
 
 ## Current state (2026-09-25)
 
-| | 2026-09-25 before | after round 2 |
-| --- | ---: | ---: |
-| tests run | 3,113 | 2,773 |
-| test source lines | 104,555 | 95,202 |
-| test files | 621 | 596 |
-| test lines per 100 main lines | 33.0 | 30.1 |
-| summed test-class time | 120.8s | 94.5s |
-| wall time, `testDebugUnitTest --rerun`, two runs | 45s, 38s | 40s, 37s |
+| | before | after round 2 (a29fe48e0) | after round 3 |
+| --- | ---: | ---: | ---: |
+| tests run | 3,113 | 2,773 | 2,552 |
+| test source lines | 104,555 | 95,233 | 90,481 |
+| test files | 621 | 597 | 591 |
+| test lines per 100 main lines | 33.0 | 30.1 | 28.6 |
+| wall time, `testDebugUnitTest --rerun`, two runs | 45s, 38s | 40s, 37s | 38s, 35s |
 
-Wall time barely moved: modules run in parallel, so it follows :app, whose own time did not fall.
-The summed time is where the cut shows (feature-github-engine 21.4s to 2.7s, ui-liquid-glass 19.0s
-to 17.7s with 24 moved-in tests).
+Wall time follows :app, which the other modules finish inside. Round 3 split :app over two JVMs,
+which is where its wall time moved; test count barely moves it, because a Robolectric suite's cost
+is mostly each JVM's startup. The summed test-class time (120.8s before, 94.5s after round 2,
+113.4s now) is no longer comparable across the fork change: two forks each pay startup and contend
+for the CPU, which inflates every class's recorded time.
 
 The suite is audited against the rules below, every module's tests run in CI, and the screenshot
-tests compare against tracked goldens there. Round 2 (below) is the latest pass; round 1
-(2026-09-23) removed the source-text mirrors.
+tests compare against tracked goldens there with a per-pixel tolerance for the macOS/Linux
+rounding. Round 3 is the latest pass.
+
+## Round 3, 2026-09-25: a stricter bar
+
+The owner asked for a harder second cut the same day. Round 2 asked whether a test was a mirror, a
+duplicate or stale; round 3 asked of every survivor whether it catches a regression that could
+plausibly happen, that no other test catches, and that matters, and whether that is worth its cost.
+Categories cut: tests per branch of a simple `when`, renders that only find a node, semantics
+repeated per screen, one rule tested at several layers, plumbing and field copies, and assertions
+of whole objects where one field is the point. One clarification held throughout: the only guard
+of a path users would notice stays, even when the regression would be obvious; at most it becomes a
+cheaper plain-JVM test.
+
+Eight areas were each audited and applied by one agent in its own worktree, at most two at a time
+after three rounds of agents running together hit the session limit. The lead merged each along
+review boundaries, tested every intermediate commit, and overruled where an agent had cut an only
+guard (the F-Droid evaluator dispatch) or touched MiFocus (two order-id cases).
+
+### What changed
+
+29 commits after a29fe48e0. Net test lines removed: 4,752 (6,734 deleted, 1,633 added); 221 fewer
+tests; production Kotlin lost 61 lines of dead code. The cut was smaller than round 2's because most
+survivors are contracts: parsers, persistence and migration, WebDAV merge and etags, concurrency,
+version selection, documented-bug guards.
+
+- **Tables and shrinks**: API-strategy histories, Atom scenarios, island render policy, share-import
+  phases (24 tests to 7), back navigation, download scheduling and leases, failure kinds.
+- **Deleted**: per-branch restatements, colour and drawable read-backs, presence-only renders,
+  repeats of a lower layer or the owning module, a 70-repo scan loop against a fake built from the
+  same export (one of its three loops could not fail), and a 348-line JSON nothing referenced.
+- **Behaviour instead of text**: the unsaved-sheet contract became a back-press test, the window
+  boundary scan a runtime check, and the F-Droid index parser tests moved onto the stream parser the
+  app uses, which gave it its first tests of repository metadata.
+- **Tests that could not fail, fixed**: the settings card-expansion test passed with the stored
+  state ignored; the presentation blur and lens bans passed if their one allowed expression was
+  renamed. Both now fail on the bug (mutation-checked).
+- **Speed**: a tool-timeout test waited out a real 4s budget (now virtual time, feature-mcp 12.1s to
+  8.2s); a routing test asked for a second SDK and paid a second Robolectric startup
+  (core-notification 9.8s to 7.2s); :app runs on two forks.
+- **Dead code**: FdroidIndexV2Parser.parseIndex, GitHubPackageRepositoryQueries.forInstalledApp, the
+  intent-based calendar-pool server selection.
+
+### CI after the first all-module run
+
+D#209 was the first run to verify screenshots and to run ui-liquid-glass on Linux. Seven of fifteen
+goldens and one pixel-comparison test failed with no visible change: Robolectric rounds colours one
+or two 8-bit steps apart on macOS and Linux. Measured from the run's images, every differing pixel
+is within 2/255 per channel. The screenshots now share a per-pixel colour tolerance
+(`KeiOSScreenshotOptions`, 0.016), checked four ways: macOS against macOS goldens and against the
+Linux renders pass; a swapped golden and a 20x20 patch tinted +8/255 fail. The flat-surface
+comparison allows 2/255, the limit its sibling case already used.
+
+### Found, not changed
+
+- **A production bug.** `PersistentShellCommandExecutor`'s timeout does not fire while it waits for
+  output: the blocking read cannot be interrupted, so a 100ms timeout on `sleep 2` returns after
+  2.05s, and a hung `settings` or `getprop` blocks `RuntimeCommandExecutor.executeAsync` as long as
+  it hangs. The test checks the timed-out flag, not the elapsed time.
+- `ModernNotificationSpecResolver.resolve` takes `preferOemLiveIconLayout`, suppresses its unused
+  warning, and never reads it, though five call sites pass it.
+- The visible-image and prewarm request builders exist as four near-identical copies in the student
+  catalog and BGM code; one shared builder would let three of the four test groups go.
+- `GitHubInstalledAppRepositoryTest` in feature-github is the only test of core-system's
+  `isPackageManagerBulkQueryFailure`, and belongs in core-system.
+- Four repo-wide source scans each re-read every production Kotlin file (about 2.1s together); a
+  shared cached reader would likely save most of it.
+- The pull-to-refresh call-site scan checks a fixed list of four files, so it cannot see a new one.
+- `feature-mcp/.../McpDevTools.kt` still names `app/src/main/assets/mcp/SKILL.md`, which moved to
+  feature-mcp.
 
 ## Round 2, 2026-09-25: the whole suite
 
@@ -115,16 +184,7 @@ Kotlin lost 112 lines of dead code.
 
 ### Next
 
-A deeper round is expected. Where to look first:
-
-- :app sets the wall time, and its Robolectric Compose tests are the bulk of it. Tests that render a
-  fixed component and only assert a tag exists are the next category to question.
-- feature-mcp, core-notification and feature-keepalive spend 6-12s each on a handful of Robolectric
-  tests; measure which cases cost that before cutting.
-- The source-scan count is 34 files by the round 1 command below, 41 counting the shared
-  `repoSource(` reader. Each should still be one of the three kinds CLAUDE.md allows.
-- Not a test, noticed in passing: `feature-mcp/.../McpDevTools.kt` still names
-  `app/src/main/assets/mcp/SKILL.md`, which moved to feature-mcp.
+Done as round 3, above.
 
 ## Round 1, 2026-09-23: source-text mirrors
 
@@ -215,8 +275,8 @@ dead weight:
 
 The policy is now in `CLAUDE.md` under *Tests*: behaviour first, and source scans only for repo-wide
 bans with an allow-list, cross-file contracts, or a documented bug that cannot be rendered. Repeat this
-audit when the count of source-reading test files climbs well past 34 (2026-09-25; 82 after round
-1, 147 before it):
+audit when the count of source-reading test files climbs well past 33 (after round 3, 2026-09-25;
+34 after round 2, 82 after round 1, 147 before it):
 
 ```bash
 git grep -l "readText()\|sourceFile(\|File(.*src/main" -- '*/src/test/*.kt' | wc -l

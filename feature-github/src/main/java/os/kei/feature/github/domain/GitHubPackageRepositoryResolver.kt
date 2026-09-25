@@ -18,7 +18,6 @@ import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.InstalledAppItem
 
 class GitHubPackageRepositoryResolver(
     private val discoverySource: GitHubRepositoryDiscoverySource,
@@ -551,12 +550,5 @@ object GitHubPackageRepositoryQueries {
         }.map { it.trim() }
             .filter { it.isNotBlank() }
             .distinct()
-    }
-
-    fun forInstalledApp(app: InstalledAppItem): List<String> {
-        return forPackage(
-            packageName = app.packageName,
-            appLabel = app.label
-        )
     }
 }

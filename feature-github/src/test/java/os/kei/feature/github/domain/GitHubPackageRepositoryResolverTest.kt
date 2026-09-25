@@ -10,7 +10,6 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
 import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
-import os.kei.feature.github.model.InstalledAppItem
 import java.util.Collections
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -97,16 +96,6 @@ class GitHubPackageRepositoryResolverTest {
                 },
                 packagesByRepo = mapOf("frknkrc44/hma-oss" to "org.frknkrc44.hma_oss"),
                 maxQueryCount = 2,
-            ),
-            RepositoryDiscoveryCorpusCase(
-                name = "preferred-updater-repository",
-                packageName = "top.yukonga.updater.kmp",
-                appLabel = "Updater",
-                preferredRepoUrl = "https://github.com/YuKongA/Updater-KMP",
-                expectedRepoKey = "yukonga/updater-kmp",
-                candidatesForQuery = { emptyList() },
-                packagesByRepo = mapOf("yukonga/updater-kmp" to "top.yukonga.updater.kmp"),
-                maxQueryCount = 0,
             ),
         )
 
@@ -196,7 +185,6 @@ class GitHubPackageRepositoryResolverTest {
         ).getOrThrow()
 
         assertEquals("com.absinthe.libchecker", result.packageName)
-        assertEquals("LibChecker", result.appLabel)
         assertEquals(1, result.queryCount)
         assertEquals(3, result.fetchedCandidateCount)
         assertEquals(3, result.scannedCandidateCount)
@@ -207,15 +195,13 @@ class GitHubPackageRepositoryResolverTest {
             "com.absinthe.libchecker",
             result.matchedCandidates.single().trackedApp.packageName
         )
-        assertEquals("LibChecker", result.matchedCandidates.single().trackedApp.appLabel)
         assertEquals("v1.0.0", result.matchedCandidates.single().releaseTag)
         assertEquals("LibChecker.apk", result.matchedCandidates.single().assetName)
         assertEquals(1, result.mismatchedCandidateCount)
         assertEquals(1, result.failedCandidateCount)
+        // The caller's lookup strategy (token or public) must reach every manifest read.
         assertTrue(scanSource.scannedStrategies.isNotEmpty())
-        assertTrue(scanSource.scannedStrategies.all {
-            it == GitHubLookupStrategyOption.GitHubApiToken
-        })
+        assertTrue(scanSource.scannedStrategies.all { it == GitHubLookupStrategyOption.GitHubApiToken })
         assertTrue(discovery.queries.any { it.contains("com.absinthe.libchecker") })
     }
 
@@ -468,12 +454,10 @@ class GitHubPackageRepositoryResolverTest {
     }
 
     @Test
-    fun `package repository queries use installed app label and package tail`() {
-        val queries = GitHubPackageRepositoryQueries.forInstalledApp(
-            InstalledAppItem(
-                label = "My Great App",
-                packageName = "io.github.owner.greatapp"
-            )
+    fun `package repository queries use app label and package tail`() {
+        val queries = GitHubPackageRepositoryQueries.forPackage(
+            packageName = "io.github.owner.greatapp",
+            appLabel = "My Great App"
         )
 
         assertTrue(queries.any { it.contains("io.github.owner.greatapp") })

@@ -72,14 +72,16 @@ comparison allows 2/255, the limit its sibling case already used.
 
 ### Found, not changed
 
-- **A production bug.** `PersistentShellCommandExecutor`'s timeout does not fire while it waits for
-  output: the blocking read cannot be interrupted, so a 100ms timeout on `sleep 2` returns after
-  2.05s, and a hung `settings` or `getprop` blocks `RuntimeCommandExecutor.executeAsync` as long as
-  it hangs. The test checks the timed-out flag, not the elapsed time.
+- **A production bug, fixed in 27d4c4692.** `PersistentShellCommandExecutor`'s timeout could not
+  fire while a command was quiet: a blocking pipe read ignores interrupts, so a 100ms timeout on
+  `sleep 2` returned after 2.05s. It now reads only what `available()` reports and waits in
+  `delay`; the test asserts the elapsed time, and a probe on the Android 17 AVD confirmed the pipe
+  behaviour on ART.
 - `ModernNotificationSpecResolver.resolve` takes `preferOemLiveIconLayout`, suppresses its unused
   warning, and never reads it, though five call sites pass it.
-- The visible-image and prewarm request builders exist as four near-identical copies in the student
-  catalog and BGM code; one shared builder would let three of the four test groups go.
+- **The visible-image and prewarm request builders, fixed.** Two of the four copies were range
+  overloads nothing had called since the two-lane lists (b4d6522e3) and are removed; the other two
+  share one window builder, so its order is tested once.
 - `GitHubInstalledAppRepositoryTest` in feature-github is the only test of core-system's
   `isPackageManagerBulkQueryFailure`, and belongs in core-system.
 - Four repo-wide source scans each re-read every production Kotlin file (about 2.1s together); a

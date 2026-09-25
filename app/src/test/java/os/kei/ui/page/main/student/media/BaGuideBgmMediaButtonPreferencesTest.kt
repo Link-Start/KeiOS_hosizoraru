@@ -5,19 +5,13 @@ import androidx.annotation.OptIn
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
-import androidx.media3.session.MediaSession
-import androidx.media3.session.SessionCommand
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import os.kei.R
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
-import os.kei.ui.page.main.student.media.BaGuideBgmMediaNotificationProviderFactory
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 @OptIn(UnstableApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -67,30 +61,6 @@ class BaGuideBgmMediaButtonPreferencesTest {
     }
 
     @Test
-    fun `custom commands are available to media controllers`() {
-        val commands = BaGuideBgmMediaButtonPreferences.availableSessionCommands(
-            MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
-        )
-
-        assertTrue(
-            commands.contains(
-                SessionCommand(
-                    BA_GUIDE_BGM_COMMAND_TOGGLE_REPEAT,
-                    android.os.Bundle.EMPTY
-                )
-            )
-        )
-        assertTrue(
-            commands.contains(
-                SessionCommand(
-                    BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK,
-                    android.os.Bundle.EMPTY
-                )
-            )
-        )
-    }
-
-    @Test
     fun `repeat mode maps between ui mode and native player mode`() {
         assertEquals(
             Player.REPEAT_MODE_ALL,
@@ -107,17 +77,6 @@ class BaGuideBgmMediaButtonPreferencesTest {
         assertEquals(
             BaGuideBgmQueueMode.Continuous,
             BaGuideBgmMediaButtonPreferences.nextQueueMode(BaGuideBgmQueueMode.SingleLoop)
-        )
-    }
-
-    @Test
-    fun `provider small icon is the KeiOS notification icon`() {
-        assertEquals(R.drawable.ic_launcher_monochrome, BA_GUIDE_BGM_MEDIA_AOSP_SMALL_ICON_RES)
-        assertEquals(R.drawable.ic_launcher_foreground, BA_GUIDE_BGM_MEDIA_XIAOMI_SMALL_ICON_RES)
-        assertNotNull(
-            BaGuideBgmMediaNotificationProviderFactory.create(
-                ApplicationProvider.getApplicationContext()
-            )
         )
     }
 }

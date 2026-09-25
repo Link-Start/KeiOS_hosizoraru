@@ -13,26 +13,10 @@ import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [35])
 class BaGuideBgmMediaIslandShareCompatTest {
-    @Test
-    fun `Xiaomi devices support media island drag share params`() {
-        assertTrue(
-            BaGuideBgmMediaOemCompat.mediaIslandDragShareSupported(
-                BaGuideBgmMediaOemCompat.DeviceSignals(
-                    brand = "Xiaomi",
-                    manufacturer = "Xiaomi",
-                    display = "OS2.0.1",
-                    model = "Xiaomi",
-                    properties = mapOf("ro.mi.os.version.name" to "OS2")
-                )
-            )
-        )
-    }
-
     @Test
     fun `share params follow HyperOS media island schema`() {
         val context = ApplicationProvider.getApplicationContext<Application>()

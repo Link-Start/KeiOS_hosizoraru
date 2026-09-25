@@ -40,7 +40,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -184,22 +183,6 @@ private fun TestPassiveMetadataPill(
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
-}
-
-private data class SourceExpectation(
-    val path: String,
-    val statusPillCount: Int,
-)
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 class StudentGuidePassiveMetadataPillTestApp : Application()

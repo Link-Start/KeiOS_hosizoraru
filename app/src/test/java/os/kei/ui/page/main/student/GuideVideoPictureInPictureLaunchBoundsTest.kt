@@ -7,18 +7,46 @@ import kotlin.test.assertTrue
 
 class GuideVideoPictureInPictureLaunchBoundsTest {
     @Test
-    fun `small preview expands to adaptive wide source rect`() {
-        val source = GuidePictureInPictureLaunchBounds(850, 1200, 1010, 1290)
-        val result = resolveGuidePictureInPictureLaunchBounds(
-            windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1080, 2400),
-            sourceRectHint = source,
+    fun `previews smaller than the video expand to a 16 by 9 rect inside the window`() {
+        data class Case(
+            val label: String,
+            val window: GuidePictureInPictureLaunchBounds,
+            val source: GuidePictureInPictureLaunchBounds,
+            val alsoTaller: Boolean,
         )
-        assertNotNull(result)
+        listOf(
+            Case(
+                "small preview",
+                GuidePictureInPictureLaunchBounds(0, 0, 1080, 2400),
+                GuidePictureInPictureLaunchBounds(850, 1200, 1010, 1290),
+                alsoTaller = true,
+            ),
+            Case(
+                "large mismatched preview",
+                GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
+                GuidePictureInPictureLaunchBounds(84, 1222, 1196, 2038),
+                alsoTaller = false,
+            ),
+            Case(
+                "full width memory preview",
+                GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
+                GuidePictureInPictureLaunchBounds(128, 1342, 1152, 1918),
+                alsoTaller = true,
+            ),
+        ).forEach { case ->
+            val result = resolveGuidePictureInPictureLaunchBounds(
+                windowBounds = case.window,
+                sourceRectHint = case.source,
+            )
+            assertNotNull(result, case.label)
 
-        assertTrue(result.width() > source.width())
-        assertTrue(result.height() > source.height())
-        assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f)
-        assertTrue(GuidePictureInPictureLaunchBounds(0, 0, 1080, 2400).contains(result))
+            assertTrue(result.width() > case.source.width(), "${case.label}: width did not grow")
+            if (case.alsoTaller) {
+                assertTrue(result.height() > case.source.height(), "${case.label}: height did not grow")
+            }
+            assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f, case.label)
+            assertTrue(case.window.contains(result), "${case.label}: $result escapes ${case.window}")
+        }
     }
 
     @Test
@@ -30,35 +58,6 @@ class GuideVideoPictureInPictureLaunchBoundsTest {
         )
 
         assertEquals(source, result)
-    }
-
-    @Test
-    fun `large mismatched preview normalizes to larger video aspect ratio bounds`() {
-        val source = GuidePictureInPictureLaunchBounds(84, 1222, 1196, 2038)
-        val result = resolveGuidePictureInPictureLaunchBounds(
-            windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
-            sourceRectHint = source,
-        )
-        assertNotNull(result)
-
-        assertTrue(result.width() > source.width())
-        assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f)
-        assertTrue(GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856).contains(result))
-    }
-
-    @Test
-    fun `full width memory preview expands to larger readable pip launch rect`() {
-        val source = GuidePictureInPictureLaunchBounds(128, 1342, 1152, 1918)
-        val result = resolveGuidePictureInPictureLaunchBounds(
-            windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
-            sourceRectHint = source,
-        )
-        assertNotNull(result)
-
-        assertTrue(result.width() > source.width())
-        assertTrue(result.height() > source.height())
-        assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f)
-        assertTrue(GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856).contains(result))
     }
 
     @Test

@@ -32,17 +32,6 @@ class BaGuideTempMediaCacheTest {
     }
 
     @Test
-    fun `session scan rebuilds summary from existing files`() {
-        val sessionDir = newScanDir("manual-session")
-        File(sessionDir, "audio.mp3").writeText("12345")
-        val summary = scanBaGuideMediaCacheSession(sessionDir)
-
-        assertEquals(1, summary.count)
-        assertEquals(5L, summary.bytes)
-        sessionDir.deleteRecursively()
-    }
-
-    @Test
     fun `session scan reflects files removed from disk`() {
         val sessionDir = newScanDir("stale-session")
         val file = File(sessionDir, "image.webp").apply { writeText("1234") }

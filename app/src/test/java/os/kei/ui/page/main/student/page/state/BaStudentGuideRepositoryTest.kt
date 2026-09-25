@@ -22,6 +22,7 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -61,14 +62,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = null,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl)
 
             assertEquals(cached, result.info)
             assertNull(result.error)
@@ -114,14 +108,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = cached,
-                    manualRefresh = true,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl, currentInfo = cached, manualRefresh = true)
 
             assertEquals(latest, result.info)
             assertNull(result.error)
@@ -173,14 +160,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = cached,
-                    manualRefresh = true,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl, currentInfo = cached, manualRefresh = true)
 
             assertEquals(latest, result.info)
             assertFalse(clearCalled)
@@ -216,14 +196,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = null,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl)
 
             assertEquals(latest, result.info)
             assertEquals(sourceUrl, clearedSourceUrl)
@@ -269,14 +242,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val firstPaint =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = null,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl)
 
             assertEquals(cached, firstPaint.info)
             assertNull(firstPaint.error)
@@ -286,15 +252,7 @@ class BaStudentGuideRepositoryTest {
             assertEquals(0, fetchCount)
 
             val validation =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = cached,
-                    manualRefresh = false,
-                    forceValidation = true,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl, currentInfo = cached, forceValidation = true)
 
             assertEquals(latest, validation.info)
             assertNull(validation.error)
@@ -334,14 +292,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = null,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl)
 
             assertEquals(cached, result.info)
             assertNull(result.error)
@@ -396,28 +347,12 @@ class BaStudentGuideRepositoryTest {
 
             val first =
                 async {
-                    repository.loadGuide(
-                        context = context,
-                        sourceUrl = sourceUrl,
-                        currentInfo = cached,
-                        manualRefresh = false,
-                        forceValidation = true,
-                        loadFailedText = "加载失败",
-                        refreshFailedKeepCacheText = "保留缓存",
-                    )
+                    repository.load(context, sourceUrl, currentInfo = cached, forceValidation = true)
                 }
             firstFetchStarted.await()
             val second =
                 async {
-                    repository.loadGuide(
-                        context = context,
-                        sourceUrl = sourceUrl,
-                        currentInfo = cached,
-                        manualRefresh = false,
-                        forceValidation = true,
-                        loadFailedText = "加载失败",
-                        refreshFailedKeepCacheText = "保留缓存",
-                    )
+                    repository.load(context, sourceUrl, currentInfo = cached, forceValidation = true)
                 }
             releaseFetch.complete(Unit)
             val results = awaitAll(first, second)
@@ -470,14 +405,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = null,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl)
 
             assertEquals(cached, result.info)
             assertNull(result.error)
@@ -526,14 +454,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = newUrl,
-                    currentInfo = null,
-                    manualRefresh = false,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, newUrl)
 
             assertEquals(cached, result.info)
             assertFalse(fetchCalled)
@@ -573,14 +494,7 @@ class BaStudentGuideRepositoryTest {
                 )
 
             val result =
-                repository.loadGuide(
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    currentInfo = cached,
-                    manualRefresh = true,
-                    loadFailedText = "加载失败",
-                    refreshFailedKeepCacheText = "保留缓存",
-                )
+                repository.load(context, sourceUrl, currentInfo = cached, manualRefresh = true)
 
             assertEquals(latest, result.info)
             assertNotNull(result.cacheMeta)
@@ -834,6 +748,22 @@ class BaStudentGuideRepositoryTest {
         return BaGuideStudentDetailFileCacheStore(root)
     }
 
+    private suspend fun BaStudentGuideRepository.load(
+        context: Context,
+        sourceUrl: String,
+        currentInfo: BaStudentGuideInfo? = null,
+        manualRefresh: Boolean = false,
+        forceValidation: Boolean = false,
+    ) = loadGuide(
+        context = context,
+        sourceUrl = sourceUrl,
+        currentInfo = currentInfo,
+        manualRefresh = manualRefresh,
+        forceValidation = forceValidation,
+        loadFailedText = "加载失败",
+        refreshFailedKeepCacheText = "保留缓存",
+    )
+
     private fun guideInfo(
         sourceUrl: String,
         title: String,
@@ -868,20 +798,13 @@ class BaStudentGuideRepositoryTest {
         tab: BaGuideCatalogTab,
         createdAtSec: Long,
     ): BaGuideCatalogEntry =
-        BaGuideCatalogEntry(
-            entryId = contentId.toInt(),
-            pid = 1,
+        testCatalogEntry(
             contentId = contentId,
-            name = "Entry $contentId",
-            alias = "",
-            aliasDisplay = "",
+            tab = tab,
             iconUrl = "https://example.com/icon.png",
-            type = 1,
             order = 1,
             createdAtSec = createdAtSec,
-            releaseDateSec = 0L,
             detailUrl = sourceUrl,
-            tab = tab,
         )
 
     private fun detailMeta(

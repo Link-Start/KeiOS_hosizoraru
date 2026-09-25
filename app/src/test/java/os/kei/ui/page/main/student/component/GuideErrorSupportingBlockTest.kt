@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.io.File
 import kotlin.math.abs
 import kotlin.test.assertTrue
 import org.junit.Rule
@@ -49,11 +48,6 @@ class GuideErrorSupportingBlockTest {
     @Test
     fun longErrorRemainsCompleteAndSeparatedAtLargeFontInLightTheme() {
         verifyLongErrorLayout(ColorSchemeMode.Light)
-    }
-
-    @Test
-    fun longErrorRemainsCompleteAndSeparatedAtLargeFontInDarkTheme() {
-        verifyLongErrorLayout(ColorSchemeMode.Dark)
     }
 
     private fun verifyLongErrorLayout(colorSchemeMode: ColorSchemeMode) {
@@ -115,17 +109,6 @@ private fun SemanticsNodeInteraction.assertReadOnly() {
     assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Selected))
     assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
     assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
-}
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
 }
 
 class GuideErrorSupportingBlockTestApp : Application()

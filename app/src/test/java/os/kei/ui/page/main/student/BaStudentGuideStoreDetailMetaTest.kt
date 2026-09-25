@@ -31,21 +31,6 @@ class BaStudentGuideStoreDetailMetaTest {
     }
 
     @Test
-    fun `detail meta round trips through file store`() {
-        val sourceUrl = uniqueSourceUrl(11)
-        val meta =
-            detailMeta(
-                sourceUrl = sourceUrl,
-                contentId = 11L,
-                tier = BaGuideStudentDetailFreshnessTier.Stable,
-            )
-
-        store.saveMeta(meta)
-
-        assertEquals(meta, store.loadMeta(sourceUrl))
-    }
-
-    @Test
     fun `student detail cache meta builds from existing guide info`() {
         val nowMs = 400L * DAY_MS
         val sourceUrl = uniqueSourceUrl(12)

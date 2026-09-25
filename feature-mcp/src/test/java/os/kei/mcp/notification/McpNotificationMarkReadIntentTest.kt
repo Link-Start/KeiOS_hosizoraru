@@ -22,58 +22,6 @@ import kotlin.test.assertTrue
 )
 class McpNotificationMarkReadIntentTest {
     @Test
-    fun `mark read intent carries immutable BA AP metadata`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-
-        val intent =
-            McpNotificationInteractionIntents.buildMarkReadIntent(
-                context = context,
-                notificationId = 243_220,
-                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
-                targetBaAccountId = "cn-main",
-            )
-
-        assertEquals(
-            243_220,
-            intent.getIntExtra(McpNotificationMarkReadContract.EXTRA_NOTIFICATION_ID, -1),
-        )
-        assertEquals(
-            LiveNotificationPayload.BA_AP_SERVER_NAME,
-            intent.getStringExtra(McpNotificationMarkReadContract.EXTRA_SERVER_NAME),
-        )
-        assertEquals(
-            "cn-main",
-            intent.getStringExtra(McpNotificationMarkReadContract.EXTRA_TARGET_BA_ACCOUNT_ID),
-        )
-    }
-
-    @Test
-    fun `dismiss intent carries immutable BA AP metadata`() {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-
-        val intent =
-            McpNotificationInteractionIntents.buildDismissIntent(
-                context = context,
-                notificationId = 243_220,
-                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
-                targetBaAccountId = "cn-main",
-            )
-
-        assertEquals(
-            243_220,
-            intent.getIntExtra(McpNotificationDismissContract.EXTRA_NOTIFICATION_ID, -1),
-        )
-        assertEquals(
-            LiveNotificationPayload.BA_AP_SERVER_NAME,
-            intent.getStringExtra(McpNotificationDismissContract.EXTRA_SERVER_NAME),
-        )
-        assertEquals(
-            "cn-main",
-            intent.getStringExtra(McpNotificationDismissContract.EXTRA_TARGET_BA_ACCOUNT_ID),
-        )
-    }
-
-    @Test
     fun `mark read and dismiss production PendingIntents have distinct identities`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationId = 243_220
@@ -192,6 +140,10 @@ class McpNotificationMarkReadIntentTest {
             shadow.flags,
         )
         assertEquals(McpNotificationDismissContract.ACTION, currentIntent.action)
+        assertEquals(
+            notificationId,
+            currentIntent.getIntExtra(McpNotificationDismissContract.EXTRA_NOTIFICATION_ID, -1),
+        )
         assertEquals(
             LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
             currentIntent.getStringExtra(McpNotificationDismissContract.EXTRA_SERVER_NAME),

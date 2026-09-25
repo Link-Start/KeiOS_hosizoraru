@@ -4,51 +4,37 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class AppPictureInPictureSeekTest {
-    @Test
-    fun `seek position moves by delta inside known duration`() {
-        assertEquals(
-            60_000L,
-            resolveAppPictureInPictureSeekPositionMs(
-                currentPositionMs = 50_000L,
-                durationMs = 120_000L,
-                deltaMs = APP_PIP_SEEK_INTERVAL_10_SECONDS_MS,
-            ),
-        )
-    }
+    private data class SeekCase(
+        val label: String,
+        val currentPositionMs: Long,
+        val durationMs: Long,
+        val deltaMs: Long,
+        val expectedMs: Long,
+    )
 
     @Test
-    fun `seek position clamps to start`() {
-        assertEquals(
-            0L,
-            resolveAppPictureInPictureSeekPositionMs(
-                currentPositionMs = 5_000L,
-                durationMs = 120_000L,
-                deltaMs = -APP_PIP_SEEK_INTERVAL_10_SECONDS_MS,
+    fun `seek position moves by delta and clamps to the known duration`() {
+        listOf(
+            SeekCase("moves by delta inside known duration", 50_000L, 120_000L, APP_PIP_SEEK_INTERVAL_10_SECONDS_MS, 60_000L),
+            SeekCase("clamps to start", 5_000L, 120_000L, -APP_PIP_SEEK_INTERVAL_10_SECONDS_MS, 0L),
+            SeekCase("clamps to duration", 118_000L, 120_000L, APP_PIP_SEEK_INTERVAL_10_SECONDS_MS, 120_000L),
+            SeekCase(
+                "keeps forward target when duration is unknown",
+                118_000L,
+                Long.MIN_VALUE + 1L,
+                APP_PIP_SEEK_INTERVAL_10_SECONDS_MS,
+                128_000L,
             ),
-        )
-    }
-
-    @Test
-    fun `seek position clamps to duration`() {
-        assertEquals(
-            120_000L,
-            resolveAppPictureInPictureSeekPositionMs(
-                currentPositionMs = 118_000L,
-                durationMs = 120_000L,
-                deltaMs = APP_PIP_SEEK_INTERVAL_10_SECONDS_MS,
-            ),
-        )
-    }
-
-    @Test
-    fun `seek position keeps forward target when duration is unknown`() {
-        assertEquals(
-            128_000L,
-            resolveAppPictureInPictureSeekPositionMs(
-                currentPositionMs = 118_000L,
-                durationMs = Long.MIN_VALUE + 1L,
-                deltaMs = APP_PIP_SEEK_INTERVAL_10_SECONDS_MS,
-            ),
-        )
+        ).forEach { case ->
+            assertEquals(
+                case.expectedMs,
+                resolveAppPictureInPictureSeekPositionMs(
+                    currentPositionMs = case.currentPositionMs,
+                    durationMs = case.durationMs,
+                    deltaMs = case.deltaMs,
+                ),
+                case.label,
+            )
+        }
     }
 }

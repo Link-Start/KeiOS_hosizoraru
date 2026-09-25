@@ -41,6 +41,12 @@ class BaIdentityPolicyTest {
         assertTrue(isBaFriendCodeConfigured("ab12cd3", BA_SERVER_INDEX_CN))
         assertTrue(isBaFriendCodeConfigured("GLOBALAB", BA_SERVER_INDEX_GLOBAL))
         assertTrue(isBaFriendCodeConfigured("YUKIARIS", BA_SERVER_INDEX_JP))
+        assertFalse(isBaFriendCodeConfigured("GL12CD34", BA_SERVER_INDEX_GLOBAL))
+        assertFalse(isBaFriendCodeConfigured("ARISUKEI"))
+        assertFalse(isBaFriendCodeConfigured("arisuke"))
+        assertFalse(isBaFriendCodeConfigured("arisukei"))
+        assertFalse(isBaFriendCodeConfigured(""))
+        assertFalse(isBaFriendCodeConfigured("A1B2"))
         assertTrue(isBaFriendCodeConfigured("ab12cd3"))
         assertTrue(isBaFriendCodeConfigured("GLOBALAB"))
     }

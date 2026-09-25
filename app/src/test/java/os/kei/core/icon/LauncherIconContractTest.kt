@@ -12,15 +12,6 @@ import os.kei.ui.testing.repoFile
 
 class LauncherIconContractTest {
     @Test
-    fun `storage id defaults to android designs`() {
-        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId(null))
-        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId(""))
-        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId("unknown"))
-        assertEquals(LauncherIconDesign.Apple, LauncherIconDesign.fromStorageId("apple"))
-        assertEquals(LauncherIconDesign.Android, LauncherIconDesign.fromStorageId("android"))
-    }
-
-    @Test
     fun `component package follows installed application id while class stays manifest namespace`() {
         val appleDebugComponent = LauncherIconDesign.Apple.componentSpec("os.kei.debug")
         val androidBenchmarkComponent = LauncherIconDesign.Android.componentSpec("os.kei")

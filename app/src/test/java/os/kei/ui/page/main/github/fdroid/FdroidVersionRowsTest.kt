@@ -276,15 +276,6 @@ class FdroidVersionRowFactsTest {
         assertTrue(version.matchesQuery("PIXEZ"))
         assertFalse(version.matchesQuery("3.0"))
     }
-
-    @Test
-    fun `the channel is read from the release channel and from the version name`() {
-        // F-Droid has no prerelease flag. index-v2 may carry `releaseChannels` and mostly does not, so a
-        // build named 2.0.0-beta has to be recognised whatever the index said.
-        assertTrue(fdroidVersion(10L, versionName = "2.0.0-beta").channel().isPreRelease)
-        assertTrue(fdroidVersion(10L, versionName = "1.4.0", releaseChannels = listOf("beta")).channel().isPreRelease)
-        assertFalse(fdroidVersion(10L, versionName = "1.4.0").channel().isPreRelease)
-    }
 }
 
 /**

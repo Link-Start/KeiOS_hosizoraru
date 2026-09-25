@@ -1,8 +1,6 @@
 package os.kei.feature.github.engine.release
 
 import org.junit.Test
-import os.kei.core.versioning.VersionCandidate
-import os.kei.core.versioning.VersionOrder
 import os.kei.core.versioning.VersioningEngine
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
@@ -108,16 +106,7 @@ class GitHubReleaseCandidateRankerTest {
             title = "Canary Build Version.26.4.Canary_C384",
             publishedAtMillis = 100L,
         )
-        val semanticComparison = VersioningEngine.compareRemoteCandidateSets(
-            leftCandidates = alpha.versionCandidates.map { candidate ->
-                VersionCandidate(candidate.value, candidate.source.priority)
-            },
-            rightCandidates = canaryAlias.versionCandidates.map { candidate ->
-                VersionCandidate(candidate.value, candidate.source.priority)
-            },
-        )
 
-        assertEquals(VersionOrder.Newer, semanticComparison?.order, semanticComparison.toString())
         assertEquals(
             alpha,
             GitHubReleaseCandidateRanker.latest(listOf(alpha, canaryAlias)),

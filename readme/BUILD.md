@@ -278,12 +278,14 @@ Notes:
 One-off CLI example (without editing local properties):
 
 ```bash
-./gradlew :feature-github:testDebugUnitTest \
+KEIOS_GITHUB_API_TOKEN=ghp_xxx ./gradlew :feature-github:testDebugUnitTest \
   --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest" \
   -Dkeios.github.liveBenchmark=true \
-  -Dkeios.github.api.token=ghp_xxx \
   -Dkeios.github.liveTargets=topjohnwu/Magisk,neovim/neovim
 ```
+
+The token goes through the environment, not `-D`: a `-D` value is stored in Gradle's configuration
+cache, so `keios.github.api.token` is not forwarded to the test JVM.
 
 ### What This Test Verifies
 

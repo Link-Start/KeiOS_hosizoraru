@@ -217,10 +217,6 @@ val preReleaseVersionCode =
 // - keios.release.storePassword
 // - keios.release.keyAlias
 // - keios.release.keyPassword
-// - keios.github.liveBenchmark
-// - keios.github.api.token
-// - keios.github.liveTargets
-// - keios.github.forceGuest
 val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
@@ -485,8 +481,7 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
-            // Keep unit tests on the desktop OkHttp platform. Live GitHub tests read secrets from
-            // JVM properties, env vars, or ~/.gradle/gradle.properties; see README.md.
+            // Keep unit tests on the desktop OkHttp platform.
             it.systemProperty("okhttp.platform", "jdk9")
         }
     }
@@ -658,7 +653,5 @@ dependencies {
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.okhttp.mockwebserver)
-    testImplementation(libs.xmlpull)
-    testImplementation(libs.kxml2)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

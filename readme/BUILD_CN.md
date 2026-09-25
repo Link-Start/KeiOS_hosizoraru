@@ -249,12 +249,14 @@ keios.github.forceGuest=false
 一次性命令示例（不改本地配置文件）：
 
 ```bash
-./gradlew :feature-github:testDebugUnitTest \
+KEIOS_GITHUB_API_TOKEN=ghp_xxx ./gradlew :feature-github:testDebugUnitTest \
   --tests "os.kei.feature.github.data.remote.GitHubStrategyLiveBenchmarkTest" \
   -Dkeios.github.liveBenchmark=true \
-  -Dkeios.github.api.token=ghp_xxx \
   -Dkeios.github.liveTargets=topjohnwu/Magisk,neovim/neovim
 ```
+
+token 通过环境变量传入，而不是 `-D`：`-D` 的值会被写进 Gradle 的配置缓存，所以
+`keios.github.api.token` 不会转发给测试进程。
 
 ### 此测试验证内容
 

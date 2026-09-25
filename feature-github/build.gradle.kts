@@ -2,6 +2,18 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
+// Opt-in GitHubStrategyLiveBenchmarkTest switches. A -D on the Gradle command line reaches the test JVM
+// only through this list; the test also reads env vars and ~/.gradle/gradle.properties.
+// keios.github.api.token is deliberately not forwarded: a value read here is stored in the
+// configuration cache (on in gradle.properties), so a token would land on disk in plain text. Give
+// the token through the environment or ~/.gradle/gradle.properties, which the test reads itself.
+val liveBenchmarkSystemPropertyKeys =
+    listOf(
+        "keios.github.liveBenchmark",
+        "keios.github.liveTargets",
+        "keios.github.forceGuest",
+    )
+
 android {
     namespace = "os.kei.feature.github"
     compileSdk = libs.versions.compile.sdk.get().toInt()
@@ -17,8 +29,13 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
-        unitTests.all {
-            it.systemProperty("okhttp.platform", "jdk9")
+        unitTests.all { test ->
+            test.systemProperty("okhttp.platform", "jdk9")
+            liveBenchmarkSystemPropertyKeys.forEach { key ->
+                providers.systemProperty(key).orNull?.let { value ->
+                    test.systemProperty(key, value)
+                }
+            }
         }
     }
 }

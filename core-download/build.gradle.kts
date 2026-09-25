@@ -55,7 +55,6 @@ dependencies {
     api(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.kotlin.test)
-    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit4)
     testImplementation(libs.okhttp.mockwebserver)
 }

@@ -1,10 +1,8 @@
 package os.kei.ui.page.main.widget.glass
 
 import android.app.Application
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -21,9 +19,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,14 +58,7 @@ class LiquidInfoBlockTest {
                 val backdrop = rememberLayerBackdrop()
                 val explicitFallback = rememberLayerBackdrop()
                 pageBackdrop = backdrop
-                Box(modifier = Modifier.size(280.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 280.dp) {
                     LiquidInfoBlock(
                         backdrop = backdrop,
                         title = "Status",
@@ -106,14 +95,7 @@ class LiquidInfoBlockTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 pageBackdrop = backdrop
-                Box(modifier = Modifier.size(280.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 280.dp) {
                     CompositionLocalProvider(LocalLiquidParentBackdrop provides backdrop) {
                         LiquidInfoBlock(
                             title = "Inherited",
@@ -308,14 +290,3 @@ class LiquidInfoBlockTest {
 }
 
 class LiquidInfoBlockTestApp : Application()
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}

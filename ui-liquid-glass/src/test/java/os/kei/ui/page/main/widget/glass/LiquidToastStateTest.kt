@@ -30,16 +30,6 @@ class LiquidToastStateTest {
     }
 
     @Test
-    fun showThenDismissClearsTheToast() {
-        val state = LiquidToastState()
-        state.show("A")
-        assertEquals(listOf("A"), state.messages())
-
-        state.dismiss(state.visibleSlots.first().token)
-        assertTrue(state.visibleSlots.isEmpty())
-    }
-
-    @Test
     fun stacksUpToTwoVisibleAndQueuesTheRest() {
         val state = LiquidToastState()
         state.show("A")

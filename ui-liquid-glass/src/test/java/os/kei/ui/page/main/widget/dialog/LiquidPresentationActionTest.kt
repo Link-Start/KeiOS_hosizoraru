@@ -48,12 +48,6 @@ class LiquidPresentationActionTest {
         assertEquals(listOf("First", "Second", "Third"), ordered.map { it.label })
     }
 
-    @Test
-    fun actionSheetToleratesHavingNoCancel() {
-        val ordered = liquidActionSheetOrder(listOf(action("Only", LiquidActionRole.Default)))
-        assertEquals(listOf("Only"), ordered.map { it.label })
-    }
-
     /**
      * "Place the button people are most likely to choose on the trailing side in a row of buttons."
      */

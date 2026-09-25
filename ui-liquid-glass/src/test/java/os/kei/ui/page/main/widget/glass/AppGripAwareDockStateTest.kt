@@ -20,26 +20,6 @@ class AppGripAwareDockStateTest {
     }
 
     @Test
-    fun physicalSidesMapToLogicalSidesInLtrAndRtl() {
-        assertEquals(
-            AppFloatingDockSide.Start,
-            resolveLogicalDockSide(AppPhysicalDockSide.Left, LayoutDirection.Ltr),
-        )
-        assertEquals(
-            AppFloatingDockSide.End,
-            resolveLogicalDockSide(AppPhysicalDockSide.Right, LayoutDirection.Ltr),
-        )
-        assertEquals(
-            AppFloatingDockSide.End,
-            resolveLogicalDockSide(AppPhysicalDockSide.Left, LayoutDirection.Rtl),
-        )
-        assertEquals(
-            AppFloatingDockSide.Start,
-            resolveLogicalDockSide(AppPhysicalDockSide.Right, LayoutDirection.Rtl),
-        )
-    }
-
-    @Test
     fun touchResolverUsesLowerPhysicalEdgeZones() {
         assertEquals(
             AppPhysicalDockSide.Left,

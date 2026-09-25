@@ -1,25 +1,23 @@
 package os.kei.ui.page.main.widget.sheet
 
 import android.app.Application
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.glass.BackdropScene
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -51,14 +49,7 @@ class SheetSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val parentBackdrop = rememberLayerBackdrop()
                 sheetBackdrop = parentBackdrop
-                Box(modifier = Modifier.size(240.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(parentBackdrop),
-                    )
+                BackdropScene(parentBackdrop, 240.dp) {
                     CompositionLocalProvider(LocalLiquidParentBackdrop provides parentBackdrop) {
                         SheetSurfaceCard {
                             cardBackdrop = LocalLiquidParentBackdrop.current

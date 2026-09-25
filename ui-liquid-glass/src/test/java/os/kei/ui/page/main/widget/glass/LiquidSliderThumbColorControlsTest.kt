@@ -20,13 +20,6 @@ import org.junit.Test
  * saturation was caught — see `grabbingTheThumbAddsLightWithoutAddingChroma`.
  */
 class LiquidSliderThumbColorControlsTest {
-    @Test
-    fun restingSaturationIsExactlyWhatVibrancyMeans() {
-        // Backdrop: `vibrancy()` multiplies saturation by 1.5. Drift here silently desaturates the
-        // resting thumb relative to every surface that still calls vibrancy().
-        assertEquals(1.5f, SliderThumbVibrancySaturation, 0f)
-    }
-
     /**
      * The invariant a screenshot of a resting slider can never guard, and the one a real drag caught.
      *

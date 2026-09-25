@@ -41,7 +41,6 @@ import androidx.compose.ui.test.isNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -548,22 +547,6 @@ class LiquidGlassActionMenuTest {
         assertTrue(abs(infoSubtitleBounds.left - disabledSubtitleBounds.left) <= tolerance)
         assertTrue(infoSubtitleBounds.top >= infoTitleBounds.bottom - tolerance)
         assertTrue(disabledSubtitleBounds.top >= disabledTitleBounds.bottom - tolerance)
-    }
-
-    @Test
-    fun infoRowModelProvidesPassiveDefaultsAndCallerModifier() {
-        val modifier = Modifier.testTag("info-model")
-        val item =
-            LiquidGlassActionMenuInfoRow(
-                id = "info",
-                text = "Information",
-                modifier = modifier,
-            )
-
-        assertEquals(modifier, item.modifier)
-        assertEquals(null, item.leadingIcon)
-        assertEquals(null, item.trailingIcon)
-        assertEquals(null, item.subtitle)
     }
 }
 

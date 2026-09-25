@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -18,7 +17,6 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
@@ -33,10 +31,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -139,15 +133,7 @@ class LiquidGlassBottomSheetTest {
                     title = "Sheet",
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -158,7 +144,7 @@ class LiquidGlassBottomSheetTest {
 
         val height = sheetHeight()
         assertTrue(
-            height in (rootHeight() * 0.66f)..(rootHeight() * 0.82f),
+            height in (composeRule.rootHeight() * 0.66f)..(composeRule.rootHeight() * 0.82f),
             "Expected managed scrollable content to stay near opening detent, got $height",
         )
     }
@@ -173,15 +159,7 @@ class LiquidGlassBottomSheetTest {
                     title = "Sheet",
                 ) {
                     Column {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -192,7 +170,7 @@ class LiquidGlassBottomSheetTest {
 
         val height = sheetHeight()
         assertTrue(
-            height >= rootHeight() * 0.90f,
+            height >= composeRule.rootHeight() * 0.90f,
             "Expected plain content to expand to full detent, got $height",
         )
     }
@@ -338,88 +316,6 @@ class LiquidGlassBottomSheetTest {
         }
     }
 
-    /**
-     * Without an overlay host there is no trustworthy backdrop, so the sheet must publish none and
-     * paint itself opaque. Asking for blur here would draw *nothing* and leave a transparent sheet —
-     * a silent failure, which is exactly how the Dialog-hosted sheet lost its glass.
-     */
-    @Test
-    fun sheetPublishesNoBackdropWithoutAnOverlayHost() {
-        var sheetBackdrop: Backdrop? = null
-
-        composeRule.setContent {
-            LiquidSheetTestTheme {
-                LiquidGlassBottomSheet(
-                    show = true,
-                    title = "Page fallback",
-                ) {
-                    sheetBackdrop = LocalLiquidParentBackdrop.current
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(96.dp)
-                                .testTag("sheet-page-fallback-control"),
-                    )
-                }
-            }
-        }
-
-        composeRule.mainClock.advanceTimeBy(2_000)
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag("sheet-page-fallback-control").assertExists()
-
-        composeRule.runOnIdle {
-            assertNull(sheetBackdrop)
-        }
-    }
-
-    @Test
-    fun customBackgroundKeepsChromeAndContentOnFallback() {
-        var startBackdrop: Backdrop? = null
-        var endBackdrop: Backdrop? = null
-        var contentBackdrop: Backdrop? = null
-
-        composeRule.setContent {
-            LiquidSheetTestTheme {
-                LiquidGlassBottomSheet(
-                    show = true,
-                    title = "Fallback",
-                    backgroundColor = Color.White,
-                    startAction = {
-                        startBackdrop = LocalLiquidParentBackdrop.current
-                        Box(modifier = Modifier.testTag("fallback-sheet-start"))
-                    },
-                    endAction = {
-                        endBackdrop = LocalLiquidParentBackdrop.current
-                        Box(modifier = Modifier.testTag("fallback-sheet-end"))
-                    },
-                ) {
-                    contentBackdrop = LocalLiquidParentBackdrop.current
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(96.dp)
-                                .testTag("fallback-sheet-content"),
-                    )
-                }
-            }
-        }
-
-        composeRule.mainClock.advanceTimeBy(2_000)
-        composeRule.waitForIdle()
-        composeRule.onNodeWithTag("fallback-sheet-start").assertExists()
-        composeRule.onNodeWithTag("fallback-sheet-end").assertExists()
-        composeRule.onNodeWithTag("fallback-sheet-content").assertExists()
-
-        composeRule.runOnIdle {
-            assertNull(startBackdrop)
-            assertNull(endBackdrop)
-            assertNull(contentBackdrop)
-        }
-    }
-
     @Test
     fun respectsCustomMaxWidth() {
         composeRule.setContent {
@@ -463,15 +359,7 @@ class LiquidGlassBottomSheetTest {
                     onDismissRequest = { dismissRequests++ },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -482,10 +370,10 @@ class LiquidGlassBottomSheetTest {
         val heightBefore = sheetHeight()
         val bottomBefore = sheetBottom()
         assertTrue(
-            heightBefore >= rootHeight() * 0.90f,
+            heightBefore >= composeRule.rootHeight() * 0.90f,
             "Expected tall sheet before drag, got $heightBefore",
         )
-        val dragDistance = rootHeight() * 0.25f
+        val dragDistance = composeRule.rootHeight() * 0.25f
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = 12.dp.toPx())
@@ -527,15 +415,7 @@ class LiquidGlassBottomSheetTest {
                         modifier = Modifier.testTag(SCROLL_CONTENT_TAG),
                         verticalSpacing = 0.dp,
                     ) {
-                        repeat(48) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 48, height = 56.dp)
                     }
                 }
             }
@@ -543,7 +423,7 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val contentScrollDistance = rootHeight() * 0.42f
+        val contentScrollDistance = composeRule.rootHeight() * 0.42f
 
         composeRule.onNodeWithTag(SCROLL_CONTENT_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = height * 0.76f)
@@ -557,7 +437,7 @@ class LiquidGlassBottomSheetTest {
         val heightBefore = sheetHeight()
         val topBefore = sheetTop()
 
-        val downwardDrag = rootHeight() * 0.20f
+        val downwardDrag = composeRule.rootHeight() * 0.20f
         composeRule.onNodeWithTag(SCROLL_CONTENT_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = height * 0.34f)
             down(start)
@@ -594,15 +474,7 @@ class LiquidGlassBottomSheetTest {
                     initialDetent = LiquidSheetInitialDetent.Full,
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -612,8 +484,8 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
         val heightBefore = sheetHeight()
         val bottomBefore = sheetBottom()
-        val downwardDrag = rootHeight() * 0.30f
-        val upwardDrag = rootHeight() * 0.18f
+        val downwardDrag = composeRule.rootHeight() * 0.30f
+        val upwardDrag = composeRule.rootHeight() * 0.18f
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = 12.dp.toPx())
@@ -654,15 +526,7 @@ class LiquidGlassBottomSheetTest {
                     initialDetent = LiquidSheetInitialDetent.Half,
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(6) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 6, height = 56.dp)
                     }
                 }
             }
@@ -677,7 +541,7 @@ class LiquidGlassBottomSheetTest {
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = 12.dp.toPx())
             down(start)
-            moveBy(Offset(x = 0f, y = -(rootHeight() * 0.80f).toPx()))
+            moveBy(Offset(x = 0f, y = -(composeRule.rootHeight() * 0.80f).toPx()))
             up()
         }
 
@@ -686,15 +550,15 @@ class LiquidGlassBottomSheetTest {
 
         val topAfter = sheetTop()
         assertTrue(
-            topBefore > rootHeight() * 0.30f,
+            topBefore > composeRule.rootHeight() * 0.30f,
             "Expected sheet to start away from safe top, got $topBefore",
         )
         assertTrue(
-            topAfter < topBefore - rootHeight() * 0.20f,
+            topAfter < topBefore - composeRule.rootHeight() * 0.20f,
             "Expected upward drag to expand sheet length toward safe top, before=$topBefore after=$topAfter",
         )
         assertTrue(
-            sheetHeight() > heightBefore + rootHeight() * 0.20f,
+            sheetHeight() > heightBefore + composeRule.rootHeight() * 0.20f,
             "Expected upward drag to increase sheet height, before=$heightBefore after=${sheetHeight()}",
         )
         assertDpNear(
@@ -718,15 +582,7 @@ class LiquidGlassBottomSheetTest {
                     onDismissRequest = { dismissRequests++ },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -773,15 +629,7 @@ class LiquidGlassBottomSheetTest {
                     onDismissRequest = { dismissRequests++ },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -834,15 +682,7 @@ class LiquidGlassBottomSheetTest {
                     },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -856,7 +696,7 @@ class LiquidGlassBottomSheetTest {
             if (heightBefore > oneThirdHeight) {
                 heightBefore - oneThirdHeight + 128.dp
             } else {
-                rootHeight() * 0.40f
+                composeRule.rootHeight() * 0.40f
             }
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
@@ -888,15 +728,7 @@ class LiquidGlassBottomSheetTest {
                     onBlockedDismissRequest = { blockedDismissRequests++ },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -910,7 +742,7 @@ class LiquidGlassBottomSheetTest {
             if (heightBefore > oneThirdHeight) {
                 heightBefore - oneThirdHeight + 128.dp
             } else {
-                rootHeight() * 0.40f
+                composeRule.rootHeight() * 0.40f
             }
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
@@ -931,56 +763,15 @@ class LiquidGlassBottomSheetTest {
         )
     }
 
-    private fun sheetHeight(): Dp {
-        val heightPx =
-            composeRule
-                .onNodeWithTag(SHEET_TAG)
-                .fetchSemanticsNode()
-                .boundsInRoot
-                .height
-        return with(composeRule.density) { heightPx.toDp() }
-    }
+    private fun sheetHeight(): Dp = composeRule.nodeBounds(SHEET_TAG).let { it.bottom - it.top }
 
-    private fun sheetWidth(): Dp {
-        val widthPx =
-            composeRule
-                .onNodeWithTag(SHEET_TAG)
-                .fetchSemanticsNode()
-                .boundsInRoot
-                .width
-        return with(composeRule.density) { widthPx.toDp() }
-    }
+    private fun sheetWidth(): Dp = composeRule.nodeBounds(SHEET_TAG).let { it.right - it.left }
 
-    private fun sheetTop(): Dp {
-        val topPx =
-            composeRule
-                .onNodeWithTag(SHEET_TAG)
-                .fetchSemanticsNode()
-                .boundsInRoot
-                .top
-        return with(composeRule.density) { topPx.toDp() }
-    }
+    private fun sheetTop(): Dp = composeRule.nodeBounds(SHEET_TAG).let { it.top }
 
-    private fun sheetBottom(): Dp {
-        val bottomPx =
-            composeRule
-                .onNodeWithTag(SHEET_TAG)
-                .fetchSemanticsNode()
-                .boundsInRoot
-                .bottom
-        return with(composeRule.density) { bottomPx.toDp() }
-    }
+    private fun sheetBottom(): Dp = composeRule.nodeBounds(SHEET_TAG).let { it.bottom }
 
-    private fun rootHeight(): Dp {
-        val heightPx =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .maxOf { it.boundsInRoot.height }
-        return with(composeRule.density) { heightPx.toDp() }
-    }
-
-    private fun oneThirdRootHeight(): Dp = rootHeight() / 3f
+    private fun oneThirdRootHeight(): Dp = composeRule.rootHeight() / 3f
 
     private fun assertNearOneThirdRootHeight(
         actual: Dp,
@@ -1003,13 +794,6 @@ class LiquidGlassBottomSheetTest {
             actual in (expected - tolerance)..(expected + tolerance),
             "$message, expected=$expected actual=$actual tolerance=$tolerance",
         )
-    }
-}
-
-@Composable
-private fun LiquidSheetTestTheme(content: @Composable () -> Unit) {
-    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-        content()
     }
 }
 

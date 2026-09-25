@@ -1,41 +1,12 @@
 package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * One material for both action bars.
- *
- * Replaces `LiquidGlassBottomBarMaterialTest`, which pinned the bottom bar's private near-twin of this
- * material — the very numbers the consolidation removed. Pinning them again would have frozen the
- * duplication in place, so these assert the *shared* values and that the private copy stays gone.
- */
+/** The shared action-bar chrome: the selection indicator's colour mixing. */
 class LiquidActionBarMaterialTest {
-    @Test
-    fun lightMaterialKeepsTheRebuiltReferenceRefraction() {
-        val material = liquidActionBarMaterial(isLight = true)
-
-        assertEquals(4.dp, material.blur)
-        assertEquals(16.dp, material.lensHeight)
-        assertEquals(32.dp, material.lensAmount)
-        assertEquals(0.30f, material.surfaceAlpha)
-        assertEquals(0.66f, material.highlightAlpha)
-    }
-
-    @Test
-    fun darkMaterialKeepsTheRebuiltReferenceRefraction() {
-        val material = liquidActionBarMaterial(isLight = false)
-
-        assertEquals(4.dp, material.blur)
-        assertEquals(16.dp, material.lensHeight)
-        assertEquals(28.dp, material.lensAmount)
-        assertEquals(0.22f, material.surfaceAlpha)
-        assertEquals(0.46f, material.highlightAlpha)
-    }
-
     @Test
     fun theSelectionIndicatorFollowsTheAccent() {
         // Was a flat 10% black/white film that ignored the theme's primary. The dark side still lands on

@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
@@ -16,11 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -30,9 +27,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 
 private const val DYNAMIC_DISMISS_SHEET_TAG = "dynamic-dismiss-liquid-sheet"
@@ -54,7 +48,7 @@ class LiquidGlassBottomSheetDynamicDismissTest {
         var dismissRequests = 0
         var blockedDismissRequests = 0
         composeRule.setContent {
-            DynamicDismissSheetTestTheme {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(DYNAMIC_DISMISS_SHEET_TAG),
@@ -65,15 +59,7 @@ class LiquidGlassBottomSheetDynamicDismissTest {
                     onBlockedDismissRequest = { blockedDismissRequests++ },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(24) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 24, height = 48.dp)
                     }
                 }
             }
@@ -81,7 +67,7 @@ class LiquidGlassBottomSheetDynamicDismissTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val dragDistance = rootHeight() * 0.82f
+        val dragDistance = composeRule.rootHeight() * 0.82f
 
         composeRule.mainClock.autoAdvance = false
         composeRule.onNodeWithTag(DYNAMIC_DISMISS_SHEET_TAG).performTouchInput {
@@ -105,7 +91,7 @@ class LiquidGlassBottomSheetDynamicDismissTest {
         var dismissRequests = 0
         lateinit var dialogBackDispatcher: OnBackPressedDispatcher
         composeRule.setContent {
-            DynamicDismissSheetTestTheme {
+            LiquidSheetTestTheme {
                 CompositionLocalProvider(LocalPredictiveBackAnimationsEnabled provides false) {
                     LiquidGlassBottomSheet(
                         show = true,
@@ -149,7 +135,7 @@ class LiquidGlassBottomSheetDynamicDismissTest {
         var dismissFinished = 0
         lateinit var dialogBackDispatcher: OnBackPressedDispatcher
         composeRule.setContent {
-            DynamicDismissSheetTestTheme {
+            LiquidSheetTestTheme {
                 CompositionLocalProvider(
                     LocalPredictiveBackAnimationsEnabled provides false,
                     LocalTransitionAnimationsEnabled provides false,
@@ -183,20 +169,5 @@ class LiquidGlassBottomSheetDynamicDismissTest {
         assertEquals(1, dismissFinished)
         composeRule.mainClock.autoAdvance = true
     }
-
-    private fun rootHeight(): Dp {
-        val heightPx =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .maxOf { it.boundsInRoot.height }
-        return with(composeRule.density) { heightPx.toDp() }
-    }
 }
 
-@Composable
-private fun DynamicDismissSheetTestTheme(content: @Composable () -> Unit) {
-    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-        content()
-    }
-}

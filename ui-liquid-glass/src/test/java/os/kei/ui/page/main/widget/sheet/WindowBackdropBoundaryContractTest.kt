@@ -39,8 +39,6 @@ class WindowBackdropBoundaryContractTest {
             "LocalLiquidParentBackdrop.current ?: LocalLiquidDialogBackdrop.current" in resolver,
             "A window can consume a parent or dialog backdrop created inside its own boundary",
         )
-        assertTrue("LiquidBackdropWindowBoundary {\n        Dialog(" in boundary)
-        assertTrue("LiquidBackdropWindowBoundary {\n        Popup(" in boundary)
         assertFalse("rememberLayerBackdrop" in boundary)
         assertFalse(".layerBackdrop(" in boundary)
         assertFalse(".drawBackdrop(" in boundary)
@@ -89,7 +87,6 @@ class WindowBackdropBoundaryContractTest {
         val modalSurface = windowBoundarySource(LIQUID_MODAL_SURFACE_SOURCE)
 
         assertTrue("LiquidOverlayPortal {" in presentation)
-        assertFalse("LiquidBackdropWindowDialog(" in presentation)
         assertFalse("Dialog(" in presentation)
 
         assertTrue("LocalSceneBackdrop.current" in modalSurface)
@@ -103,15 +100,12 @@ class WindowBackdropBoundaryContractTest {
             "A second layerBackdrop after drawBackdrop is the documented draw loop",
         )
 
+        // Not going back to a Dialog window is the repo-wide ban in app's PlatformWindowSourceContractTest.
         for (relativePath in LIQUID_MODAL_CONSUMER_SOURCES) {
             val consumer = windowBoundarySource(relativePath)
             assertTrue(
                 "LocalLiquidParentBackdrop provides surface.exportedBackdrop," in consumer,
                 "$relativePath must republish its own surface to its content",
-            )
-            assertFalse(
-                "LiquidBackdropWindowDialog(" in consumer,
-                "$relativePath must not go back to hosting itself in a Dialog window",
             )
         }
     }
@@ -133,10 +127,8 @@ class WindowBackdropBoundaryContractTest {
     fun theAnchoredPanelIsHostedInWindowRatherThanBehindAWindowBoundary() {
         val panel = windowBoundarySource(SNAPSHOT_POPUP_SOURCE)
 
-        assertFalse(
-            "LiquidBackdropWindowPopup(" in panel,
-            "the anchored panel must not host itself in a Popup window — that is what blanked its backdrop",
-        )
+        // Not hosting it in a Popup window, which is what blanked its backdrop, is the repo-wide ban in
+        // app's PlatformWindowSourceContractTest.
         assertTrue(
             "LiquidMenuPresentation(" in panel,
             "the panel is hosted by LiquidMenuPresentation, which portals it into the activity window",
@@ -209,11 +201,6 @@ class WindowBackdropBoundaryRuntimeTest {
 }
 
 class WindowBackdropBoundaryContractTestApp : Application()
-
-private fun Int.windowMarkerFound(): Int {
-    require(this >= 0) { "Expected source marker was not found" }
-    return this
-}
 
 private fun windowBoundarySource(relativePath: String): String {
     val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }

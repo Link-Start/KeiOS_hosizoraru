@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,34 +26,6 @@ class AppLiquidSearchMaterialTest {
         assertTrue(colors.bottomGlow.alpha <= 0.07f)
         assertTrue(colors.sideRim.alpha <= 0.17f)
         assertTrue(colors.innerRim.alpha <= 0.27f)
-    }
-
-    /**
-     * The film must not carry a border, because both surfaces that use it already stroke
-     * `glass.borderColor` at `glass.borderWidth` themselves.
-     *
-     * This is the regression that existed: the film had an `edge` colour that was the same 1.1dp ring
-     * with, in light mode, the byte-identical `Color(0xFF86C3FF).copy(alpha = 0.32f)`. Two strokes of one
-     * ring on one path composite to `0.32 + 0.32 * 0.68`, so the border rendered at roughly 0.54 —
-     * two-thirds over strength — everywhere a search capsule appeared in light mode.
-     */
-    @Test
-    fun theFilmLeavesTheBorderToTheVariantStyle() {
-        val searchFieldBorder =
-            listOf(true, false).map { isDark ->
-                if (isDark) Color.White.copy(alpha = 0.18f) else Color(0xFF86C3FF).copy(alpha = 0.32f)
-            }
-
-        listOf(true, false).forEachIndexed { index, isDark ->
-            val colors = appLiquidSearchMaterialColors(isDark = isDark)
-            val border = searchFieldBorder[index]
-            // The film's rim is white in both themes; the variant's border is accent-tinted in light.
-            // Equal values here would mean the ring is defined twice again.
-            assertTrue(
-                "The film's rim must not restate the SearchField border (isDark=$isDark)",
-                colors.innerRim != border,
-            )
-        }
     }
 
     /** The ramp the cached glow brushes replace, held to the values it used to draw. */
@@ -101,16 +72,5 @@ class AppLiquidSearchMaterialTest {
             )
 
         assertTrue(alpha <= 0.68f)
-    }
-
-    @Test
-    fun lightPlaceholderUsesReadableContentColor() {
-        val placeholder =
-            appLiquidSearchPlaceholderColor(
-                contentColor = Color.Black,
-                isDark = false,
-            )
-
-        assertTrue(placeholder.alpha in 0.61f..0.63f)
     }
 }

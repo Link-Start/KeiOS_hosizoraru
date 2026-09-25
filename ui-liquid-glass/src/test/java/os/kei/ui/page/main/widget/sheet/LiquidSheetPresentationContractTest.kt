@@ -7,18 +7,10 @@ import java.io.File
 
 class LiquidSheetPresentationContractTest {
     @Test
-    fun detectsComposeImeInsets() {
-        assertTrue(liquidSheetImeVisible(composeImeBottomPx = 1, platformImeVisible = false))
-    }
-
-    @Test
-    fun detectsPlatformImeInsets() {
-        assertTrue(liquidSheetImeVisible(composeImeBottomPx = 0, platformImeVisible = true))
-    }
-
-    @Test
-    fun reportsHiddenImeWhenBothSourcesAreClear() {
-        assertFalse(liquidSheetImeVisible(composeImeBottomPx = 0, platformImeVisible = false))
+    fun imeCountsAsVisibleWhenEitherSourceReportsIt() {
+        assertTrue("Compose IME insets", liquidSheetImeVisible(composeImeBottomPx = 1, platformImeVisible = false))
+        assertTrue("platform IME visibility", liquidSheetImeVisible(composeImeBottomPx = 0, platformImeVisible = true))
+        assertFalse("both sources clear", liquidSheetImeVisible(composeImeBottomPx = 0, platformImeVisible = false))
     }
 
     /**

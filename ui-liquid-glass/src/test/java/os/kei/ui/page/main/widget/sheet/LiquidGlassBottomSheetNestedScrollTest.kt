@@ -2,16 +2,9 @@
 
 package os.kei.ui.page.main.widget.sheet
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -23,9 +16,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -47,7 +37,7 @@ class LiquidGlassBottomSheetNestedScrollTest {
     fun contentReachingTopHandsRemainingDownwardDragToSheetInSameGesture() {
         var dismissRequests = 0
         composeRule.setContent {
-            NestedSheetTestTheme {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(NESTED_SHEET_TAG),
@@ -59,15 +49,7 @@ class LiquidGlassBottomSheetNestedScrollTest {
                         modifier = Modifier.testTag(NESTED_CONTENT_TAG),
                         verticalSpacing = 0.dp,
                     ) {
-                        repeat(48) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp)
-                                        .background(Color.Gray),
-                            )
-                        }
+                        GrayRows(count = 48, height = 56.dp)
                     }
                 }
             }
@@ -75,7 +57,7 @@ class LiquidGlassBottomSheetNestedScrollTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val rootHeight = rootHeight()
+        val rootHeight = composeRule.rootHeight()
 
         composeRule.onNodeWithTag(NESTED_CONTENT_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = height * 0.76f)
@@ -106,29 +88,6 @@ class LiquidGlassBottomSheetNestedScrollTest {
         )
     }
 
-    private fun sheetHeight(): Dp {
-        val heightPx =
-            composeRule
-                .onNodeWithTag(NESTED_SHEET_TAG)
-                .fetchSemanticsNode()
-                .boundsInRoot
-                .height
-        return with(composeRule.density) { heightPx.toDp() }
-    }
-
-    private fun rootHeight(): Dp {
-        val heightPx =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .maxOf { it.boundsInRoot.height }
-        return with(composeRule.density) { heightPx.toDp() }
-    }
+    private fun sheetHeight(): Dp = composeRule.nodeBounds(NESTED_SHEET_TAG).let { it.bottom - it.top }
 }
 
-@Composable
-private fun NestedSheetTestTheme(content: @Composable () -> Unit) {
-    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-        content()
-    }
-}

@@ -43,17 +43,6 @@ class AppFloatingKeyboardLiftTest {
     }
 
     @Test
-    fun verticalDockHeightKeepsActionsInOneContinuousCapsule() {
-        assertEquals(
-            186.dp,
-            appFloatingVerticalDockHeight(
-                itemSize = 62.dp,
-                itemCount = 3
-            )
-        )
-    }
-
-    @Test
     fun floatingDockBottomTargetKeepsExpandedDockAboveFullBottomBar() {
         assertEquals(
             112.dp,

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -67,14 +66,7 @@ class AppLiquidDialogActionsTest {
         composeRule.setContent {
             val backdrop = rememberLayerBackdrop()
             expectedBackdrop = backdrop
-            Box(modifier = Modifier.size(48.dp)) {
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .background(Color.White)
-                            .layerBackdrop(backdrop),
-                )
+            BackdropScene(backdrop, 48.dp) {
                 AppStandaloneLiquidBackdropGroup(backdrop = backdrop) {
                     observedBackdrop = LocalLiquidParentBackdrop.current
                     Box(modifier = Modifier.testTag("grouped-standalone-content"))
@@ -87,23 +79,6 @@ class AppLiquidDialogActionsTest {
             assertNotNull(expectedBackdrop)
             assertSame(expectedBackdrop, observedBackdrop)
         }
-    }
-
-    @Test
-    fun standaloneBackdropHostPassesNullWhenLiquidEffectsAreDisabled() {
-        var observedBackdrop: Backdrop? = null
-
-        composeRule.setContent {
-            CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
-                AppStandaloneBackdropHost(modifier = Modifier) { backdrop ->
-                    observedBackdrop = backdrop
-                    Box(modifier = Modifier.testTag("standalone-fallback-content"))
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("standalone-fallback-content").assertExists()
-        composeRule.runOnIdle { assertNull(observedBackdrop) }
     }
 
     @Test

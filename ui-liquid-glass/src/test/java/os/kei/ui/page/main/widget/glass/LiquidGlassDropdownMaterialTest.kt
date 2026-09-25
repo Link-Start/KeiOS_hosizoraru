@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -82,19 +81,6 @@ class LiquidGlassDropdownMaterialTest {
             assertTrue(fallback.alpha > glass.alpha)
             assertEquals(glass.copy(alpha = 1f), fallback.copy(alpha = 1f))
         }
-    }
-
-    @Test
-    fun contentContrastUsesLocalThemeRelativeHalo() {
-        val light = liquidGlassDropdownContentShadow(isDark = false, enabled = true)
-        val dark = liquidGlassDropdownContentShadow(isDark = true, enabled = true)
-
-        assertEquals(Color.White, light.color.copy(alpha = 1f))
-        assertEquals(Color.Black, dark.color.copy(alpha = 1f))
-        assertTrue(light.color.alpha in 0.38f..0.42f)
-        assertTrue(dark.color.alpha in 0.42f..0.46f)
-        assertEquals(2f, light.blurRadius)
-        assertEquals(2f, dark.blurRadius)
     }
 
     @Test

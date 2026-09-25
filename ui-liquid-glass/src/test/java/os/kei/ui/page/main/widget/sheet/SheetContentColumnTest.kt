@@ -40,14 +40,7 @@ class SheetContentColumnTest {
                     LocalLiquidSheetContentOverflowReporter provides { overflows = it }
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        repeat(8) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .background(Color.Gray)
-                            )
-                        }
+                        GrayRows(count = 8, height = 48.dp)
                     }
                 }
             }
@@ -69,14 +62,7 @@ class SheetContentColumnTest {
                         scrollable = false,
                         verticalSpacing = 0.dp
                     ) {
-                        repeat(8) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .background(Color.Gray)
-                            )
-                        }
+                        GrayRows(count = 8, height = 48.dp)
                     }
                 }
             }

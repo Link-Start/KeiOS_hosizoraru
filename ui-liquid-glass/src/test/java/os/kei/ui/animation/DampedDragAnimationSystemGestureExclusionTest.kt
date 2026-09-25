@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -37,35 +38,7 @@ class DampedDragAnimationSystemGestureExclusionTest {
 
     @Test
     fun dragModifierLeavesSystemGesturesAvailableByDefault() {
-        lateinit var rootView: View
-
-        composeRule.setContent {
-            rootView = LocalView.current
-            val scope = rememberCoroutineScope()
-            val dragAnimation =
-                remember(scope) {
-                    DampedDragAnimation(
-                        animationScope = scope,
-                        initialValue = 0f,
-                        valueRange = 0f..1f,
-                        visibilityThreshold = 0.001f,
-                        initialScale = 1f,
-                        pressedScale = 1.1f,
-                        onDragStarted = {},
-                        onDragStopped = {},
-                        onDrag = { _, _ -> },
-                    )
-                }
-
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = 96.dp, height = 48.dp)
-                        .then(dragAnimation.modifier),
-            )
-        }
-
-        composeRule.waitForIdle()
+        val rootView = setDragTarget()
 
         assertFalse(
             rootView.systemGestureExclusionRects.any { rect -> rect.width() > 0 && rect.height() > 0 },
@@ -74,36 +47,7 @@ class DampedDragAnimationSystemGestureExclusionTest {
 
     @Test
     fun dragModifierCanExplicitlyOptIntoSystemGestureExclusion() {
-        lateinit var rootView: View
-
-        composeRule.setContent {
-            rootView = LocalView.current
-            val scope = rememberCoroutineScope()
-            val dragAnimation =
-                remember(scope) {
-                    DampedDragAnimation(
-                        animationScope = scope,
-                        initialValue = 0f,
-                        valueRange = 0f..1f,
-                        visibilityThreshold = 0.001f,
-                        initialScale = 1f,
-                        pressedScale = 1.1f,
-                        excludeFromSystemGestures = true,
-                        onDragStarted = {},
-                        onDragStopped = {},
-                        onDrag = { _, _ -> },
-                    )
-                }
-
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = 96.dp, height = 48.dp)
-                        .then(dragAnimation.modifier),
-            )
-        }
-
-        composeRule.waitForIdle()
+        val rootView = setDragTarget(excludeFromSystemGestures = true)
 
         assertTrue(
             rootView.systemGestureExclusionRects.any { rect -> rect.width() > 0 && rect.height() > 0 },
@@ -115,37 +59,13 @@ class DampedDragAnimationSystemGestureExclusionTest {
         var dragCount = 0
         var stopCount = 0
         var cancelCount = 0
-        composeRule.setContent {
-            val scope = rememberCoroutineScope()
-            val dragAnimation =
-                remember(scope) {
-                    DampedDragAnimation(
-                        animationScope = scope,
-                        initialValue = 0f,
-                        valueRange = 0f..1f,
-                        visibilityThreshold = 0.001f,
-                        initialScale = 1f,
-                        pressedScale = 1.1f,
-                        dragOrientation = Orientation.Horizontal,
-                        dragTouchSlop = 8f,
-                        consumeDragChanges = true,
-                        onDragStarted = {},
-                        onDragStopped = { stopCount++ },
-                        onDragCancelled = { cancelCount++ },
-                        onDrag = { _, _ -> dragCount++ },
-                    )
-                }
+        setHorizontalDragTarget(
+            onDragStopped = { stopCount++ },
+            onDragCancelled = { cancelCount++ },
+            onDrag = { dragCount++ },
+        )
 
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = 96.dp, height = 96.dp)
-                        .testTag("horizontal-drag-target")
-                        .then(dragAnimation.modifier),
-            )
-        }
-
-        composeRule.onNodeWithTag("horizontal-drag-target").performTouchInput {
+        composeRule.onNodeWithTag(DRAG_TARGET_TAG).performTouchInput {
             down(center)
             moveBy(Offset(0f, 48f))
             up()
@@ -161,7 +81,53 @@ class DampedDragAnimationSystemGestureExclusionTest {
         var dragCount = 0
         var stopCount = 0
         var cancelCount = 0
+        setHorizontalDragTarget(
+            onDragStopped = { stopCount++ },
+            onDragCancelled = { cancelCount++ },
+            onDrag = { dragCount++ },
+        )
+
+        composeRule.onNodeWithTag(DRAG_TARGET_TAG).performTouchInput {
+            down(center)
+            moveBy(Offset(48f, 0f))
+            up()
+        }
+
+        assertTrue(dragCount > 0)
+        assertTrue(stopCount == 1)
+        assertTrue(cancelCount == 0)
+    }
+
+    private fun setHorizontalDragTarget(
+        onDragStopped: () -> Unit,
+        onDragCancelled: () -> Unit,
+        onDrag: () -> Unit,
+    ) {
+        setDragTarget(
+            height = 96.dp,
+            dragOrientation = Orientation.Horizontal,
+            dragTouchSlop = 8f,
+            consumeDragChanges = true,
+            onDragStopped = onDragStopped,
+            onDragCancelled = onDragCancelled,
+            onDrag = onDrag,
+        )
+    }
+
+    /** One [DampedDragAnimation] on a 96dp-wide box tagged [DRAG_TARGET_TAG]; returns the host view. */
+    private fun setDragTarget(
+        height: Dp = 48.dp,
+        excludeFromSystemGestures: Boolean = false,
+        dragOrientation: Orientation? = null,
+        dragTouchSlop: Float = 0f,
+        consumeDragChanges: Boolean = false,
+        onDragStopped: () -> Unit = {},
+        onDragCancelled: () -> Unit = {},
+        onDrag: () -> Unit = {},
+    ): View {
+        lateinit var rootView: View
         composeRule.setContent {
+            rootView = LocalView.current
             val scope = rememberCoroutineScope()
             val dragAnimation =
                 remember(scope) {
@@ -172,35 +138,30 @@ class DampedDragAnimationSystemGestureExclusionTest {
                         visibilityThreshold = 0.001f,
                         initialScale = 1f,
                         pressedScale = 1.1f,
-                        dragOrientation = Orientation.Horizontal,
-                        dragTouchSlop = 8f,
-                        consumeDragChanges = true,
+                        consumeDragChanges = consumeDragChanges,
+                        excludeFromSystemGestures = excludeFromSystemGestures,
+                        dragOrientation = dragOrientation,
+                        dragTouchSlop = dragTouchSlop,
                         onDragStarted = {},
-                        onDragStopped = { stopCount++ },
-                        onDragCancelled = { cancelCount++ },
-                        onDrag = { _, _ -> dragCount++ },
+                        onDragStopped = { onDragStopped() },
+                        onDragCancelled = { onDragCancelled() },
+                        onDrag = { _, _ -> onDrag() },
                     )
                 }
 
             Box(
                 modifier =
                     Modifier
-                        .size(width = 96.dp, height = 96.dp)
-                        .testTag("accepted-horizontal-drag-target")
+                        .size(width = 96.dp, height = height)
+                        .testTag(DRAG_TARGET_TAG)
                         .then(dragAnimation.modifier),
             )
         }
-
-        composeRule.onNodeWithTag("accepted-horizontal-drag-target").performTouchInput {
-            down(center)
-            moveBy(Offset(48f, 0f))
-            up()
-        }
-
-        assertTrue(dragCount > 0)
-        assertTrue(stopCount == 1)
-        assertTrue(cancelCount == 0)
+        composeRule.waitForIdle()
+        return rootView
     }
 }
+
+private const val DRAG_TARGET_TAG = "damped-drag-target"
 
 class DampedDragAnimationSystemGestureExclusionTestApp : Application()

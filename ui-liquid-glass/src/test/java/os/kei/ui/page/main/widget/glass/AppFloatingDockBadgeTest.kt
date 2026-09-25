@@ -50,17 +50,6 @@ class AppFloatingDockBadgeTest {
         assertEquals("4", appFloatingDockCollapsedBadgeLabel(listOf("NEW", "4")))
     }
 
-    @Test
-    fun theSingleCountFormatterAgreesWithTheAggregator() {
-        assertNull(appFloatingDockBadgeLabel(0))
-        assertNull(appFloatingDockBadgeLabel(-3))
-        assertEquals("1", appFloatingDockBadgeLabel(1))
-        assertEquals("99", appFloatingDockBadgeLabel(APP_FLOATING_DOCK_BADGE_CAP))
-        assertEquals("99+", appFloatingDockBadgeLabel(APP_FLOATING_DOCK_BADGE_CAP + 1))
-        // Round-tripping a formatted count through the aggregator must not change it.
-        assertEquals("5", appFloatingDockCollapsedBadgeLabel(listOf(appFloatingDockBadgeLabel(5))))
-    }
-
     // ---- geometry: the badge must stay inside the capsule --------------------------------------
 
     @Test

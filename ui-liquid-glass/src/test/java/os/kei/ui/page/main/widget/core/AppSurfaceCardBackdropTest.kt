@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.widget.core
 
 import android.app.Application
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
@@ -13,9 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.shapes.RoundedRectangle
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +20,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppStandaloneBackdropHost
+import os.kei.ui.page.main.widget.glass.BackdropScene
 import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowBoundary
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
@@ -49,28 +47,6 @@ class AppSurfaceCardBackdropTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun acceptsPageSpecificShapeAndOpticalRadii() {
-        composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                AppSurfaceCard(
-                    shape = RoundedRectangle(20.dp),
-                    blurRadius = 8.dp,
-                    lensRadius = 24.dp,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(24.dp)
-                                .testTag("custom-surface-card"),
-                    )
-                }
-            }
-        }
-
-        composeRule.onNodeWithTag("custom-surface-card").assertExists()
-    }
-
-    @Test
     fun surfaceCardExportsIndependentBackdropToContent() {
         var sceneBackdrop: Backdrop? = null
         var contentBackdrop: Backdrop? = null
@@ -83,14 +59,7 @@ class AppSurfaceCardBackdropTest {
                 val backdrop = rememberLayerBackdrop()
                 val explicitFallback = rememberLayerBackdrop()
                 sceneBackdrop = backdrop
-                Box(modifier = Modifier.size(220.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 220.dp) {
                     CompositionLocalProvider(LocalLiquidParentBackdrop provides backdrop) {
                         AppSurfaceCard(
                             exportBackdropToContent = true,
@@ -152,14 +121,7 @@ class AppSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 sceneBackdrop = backdrop
-                Box(modifier = Modifier.size(260.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 260.dp) {
                     AppLiquidExpandableSection(
                         backdrop = backdrop,
                         title = "Expandable",
@@ -196,14 +158,7 @@ class AppSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 sceneBackdrop = backdrop
-                Box(modifier = Modifier.size(260.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 260.dp) {
                     AppFeatureCard(
                         title = "Backdrop",
                         subtitle = "Export",
@@ -239,14 +194,7 @@ class AppSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 expectedBackdrop = backdrop
-                Box(modifier = Modifier.size(220.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 220.dp) {
                     CompositionLocalProvider(LocalLiquidParentBackdrop provides backdrop) {
                         AppSurfaceCard(exportBackdropToContent = false) {
                             observedBackdrop = LocalLiquidParentBackdrop.current
@@ -279,14 +227,7 @@ class AppSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 parentBackdrop = backdrop
-                Box(modifier = Modifier.size(220.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 220.dp) {
                     CompositionLocalProvider(
                         LocalLiquidParentBackdrop provides backdrop,
                         LocalLiquidControlsEnabled provides false,
@@ -321,14 +262,7 @@ class AppSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 capturedPageBackdrop = backdrop
-                Box(modifier = Modifier.size(220.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 220.dp) {
                     LiquidBackdropWindowBoundary {
                         AppSurfaceCard(
                             backdrop = backdrop,
@@ -363,14 +297,7 @@ class AppSurfaceCardBackdropTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 sceneBackdrop = backdrop
-                Box(modifier = Modifier.size(260.dp)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .matchParentSize()
-                                .background(Color.White)
-                                .layerBackdrop(backdrop),
-                    )
+                BackdropScene(backdrop, 260.dp) {
                     AppSurfaceCard(
                         backdrop = backdrop,
                         exportBackdropToContent = true,

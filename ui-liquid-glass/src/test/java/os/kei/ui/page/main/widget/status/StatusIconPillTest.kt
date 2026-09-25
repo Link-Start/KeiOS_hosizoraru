@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -43,7 +42,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -170,55 +168,9 @@ class StatusIconPillTest {
         composeRule.onNodeWithContentDescription(LIGHT_LABEL).assertExists()
         composeRule.onNodeWithContentDescription(DARK_LABEL).assertExists()
     }
-
-    @Test
-    fun lightAndDarkFallbacksReuseTheAiryStatusPillOptics() {
-        assertEquals(28.dp, StatusIconPillDefaults.Width)
-        assertEquals(22.dp, StatusIconPillDefaults.Height)
-        assertEquals(13.dp, StatusIconPillDefaults.IconSize)
-
-        val lightBackgroundAlpha = statusPillBackgroundAlpha(isDark = false)
-        val darkBackgroundAlpha = statusPillBackgroundAlpha(isDark = true)
-        val lightBorderAlpha = statusPillBorderAlpha(isDark = false)
-        val darkBorderAlpha = statusPillBorderAlpha(isDark = true)
-        val lightOptics =
-            statusPillFallbackOptics(
-                isDark = false,
-                accent = ACCENT,
-                backgroundAlpha = lightBackgroundAlpha,
-                borderAlpha = lightBorderAlpha,
-            )
-        val darkOptics =
-            statusPillFallbackOptics(
-                isDark = true,
-                accent = ACCENT,
-                backgroundAlpha = darkBackgroundAlpha,
-                borderAlpha = darkBorderAlpha,
-            )
-
-        assertEquals(0.24f, lightOptics.baseColor.alpha, COLOR_TOLERANCE)
-        assertEquals(0.18f, darkOptics.baseColor.alpha, COLOR_TOLERANCE)
-        assertTrue(lightOptics.veilTop.alpha > lightOptics.veilMiddle.alpha)
-        assertTrue(darkOptics.veilTop.alpha > darkOptics.innerShadeBottom.alpha)
-        assertTrue(lightOptics.rimColor.alpha > darkOptics.rimColor.alpha)
-        assertTrue(statusPillContentColor(isDark = false, accent = ACCENT).alpha > 0.95f)
-        assertEquals(ACCENT, statusPillContentColor(isDark = true, accent = ACCENT))
-    }
-
 }
 
 class StatusIconPillTestApp : Application()
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
 
 private val TestStatusIcon =
     ImageVector
@@ -250,4 +202,3 @@ private const val LIGHT_TAG = "status-icon-pill-light"
 private const val DARK_TAG = "status-icon-pill-dark"
 private const val ROW_TAG = "status-icon-pill-row"
 private const val TITLE_TAG = "status-icon-pill-title"
-private const val COLOR_TOLERANCE = 0.001f

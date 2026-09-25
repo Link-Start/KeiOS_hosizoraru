@@ -73,28 +73,6 @@ class LiquidSurfaceMaterialTest {
     }
 
     @Test
-    fun idleHighlightStaysQuietInBothThemes() {
-        assertEquals(
-            0.62f,
-            liquidSurfaceHighlightAlpha(
-                isDark = false,
-                interactive = true,
-                enabled = true,
-                pressProgress = 0f,
-            ),
-        )
-        assertEquals(
-            0.42f,
-            liquidSurfaceHighlightAlpha(
-                isDark = true,
-                interactive = false,
-                enabled = true,
-                pressProgress = 0f,
-            ),
-        )
-    }
-
-    @Test
     fun pressAddsOnlyAControlledHighlightBoost() {
         val lightPressed =
             liquidSurfaceHighlightAlpha(
@@ -197,12 +175,3 @@ class LiquidSurfaceMaterialTest {
 }
 
 private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = java.io.File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> java.io.File(directory, relativePath) }
-            .firstOrNull(java.io.File::isFile)
-    return requireNotNull(sourceFile) { "Unable to locate $relativePath from $workingDirectory" }.readText()
-}

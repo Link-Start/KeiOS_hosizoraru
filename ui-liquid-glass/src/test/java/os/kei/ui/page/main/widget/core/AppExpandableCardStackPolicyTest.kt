@@ -1,43 +1,27 @@
 package os.kei.ui.page.main.widget.core
 
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 import org.junit.Test
 
 class AppExpandableCardStackPolicyTest {
     @Test
-    fun `collapsed resting cards participate in the edge stack`() {
-        assertTrue(
-            shouldApplyEdgeStackToExpandableCard(
-                currentState = false,
-                targetState = false,
-            ),
-        )
-    }
-
-    @Test
-    fun `expanding and expanded cards stay out of the edge stack`() {
-        assertFalse(
-            shouldApplyEdgeStackToExpandableCard(
-                currentState = false,
-                targetState = true,
-            ),
-        )
-        assertFalse(
-            shouldApplyEdgeStackToExpandableCard(
-                currentState = true,
-                targetState = true,
-            ),
-        )
-    }
-
-    @Test
-    fun `collapsing cards rejoin only after their body finishes leaving`() {
-        assertFalse(
-            shouldApplyEdgeStackToExpandableCard(
-                currentState = true,
-                targetState = false,
-            ),
-        )
+    fun `only a card resting collapsed participates in the edge stack`() {
+        data class Case(val label: String, val currentState: Boolean, val targetState: Boolean, val expected: Boolean)
+        listOf(
+            Case("collapsed and resting", currentState = false, targetState = false, expected = true),
+            Case("expanding", currentState = false, targetState = true, expected = false),
+            Case("expanded", currentState = true, targetState = true, expected = false),
+            // Rejoins only after the body has finished leaving.
+            Case("collapsing", currentState = true, targetState = false, expected = false),
+        ).forEach { case ->
+            assertEquals(
+                case.expected,
+                shouldApplyEdgeStackToExpandableCard(
+                    currentState = case.currentState,
+                    targetState = case.targetState,
+                ),
+                case.label,
+            )
+        }
     }
 }

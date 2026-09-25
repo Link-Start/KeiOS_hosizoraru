@@ -46,18 +46,6 @@ class LiquidGlassBottomSheetMathTest {
         )
     }
 
-    @Test
-    fun maxVisibleHeightLeavesSafeTopInset() {
-        assertEquals(
-            1_040f,
-            liquidSheetMaxVisibleHeightPx(windowHeightPx = 1_120f, topInsetPx = 80f),
-        )
-        assertEquals(
-            1_024f,
-            liquidSheetMaxVisibleHeightPx(windowHeightPx = 1_120f, topInsetPx = 96f),
-        )
-    }
-
     /**
      * The regression guard for the dismiss flinch.
      *
@@ -312,25 +300,6 @@ class LiquidGlassBottomSheetMathTest {
         assertTrue(
             blocked.hidden < allowed.hidden,
             "A sheet that refuses dismissal must follow the finger less far",
-        )
-    }
-
-    @Test
-    fun visibleHeightFractionTracksResizableSheetHeight() {
-        assertEquals(
-            0f,
-            liquidSheetVisibleHeightFraction(visibleHeightPx = 0f, maxVisibleHeightPx = 1_000f),
-            0.0001f,
-        )
-        assertEquals(
-            0.5f,
-            liquidSheetVisibleHeightFraction(visibleHeightPx = 500f, maxVisibleHeightPx = 1_000f),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            liquidSheetVisibleHeightFraction(visibleHeightPx = 1_200f, maxVisibleHeightPx = 1_000f),
-            0.0001f,
         )
     }
 

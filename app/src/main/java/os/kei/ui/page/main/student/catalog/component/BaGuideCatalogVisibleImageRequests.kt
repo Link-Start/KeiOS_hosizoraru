@@ -56,59 +56,6 @@ internal fun buildBaGuideCatalogVisibleImageRequestUrls(
     return urls.toList()
 }
 
-internal fun buildBaGuideCatalogVisibleImageRequestUrls(
-    displayedEntries: List<BaGuideCatalogEntry>,
-    visibleItemRange: BaGuideVisibleItemRange,
-    entryStartIndex: Int,
-    beforeCount: Int = baGuideCatalogVisibleImagePreloadBeforeCount(visibleItemRange.visibleItemCount),
-    afterCount: Int = baGuideCatalogVisibleImagePreloadAfterCount(visibleItemRange.visibleItemCount),
-    limit: Int = BA_GUIDE_CATALOG_VISIBLE_IMAGE_REQUEST_LIMIT,
-): List<String> {
-    if (displayedEntries.isEmpty() || visibleItemRange.isEmpty || limit <= 0) return emptyList()
-    val visibleEntryRange =
-        buildBaGuideVisibleEntryRange(
-            displayedEntryCount = displayedEntries.size,
-            visibleItemRange = visibleItemRange,
-            entryStartIndex = entryStartIndex,
-        ) ?: return emptyList()
-
-    val urls = linkedSetOf<String>()
-
-    fun addEntry(index: Int) {
-        if (urls.size >= limit) return
-        val url = displayedEntries.getOrNull(index)?.iconUrl?.trim().orEmpty()
-        if (url.isNotBlank()) {
-            urls.add(url)
-        }
-    }
-
-    visibleEntryRange.forEach(::addEntry)
-
-    val safeBeforeCount = beforeCount.coerceAtLeast(0)
-    val safeAfterCount = afterCount.coerceAtLeast(0)
-    val maxDistance = max(safeBeforeCount, safeAfterCount)
-    for (distance in 1..maxDistance) {
-        if (urls.size >= limit) break
-        if (distance <= safeBeforeCount) {
-            addEntry(visibleEntryRange.first - distance)
-        }
-        if (urls.size >= limit) break
-        if (distance <= safeAfterCount) {
-            addEntry(visibleEntryRange.last + distance)
-        }
-    }
-    return urls.toList()
-}
-
-internal data class BaGuideVisibleItemRange(
-    val firstItemIndex: Int,
-    val lastItemIndex: Int,
-    val visibleItemCount: Int,
-) {
-    val isEmpty: Boolean
-        get() = visibleItemCount <= 0 || firstItemIndex < 0 || lastItemIndex < firstItemIndex
-}
-
 internal fun buildBaGuideVisibleEntryIndices(
     displayedEntryCount: Int,
     visibleItemIndices: List<Int>,
@@ -134,18 +81,6 @@ internal fun buildBaGuideVisibleEntryIndices(
         }
     }
     return indices
-}
-
-internal fun buildBaGuideVisibleEntryRange(
-    displayedEntryCount: Int,
-    visibleItemRange: BaGuideVisibleItemRange,
-    entryStartIndex: Int,
-): IntRange? {
-    if (displayedEntryCount <= 0 || visibleItemRange.isEmpty) return null
-    val firstEntryIndex = (visibleItemRange.firstItemIndex - entryStartIndex).coerceAtLeast(0)
-    val lastEntryIndex = (visibleItemRange.lastItemIndex - entryStartIndex).coerceAtMost(displayedEntryCount - 1)
-    if (firstEntryIndex > lastEntryIndex) return null
-    return firstEntryIndex..lastEntryIndex
 }
 
 internal fun baGuideCatalogVisibleImagePreloadBeforeCount(viewportItemCount: Int): Int =

@@ -46,40 +46,6 @@ class BaGuideStudentBgmVisibleRequestsTest {
         )
     }
 
-    @Test
-    fun `visible range prewarm matches contiguous visible indices`() {
-        val entries = (0 until 12).map { index -> catalogEntry(index) }
-
-        val fromIndices =
-            buildBaGuideStudentBgmVisiblePrewarmEntries(
-                displayedEntries = entries,
-                visibleItemIndices = listOf(4, 5),
-                entryStartIndex = 1,
-                beforeCount = 2,
-                afterCount = 3,
-                limit = 7,
-            )
-        val fromRange =
-            buildBaGuideStudentBgmVisiblePrewarmEntries(
-                displayedEntries = entries,
-                visibleItemRange =
-                    BaGuideVisibleItemRange(
-                        firstItemIndex = 4,
-                        lastItemIndex = 5,
-                        visibleItemCount = 2,
-                    ),
-                entryStartIndex = 1,
-                beforeCount = 2,
-                afterCount = 3,
-                limit = 7,
-            )
-
-        assertEquals(
-            fromIndices.map { entry -> entry.contentId },
-            fromRange.map { entry -> entry.contentId },
-        )
-    }
-
     private fun catalogEntry(index: Int): BaGuideCatalogEntry =
         testCatalogEntry(contentId = index.toLong(), iconUrl = "student-$index")
 }

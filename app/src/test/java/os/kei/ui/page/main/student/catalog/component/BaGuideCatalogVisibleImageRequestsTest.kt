@@ -56,37 +56,6 @@ class BaGuideCatalogVisibleImageRequestsTest {
     }
 
     @Test
-    fun `visible range request matches contiguous visible indices`() {
-        val entries = (0 until 16).map { index -> catalogEntry("student-$index") }
-
-        val fromIndices =
-            buildBaGuideCatalogVisibleImageRequestUrls(
-                displayedEntries = entries,
-                visibleItemIndices = listOf(6, 7, 8),
-                entryStartIndex = 2,
-                beforeCount = 2,
-                afterCount = 3,
-                limit = 8,
-            )
-        val fromRange =
-            buildBaGuideCatalogVisibleImageRequestUrls(
-                displayedEntries = entries,
-                visibleItemRange =
-                    BaGuideVisibleItemRange(
-                        firstItemIndex = 6,
-                        lastItemIndex = 8,
-                        visibleItemCount = 3,
-                    ),
-                entryStartIndex = 2,
-                beforeCount = 2,
-                afterCount = 3,
-                limit = 8,
-            )
-
-        assertEquals(fromIndices, fromRange)
-    }
-
-    @Test
     fun `visible request filters blank and duplicate urls`() {
         val entries =
             listOf(

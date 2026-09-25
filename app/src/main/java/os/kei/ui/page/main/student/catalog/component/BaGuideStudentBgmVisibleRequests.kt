@@ -55,49 +55,6 @@ internal fun buildBaGuideStudentBgmVisiblePrewarmEntries(
     return indices.map { index -> displayedEntries[index] }
 }
 
-internal fun buildBaGuideStudentBgmVisiblePrewarmEntries(
-    displayedEntries: List<BaGuideCatalogEntry>,
-    visibleItemRange: BaGuideVisibleItemRange,
-    entryStartIndex: Int,
-    beforeCount: Int = baGuideStudentBgmVisiblePrewarmBeforeCount(visibleItemRange.visibleItemCount),
-    afterCount: Int = baGuideStudentBgmVisiblePrewarmAfterCount(visibleItemRange.visibleItemCount),
-    limit: Int = STUDENT_BGM_VISIBLE_PREWARM_LIMIT,
-): List<BaGuideCatalogEntry> {
-    if (displayedEntries.isEmpty() || visibleItemRange.isEmpty || limit <= 0) return emptyList()
-    val visibleEntryRange =
-        buildBaGuideVisibleEntryRange(
-            displayedEntryCount = displayedEntries.size,
-            visibleItemRange = visibleItemRange,
-            entryStartIndex = entryStartIndex,
-        ) ?: return emptyList()
-
-    val indices = linkedSetOf<Int>()
-
-    fun addEntryIndex(index: Int) {
-        if (indices.size >= limit) return
-        if (index in displayedEntries.indices) {
-            indices += index
-        }
-    }
-
-    visibleEntryRange.forEach(::addEntryIndex)
-
-    val safeBeforeCount = beforeCount.coerceAtLeast(0)
-    val safeAfterCount = afterCount.coerceAtLeast(0)
-    val maxDistance = max(safeBeforeCount, safeAfterCount)
-    for (distance in 1..maxDistance) {
-        if (indices.size >= limit) break
-        if (distance <= safeBeforeCount) {
-            addEntryIndex(visibleEntryRange.first - distance)
-        }
-        if (indices.size >= limit) break
-        if (distance <= safeAfterCount) {
-            addEntryIndex(visibleEntryRange.last + distance)
-        }
-    }
-    return indices.map { index -> displayedEntries[index] }
-}
-
 internal fun baGuideStudentBgmVisiblePrewarmBeforeCount(viewportItemCount: Int): Int =
     max(STUDENT_BGM_VISIBLE_PREWARM_MIN_BEFORE, viewportItemCount.coerceAtLeast(1) / 2)
         .coerceAtMost(STUDENT_BGM_VISIBLE_PREWARM_MAX_BEFORE)

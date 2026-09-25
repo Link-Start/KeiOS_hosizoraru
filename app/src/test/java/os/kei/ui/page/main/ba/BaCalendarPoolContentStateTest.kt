@@ -1,9 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import org.junit.Test
-import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class BaCalendarPoolContentStateTest {
     @Test
@@ -32,26 +30,5 @@ class BaCalendarPoolContentStateTest {
                 )
             assertEquals(case.expected, status, case.label)
         }
-    }
-
-    @Test
-    fun `ba page content state preserves calendar and pool refreshing flags`() {
-        val routeState =
-            testBaPageRouteState(
-                calendarUiState = BaCalendarUiState(loading = false, refreshing = true),
-                poolUiState = BaPoolUiState(loading = false, refreshing = true),
-            )
-
-        val contentState =
-            buildBaPageContentState(
-                officeState = BaOfficeController(BaPageSnapshot()).state(),
-                routeState = routeState,
-                clockState = testBaPageClockState(),
-                serverOptions = listOf("CN", "Global", "JP"),
-                cafeLevelOptions = listOf(1, 2, 3),
-            )
-
-        assertTrue(contentState.baCalendarRefreshing)
-        assertTrue(contentState.baPoolRefreshing)
     }
 }

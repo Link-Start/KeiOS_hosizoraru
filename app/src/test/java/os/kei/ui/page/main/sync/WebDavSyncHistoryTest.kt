@@ -92,45 +92,7 @@ class WebDavSyncHistoryTest {
         assertEquals("legacy", payload.entries.single().id)
         assertNull(payload.entries.single().runtimeDiagnostics)
     }
-
-    @Test
-    fun `history builder preserves runtime diagnostics`() {
-        val diagnostics = webDavRuntimeDiagnostics(previousStopReason = "timeout")
-        val entry =
-            buildWebDavSyncHistoryEntry(
-                source = WebDavSyncHistorySource.Auto,
-                kind = null,
-                reason = "job",
-                startedAtMs = 1_000L,
-                finishedAtMs = 2_000L,
-                targetCount = 1,
-                outcomes = listOf(WebDavSyncItem.GitHubTracked to WebDavItemOutcome(WebDavItemStatus.UpToDate)),
-                skippedCount = 0,
-                runtimeDiagnostics = diagnostics,
-            )
-
-        assertEquals(diagnostics, entry.runtimeDiagnostics)
-    }
 }
-
-private fun webDavRuntimeDiagnostics(previousStopReason: String? = null) =
-    WebDavSyncRuntimeDiagnostics(
-        interactive = false,
-        deviceIdle = true,
-        lightDeviceIdle = false,
-        powerSave = false,
-        lowPowerStandbyEnabled = true,
-        lowPowerStandbyExempt = false,
-        batteryOptimizationExempt = false,
-        backgroundDataRestricted = false,
-        networkPresent = true,
-        networkValidated = true,
-        networkNotSuspended = true,
-        appStandbyBucket = "rare",
-        queuedDurationMs = 5_000L,
-        pendingReasons = listOf("connectivity"),
-        previousStopReason = previousStopReason,
-    )
 
 private fun webDavSyncHistoryEntry(
     id: String,

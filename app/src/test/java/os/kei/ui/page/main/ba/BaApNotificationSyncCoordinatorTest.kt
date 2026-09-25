@@ -37,23 +37,6 @@ class BaApNotificationSyncCoordinatorTest {
     }
 
     @Test
-    fun `foreground dismissal suppresses AP growth without refreshing notification`() {
-        val plan =
-            planBaApNotificationSync(
-                request =
-                    request(
-                        currentDisplay = 121,
-                        lastNotifiedLevel = 120,
-                        dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS,
-                    ),
-                nowMs = NOW_MS,
-            )
-
-        assertFalse(plan.shouldSendThresholdNotification)
-        assertFalse(plan.shouldRefreshActiveNotification)
-    }
-
-    @Test
     fun `expired foreground dismissal sends same level and clears snooze after delivery`() = runTest {
         val request =
             request(

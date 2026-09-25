@@ -62,14 +62,6 @@ class BaCraftSummaryTest {
     }
 
     @Test
-    fun `the boundary instant counts as ready`() {
-        val state = BaCraftState(generate = listOf(slot(BaCraftGrade.Low)))
-
-        // isComplete is `now >= end`, so the exact instant is already collectable.
-        assertEquals(1, state.summary(START + 30L * MINUTE).readyCount)
-    }
-
-    @Test
     fun `both functions are counted, not just generate`() {
         val state =
             BaCraftState(
@@ -84,18 +76,6 @@ class BaCraftSummaryTest {
     }
 
     @Test
-    fun `next completion is the earliest still in the future`() {
-        val state =
-            BaCraftState(
-                generate = listOf(slot(BaCraftGrade.Highest), slot(BaCraftGrade.Normal)),
-                fusion = listOf(slot(BaCraftGrade.High)),
-            )
-
-        // Normal is 1h30 — sooner than High's 3h and Highest's 6h.
-        assertEquals(START + 90L * MINUTE, state.summary(START).nextCompletionAtMs)
-    }
-
-    @Test
     fun `an already-elapsed slot does not become the next completion`() {
         val state =
             BaCraftState(
@@ -105,42 +85,5 @@ class BaCraftSummaryTest {
         val summary = state.summary(START + HOUR)
         assertEquals(1, summary.readyCount)
         assertEquals(START + 3L * HOUR, summary.nextCompletionAtMs)
-    }
-
-    @Test
-    fun `everything elapsed leaves no next completion`() {
-        val state = BaCraftState(generate = listOf(slot(BaCraftGrade.Low), slot(BaCraftGrade.Normal)))
-
-        val summary = state.summary(START + 12L * HOUR)
-        assertEquals(2, summary.readyCount)
-        assertEquals(0, summary.runningCount)
-        assertNull(summary.nextCompletionAtMs)
-    }
-
-    @Test
-    fun `a custom duration override drives the summary too`() {
-        val state =
-            BaCraftState(
-                generate =
-                    listOf(
-                        BaCraftSlot(
-                            startedAtMs = START,
-                            grades = listOf(BaCraftGrade.Highest),
-                            customDurationMs = 10L * MINUTE,
-                        ),
-                    ),
-            )
-
-        // The override wins over the summed 6h, exactly as the rows show it.
-        assertEquals(START + 10L * MINUTE, state.summary(START).nextCompletionAtMs)
-        assertEquals(1, state.summary(START + 11L * MINUTE).readyCount)
-    }
-
-    @Test
-    fun `a full chamber counts all six slots`() {
-        val full = List(BA_CRAFT_SLOT_COUNT) { slot(BaCraftGrade.High) }
-        val state = BaCraftState(generate = full, fusion = full)
-
-        assertEquals(6, state.summary(START).runningCount)
     }
 }

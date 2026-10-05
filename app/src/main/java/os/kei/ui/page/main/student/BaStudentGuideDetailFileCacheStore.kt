@@ -333,6 +333,7 @@ internal fun baGuideStudentDetailContentHash(info: BaStudentGuideInfo): String {
         digest.updateString(item.mediaUrl)
         digest.updateString(item.memoryUnlockLevel)
         digest.updateString(item.note)
+        digest.updateString(item.webMemoryLobby?.toJson()?.toString().orEmpty())
     }
     info.growthRows.forEach { digest.updateGuideRow(it) }
     info.simulateRows.forEach { digest.updateGuideRow(it) }

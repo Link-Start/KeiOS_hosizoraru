@@ -131,6 +131,15 @@ class BaGuideStudentDetailCachePolicyTest {
                 nextRetryAtMs = nowMs + 10L * 60L * 1000L,
             )
 
+        // A missing parser version forces one validation, but still respects retry backoff.
+        assertTrue(decideBaGuideStudentDetailCacheRefresh(
+            meta = meta.copy(nextRetryAtMs = 0L), manualRefresh = false,
+            nowMs = nowMs, galleryParserVersion = 0,
+        ).shouldValidate)
+        assertFalse(decideBaGuideStudentDetailCacheRefresh(
+            meta = meta, manualRefresh = false,
+            nowMs = nowMs, galleryParserVersion = 0,
+        ).shouldValidate)
         assertFalse(
             decideBaGuideStudentDetailCacheRefresh(
                 meta = meta,

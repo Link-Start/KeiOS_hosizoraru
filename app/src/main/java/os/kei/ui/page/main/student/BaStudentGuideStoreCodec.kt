@@ -64,6 +64,7 @@ internal fun encodeGalleryItems(items: List<BaGuideGalleryItem>): JSONArray {
                     put("mu", item.mediaUrl)
                     put("ml", item.memoryUnlockLevel)
                     put("n", item.note)
+                    item.webMemoryLobby?.let { put("web", it.toJson()) }
                 }
             )
         }
@@ -89,7 +90,8 @@ internal fun decodeGalleryItemsFromArray(arr: JSONArray?): List<BaGuideGalleryIt
                     mediaType = mediaType,
                     mediaUrl = mediaUrl,
                     memoryUnlockLevel = memoryUnlockLevel,
-                    note = note
+                    note = note,
+                    webMemoryLobby = decodeWebMemoryLobby(item.optJSONObject("web")),
                 )
             )
         }

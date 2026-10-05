@@ -220,9 +220,9 @@ private fun BaStudentGuideInfo.galleryTabStateCacheKey(): String {
         append('|')
         append(syncedAtMs)
         append('|')
-        append(galleryItems.size)
+        append(galleryItems.hashCode())
         append('|')
-        append(profileRows.size)
+        append(profileRows.hashCode())
         append('|')
         append(imageUrl.trim().hashCode())
     }

@@ -382,6 +382,7 @@ internal class BaStudentGuideRepository(
                         meta = studentMeta,
                         manualRefresh = manualRefresh,
                         nowMs = now,
+                        galleryParserVersion = cacheInfo?.galleryParserVersion ?: 0,
                     ).shouldValidate
                 else -> legacyCacheExpired
             }

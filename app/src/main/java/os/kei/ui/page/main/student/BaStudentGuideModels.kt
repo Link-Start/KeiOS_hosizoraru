@@ -36,7 +36,8 @@ data class BaStudentGuideInfo(
     val tabVoiceIconUrl: String = "",
     val tabGalleryIconUrl: String = "",
     val tabSimulateIconUrl: String = "",
-    val syncedAtMs: Long
+    val syncedAtMs: Long,
+    val galleryParserVersion: Int = 0,
 )
 
 @Immutable
@@ -53,7 +54,8 @@ data class BaGuideGalleryItem(
     val mediaType: String = "image",
     val mediaUrl: String = imageUrl,
     val memoryUnlockLevel: String = "",
-    val note: String = ""
+    val note: String = "",
+    val webMemoryLobby: BaGuideWebMemoryLobby? = null,
 )
 
 @Immutable

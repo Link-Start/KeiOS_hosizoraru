@@ -148,6 +148,9 @@ internal fun isRenderableGalleryAudioUrl(raw: String): Boolean {
 }
 
 internal fun hasRenderableGalleryMedia(item: BaGuideGalleryItem): Boolean {
+    if (item.mediaType.equals("web", ignoreCase = true)) {
+        return item.webMemoryLobby?.let { gameKeeMemoryLobbyViewerUrl(it.viewerUrl).isNotBlank() } == true
+    }
     val imageRenderable = isRenderableGalleryImageUrl(item.imageUrl)
     val mediaRenderable = when (item.mediaType.lowercase()) {
         "video" -> isRenderableGalleryVideoUrl(item.mediaUrl)
@@ -245,7 +248,7 @@ internal fun isPreviewVideoCategoryGalleryItem(item: BaGuideGalleryItem): Boolea
 }
 
 internal fun isPreviewVideoGalleryItem(item: BaGuideGalleryItem): Boolean {
-    if (item.mediaType.lowercase() != "video") return false
+    if (item.mediaType.lowercase() != "video" && item.webMemoryLobby == null) return false
     return isPreviewVideoCategoryTitle(item.title)
 }
 

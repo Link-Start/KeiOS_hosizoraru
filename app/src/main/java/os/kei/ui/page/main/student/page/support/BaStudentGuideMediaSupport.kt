@@ -95,7 +95,7 @@ internal fun collectGuideMediaCacheUrls(info: BaStudentGuideInfo): List<String> 
     addRows(info.voiceRows)
     info.galleryItems.forEach { item ->
         addMediaUrl(item.imageUrl)
-        addMediaUrl(item.mediaUrl)
+        if (item.webMemoryLobby == null) addMediaUrl(item.mediaUrl)
     }
     info.voiceEntries.forEach { entry ->
         entry.audioUrls.forEach(::addMediaUrl)

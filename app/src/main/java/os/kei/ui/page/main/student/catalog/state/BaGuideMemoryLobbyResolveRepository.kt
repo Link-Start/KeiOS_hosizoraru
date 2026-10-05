@@ -2,11 +2,14 @@ package os.kei.ui.page.main.student.catalog.state
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideDataClock
+import os.kei.ui.page.main.student.BA_GUIDE_GALLERY_PARSER_VERSION
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.BaStudentGuideCacheSnapshot
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -20,11 +23,17 @@ internal class BaGuideMemoryLobbyResolveRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val clock: BaGuideDataClock = BaGuideSystemDataClock,
+    private val cacheSnapshotLoader: (String) -> BaStudentGuideCacheSnapshot = BaStudentGuideStore::loadInfoSnapshot,
+    private val infoFetcher: suspend (String, CoroutineDispatcher, CoroutineDispatcher, BaGuideDataClock) -> BaStudentGuideInfo = ::fetchGuideInfoAsync,
+    private val infoSaver: (BaStudentGuideInfo) -> Unit = BaStudentGuideStore::saveInfo,
 ) {
     suspend fun loadCachedMemoryLobbyLookup(entry: BaGuideCatalogEntry): BaGuideMemoryLobbyCachedLookupResult =
         withContext(ioDispatcher) {
-            val snapshot = BaStudentGuideStore.loadInfoSnapshot(entry.detailUrl)
+            val snapshot = cacheSnapshotLoader(entry.detailUrl)
             val info = snapshot.info ?: return@withContext BaGuideMemoryLobbyCachedLookupResult.NoCache
+            if (info.galleryParserVersion < BA_GUIDE_GALLERY_PARSER_VERSION) {
+                return@withContext BaGuideMemoryLobbyCachedLookupResult.NoCache
+            }
             info
                 .toMemoryLobbyResolvedItem(entry = entry, fromCache = true)
                 ?.let(BaGuideMemoryLobbyCachedLookupResult::Ready)
@@ -53,16 +62,22 @@ internal class BaGuideMemoryLobbyResolveRepository(
         }
 
     suspend fun fetchMemoryLobby(entry: BaGuideCatalogEntry): BaGuideMemoryLobbyResolvedItem? {
-        loadCachedMemoryLobby(entry)?.let { return it }
+        val cachedInfo = withContext(ioDispatcher) { cacheSnapshotLoader(entry.detailUrl).info }
+        val cachedLobby = cachedInfo?.toMemoryLobbyResolvedItem(entry, fromCache = true)
+        if (cachedInfo != null && cachedInfo.galleryParserVersion >= BA_GUIDE_GALLERY_PARSER_VERSION && cachedLobby != null) {
+            return cachedLobby
+        }
         val info =
-            fetchGuideInfoAsync(
-                sourceUrl = entry.detailUrl,
-                networkDispatcher = ioDispatcher,
-                parseDispatcher = parseDispatcher,
-                clock = clock,
-            )
+            try {
+                infoFetcher(entry.detailUrl, ioDispatcher, parseDispatcher, clock)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                // Refresh parser-era caches without losing usable offline images and videos.
+                return cachedLobby ?: throw error
+            }
         withContext(ioDispatcher) {
-            BaStudentGuideStore.saveInfo(info)
+            infoSaver(info)
         }
         return info.toMemoryLobbyResolvedItem(entry = entry, fromCache = false)
     }

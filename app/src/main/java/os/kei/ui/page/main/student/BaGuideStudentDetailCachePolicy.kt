@@ -92,6 +92,7 @@ internal fun decideBaGuideStudentDetailCacheRefresh(
     meta: BaGuideStudentDetailCacheMeta,
     manualRefresh: Boolean,
     nowMs: Long = System.currentTimeMillis(),
+    galleryParserVersion: Int = BA_GUIDE_GALLERY_PARSER_VERSION,
 ): BaGuideStudentDetailCacheRefreshDecision {
     val tier =
         resolveBaGuideStudentDetailFreshnessTier(
@@ -110,6 +111,7 @@ internal fun decideBaGuideStudentDetailCacheRefresh(
         }
     val retryReady = meta.nextRetryAtMs <= 0L || nowMs >= meta.nextRetryAtMs
     val autoDue =
+        galleryParserVersion < BA_GUIDE_GALLERY_PARSER_VERSION ||
         meta.lastValidatedAtMs <= 0L ||
             nextAutoRefreshAtMs <= 0L ||
             nowMs >= nextAutoRefreshAtMs

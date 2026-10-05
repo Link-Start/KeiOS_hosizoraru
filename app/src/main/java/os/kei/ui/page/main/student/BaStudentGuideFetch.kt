@@ -117,6 +117,7 @@ private fun buildGuideInfoFromContentDetail(
         skillRows = detail.skillRows,
         profileRows = detail.profileRows,
         galleryItems = detail.galleryItems,
+        galleryParserVersion = BA_GUIDE_GALLERY_PARSER_VERSION,
         growthRows = detail.growthRows,
         simulateRows = detail.simulateRows,
         voiceRows = detail.voiceRows,

@@ -77,6 +77,30 @@ class BaStudentGuideRepositoryTest {
         }
 
     @Test
+    fun `old parser cache paints immediately and schedules validation despite a fresh tier`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/718266"
+            val cached = guideInfo(sourceUrl, "缓存学生", nowMs - 1L).copy(galleryParserVersion = 0)
+            var fetchCalled = false
+            val repository = repository(
+                nowMs = nowMs,
+                cacheSnapshot = BaStudentGuideCacheSnapshot(cached, true, true, cached.syncedAtMs),
+                catalog = catalogBundle(catalogEntry(sourceUrl, 718266L, BaGuideCatalogTab.Student, nowMs / 1000L)),
+                metaStore = tempMetaStore(context),
+                fetcher = { fetchCalled = true; guideInfo(sourceUrl, "网络学生", nowMs) },
+            )
+            val firstPaint = repository.load(context, sourceUrl)
+            assertEquals(cached, firstPaint.info)
+            assertTrue(firstPaint.validateInBackground)
+            assertFalse(fetchCalled)
+            val refreshed = repository.load(context, sourceUrl, currentInfo = cached, forceValidation = true)
+            assertTrue(fetchCalled)
+            assertEquals(os.kei.ui.page.main.student.BA_GUIDE_GALLERY_PARSER_VERSION, refreshed.info?.galleryParserVersion)
+        }
+
+    @Test
     fun `manual refresh implemented student detail fetches network and updates meta`() =
         runBlocking {
             val context = ApplicationProvider.getApplicationContext<Application>()
@@ -779,6 +803,7 @@ class BaStudentGuideRepositoryTest {
             stats = listOf("学校" to "夏莱"),
             profileRows = listOf(BaGuideRow("学校", "夏莱")),
             syncedAtMs = syncedAtMs,
+            galleryParserVersion = os.kei.ui.page.main.student.BA_GUIDE_GALLERY_PARSER_VERSION,
         )
 
     private fun catalogBundle(vararg entries: BaGuideCatalogEntry): BaGuideCatalogBundle =

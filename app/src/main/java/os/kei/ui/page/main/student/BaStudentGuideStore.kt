@@ -201,6 +201,7 @@ object BaStudentGuideStore {
         nowMs: Long = System.currentTimeMillis()
     ): Boolean {
         if (!snapshot.hasCache) return true
+        if (snapshot.info?.galleryParserVersion?.let { it < BA_GUIDE_GALLERY_PARSER_VERSION } == true) return true
         if (snapshot.syncedAtMs <= 0L) return true
         val intervalMs = refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
         return (nowMs - snapshot.syncedAtMs).coerceAtLeast(0L) >= intervalMs
@@ -370,6 +371,7 @@ internal fun encodeGuideV2Payload(info: BaStudentGuideInfo): Map<String, String>
     val source = normalizeStudentGuideSourceUrl(info.sourceUrl)
     val metaRaw = JSONObject().apply {
         put("schema", BA_GUIDE_CACHE_SCHEMA_VERSION)
+        put("galleryParserVersion", info.galleryParserVersion)
         put("sourceUrl", source)
         put("title", info.title)
         put("subtitle", info.subtitle)

@@ -128,7 +128,24 @@ internal fun parseGalleryItemsFromBaseData(baseData: JSONArray, sourceUrl: Strin
         if (row.length() == 0) continue
         val key = stripHtml((row.optJSONObject(0)?.optString("value") ?: "").trim())
         if (key == "回忆大厅解锁等级") continue
-        if (key.replace(" ", "").startsWith("回忆大厅文件")) continue
+        if (key.replace(" ", "").startsWith("回忆大厅文件")) {
+            for (j in 1 until row.length()) {
+                val cell = row.optJSONObject(j) ?: continue
+                if (!cell.optString("type").equals("live2d", ignoreCase = true)) continue
+                out += extractWebMemoryLobbies(sourceUrl, cell.opt("value")).map { lobby ->
+                    BaGuideGalleryItem(
+                        title = "回忆大厅视频",
+                        imageUrl = "",
+                        mediaType = "web",
+                        mediaUrl = lobby.viewerUrl,
+                        memoryUnlockLevel = memoryUnlockLevel,
+                        webMemoryLobby = lobby,
+                    )
+                }
+            }
+            // Texture atlases and background/scene rows are not gallery illustrations.
+            continue
+        }
         val isGalleryContextStart = isGuideGalleryContextStart(key)
         val isNonGallerySectionStart = isGuideNonGallerySectionStart(key)
         if (isNonGallerySectionStart && !isGalleryContextStart) {

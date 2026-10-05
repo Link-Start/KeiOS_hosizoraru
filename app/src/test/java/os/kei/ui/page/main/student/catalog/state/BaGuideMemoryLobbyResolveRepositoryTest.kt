@@ -1,6 +1,11 @@
 package os.kei.ui.page.main.student.catalog.state
 
 import org.junit.Test
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlin.coroutines.cancellation.CancellationException
+import os.kei.ui.page.main.student.BA_GUIDE_GALLERY_PARSER_VERSION
+import os.kei.ui.page.main.student.BaStudentGuideCacheSnapshot
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaStudentGuideInfo
@@ -9,8 +14,57 @@ import os.kei.ui.page.main.student.catalog.testCatalogEntry
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class BaGuideMemoryLobbyResolveRepositoryTest {
+    @Test
+    fun `legacy cached lobby refreshes once and stores current parser metadata`() = runBlocking {
+        var cached = legacyLobbyInfo()
+        var fetched = 0
+        val repository = BaGuideMemoryLobbyResolveRepository(
+            ioDispatcher = Dispatchers.Unconfined,
+            parseDispatcher = Dispatchers.Unconfined,
+            cacheSnapshotLoader = { BaStudentGuideCacheSnapshot(cached, true, true, cached.syncedAtMs) },
+            infoFetcher = { _, _, _, _ -> fetched++; cached.copy(galleryParserVersion = BA_GUIDE_GALLERY_PARSER_VERSION) },
+            infoSaver = { cached = it },
+        )
+        val first = assertNotNull(repository.fetchMemoryLobby(catalogEntry()))
+        assertEquals(false, first.fromCache)
+        assertEquals(BA_GUIDE_GALLERY_PARSER_VERSION, cached.galleryParserVersion)
+        val second = assertNotNull(repository.fetchMemoryLobby(catalogEntry()))
+        assertEquals(true, second.fromCache)
+        assertEquals(1, fetched)
+    }
+
+    @Test
+    fun `failed migration retains the usable cached lobby`() = runBlocking {
+        val cached = legacyLobbyInfo()
+        val repository = BaGuideMemoryLobbyResolveRepository(
+            ioDispatcher = Dispatchers.Unconfined,
+            parseDispatcher = Dispatchers.Unconfined,
+            cacheSnapshotLoader = { BaStudentGuideCacheSnapshot(cached, true, true, cached.syncedAtMs) },
+            infoFetcher = { _, _, _, _ -> error("offline") },
+            infoSaver = { error("failed migration must not overwrite the cache") },
+        )
+        val result = assertNotNull(repository.fetchMemoryLobby(catalogEntry()))
+        assertTrue(result.fromCache)
+        assertEquals(cached.galleryItems.single().mediaUrl, result.galleryItems.single().mediaUrl)
+    }
+
+    @Test
+    fun `cancelling migration propagates cancellation instead of returning stale content`(): Unit = runBlocking {
+        val cached = legacyLobbyInfo()
+        val repository = BaGuideMemoryLobbyResolveRepository(
+            ioDispatcher = Dispatchers.Unconfined,
+            parseDispatcher = Dispatchers.Unconfined,
+            cacheSnapshotLoader = { BaStudentGuideCacheSnapshot(cached, true, true, cached.syncedAtMs) },
+            infoFetcher = { _, _, _, _ -> throw CancellationException("cancel") },
+            infoSaver = { error("cancelled migration must not overwrite the cache") },
+        )
+        assertFailsWith<CancellationException> { repository.fetchMemoryLobby(catalogEntry()) }
+    }
+
     @Test
     fun `resolved item keeps memory lobby images videos and unlock level`() {
         val entry = catalogEntry()
@@ -101,6 +155,10 @@ class BaGuideMemoryLobbyResolveRepositoryTest {
 
     private fun catalogEntry(): BaGuideCatalogEntry =
         testCatalogEntry(name = "Demo", iconUrl = "https://example.com/icon.png", order = 0, detailUrl = "https://www.gamekee.com/ba/1.html")
+
+    private fun legacyLobbyInfo() = studentGuideInfo(listOf(
+        BaGuideGalleryItem("回忆大厅视频", "", "video", "https://example.com/lobby.mp4"),
+    ))
 
     private fun studentGuideInfo(
         galleryItems: List<BaGuideGalleryItem>,

@@ -152,6 +152,11 @@ class GuideWebMemoryLobbySceneTest {
         val title = composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby))
             .fetchSemanticsNode().boundsInRoot
         assertTrue(title.right < scene.center.x, "Wide-window title must leave the central character unobscured")
+        listOf(R.string.common_close, R.string.guide_gallery_dynamic_lobby_adjust_view).forEach { label ->
+            val button = composeRule.onNodeWithContentDescription(text(label)).fetchSemanticsNode().boundsInRoot
+            assertTrue(button.left >= viewport.left && button.right <= viewport.right,
+                "Floating actions must remain over the cinematic image rather than its dark margins")
+        }
         assertFloatingChromeInsideWindow()
     }
 

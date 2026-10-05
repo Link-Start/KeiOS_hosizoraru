@@ -146,7 +146,7 @@ internal fun GuideWebMemoryLobbyScene(
                     Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.30f), Color.Transparent)),
                 ),
             )
-            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Box(viewport.align(Alignment.Center).safeDrawingPadding()) {
                 Box(
                     Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(
                         horizontal = AppChromeTokens.pageHorizontalPadding,

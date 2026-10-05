@@ -64,13 +64,15 @@ internal fun GuideWebMemoryLobbyScreen(
     var actions by remember(resource, retry) { mutableStateOf(emptyList<String>()) }
     var selectedAction by remember(resource, retry) { mutableStateOf("") }
     var controlsVisible by rememberSaveable(viewerUrl) { mutableStateOf(true) }
+    val camera = remember(resource) { GuideWebMemoryLobbyCamera() }
     LaunchedEffect(controlsVisible) { onControlsVisibleChange(controlsVisible) }
     BackHandler(enabled = !controlsVisible) { controlsVisible = true }
 
     GuideWebMemoryLobbyScene(
         controlsVisible = controlsVisible,
         onShowControls = { controlsVisible = true },
-        header = { backdrop -> GuideWebMemoryLobbyHeader(backdrop, onDismiss) },
+        camera = camera,
+        header = { backdrop -> GuideWebMemoryLobbyHeader(backdrop, onDismiss, camera) },
         controls = { backdrop ->
             GuideWebMemoryLobbyControls(
                 backdrop = backdrop,
@@ -93,6 +95,7 @@ internal fun GuideWebMemoryLobbyScreen(
             stateRequest = stateRequest,
             actionRequest = actionRequest,
             selectedAction = selectedAction,
+            camera = camera,
             onActionsAvailable = { available, current -> actions = available; selectedAction = current },
             modifier = viewport,
         )
@@ -107,6 +110,7 @@ internal fun GuideWebMemoryLobbyScene(
     modifier: Modifier = Modifier,
     controlsVisible: Boolean = true,
     onShowControls: () -> Unit = {},
+    camera: GuideWebMemoryLobbyCamera? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
     val mediaBackdrop = rememberLayerBackdrop()
@@ -117,7 +121,8 @@ internal fun GuideWebMemoryLobbyScene(
     ) {
         // The Wiki uses cover scaling. Preserve its cinematic framing in wide windows,
         // while using the full window height, including the area beneath floating chrome.
-        val viewport = if (maxWidth > maxHeight * (16f / 9f)) {
+        val viewportWidthFraction = if (maxWidth > maxHeight * (16f / 9f)) maxHeight * (16f / 9f) / maxWidth else 1f
+        val viewport = if (viewportWidthFraction < 1f) {
             Modifier.fillMaxHeight().aspectRatio(16f / 9f)
         } else {
             Modifier.fillMaxSize()
@@ -127,6 +132,10 @@ internal fun GuideWebMemoryLobbyScene(
             contentAlignment = Alignment.Center,
         ) {
             content(viewport.testTag(GuideWebMemoryLobbyViewportTag))
+            if (camera != null) {
+                // Letterbox margins also restore chrome; camera coordinates still refer to the media.
+                GuideWebMemoryLobbyGestures(camera, controlsVisible, onShowControls, Modifier.fillMaxSize(), viewportWidthFraction)
+            }
         }
         if (controlsVisible) {
             // A short transparent ramp protects white system icons over bright animation.
@@ -151,7 +160,7 @@ internal fun GuideWebMemoryLobbyScene(
                     ).widthIn(max = 460.dp).fillMaxWidth().testTag(GuideWebMemoryLobbyControlsTag),
                 ) { controls(mediaBackdrop) }
             }
-        } else {
+        } else if (camera == null) {
             // Keep the media subtree mounted and playing. Only this transparent tap target
             // replaces chrome, including an accessible way to reveal it again.
             val showControls = stringResource(R.string.guide_gallery_dynamic_lobby_show_controls)

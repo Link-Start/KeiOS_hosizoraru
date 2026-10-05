@@ -56,6 +56,33 @@ internal val GameKeeLobbyFocusScript = """
       const renderer = rendererElement && rendererElement.__vue__;
       if (!renderer || !renderer.pixiApp || !renderer.spineLayers.length) return 'waiting';
       if (!window.keiosLobby) {
+        const base = renderer.layerList && renderer.layerList.length
+          ? { ...renderer.layerList[renderer.layerList.length - 1].position } : null;
+        let camera = { scale: 1, panX: 0, panY: 0 };
+        const applyCamera = () => {
+          const screen = renderer.pixiApp.screen;
+          if (!base || !(base.width > 0) || !(base.height > 0) || !screen ||
+              typeof renderer.applyViewportToAll !== 'function') return false;
+          const left = renderer.parsePad(base.padLeft, screen.width);
+          const right = renderer.parsePad(base.padRight, screen.width);
+          const top = renderer.parsePad(base.padTop, screen.height);
+          const bottom = renderer.parsePad(base.padBottom, screen.height);
+          const fit = Math.max(Math.max(1, screen.width - left - right) / base.width,
+            Math.max(1, screen.height - top - bottom) / base.height) * camera.scale;
+          const width = base.width / camera.scale, height = base.height / camera.scale;
+          renderer.applyViewportToAll({ ...base, width, height,
+            x: Number(base.x || 0) + (base.width - width) / 2 - camera.panX * screen.width / fit,
+            y: Number(base.y || 0) + (base.height - height) / 2 + camera.panY * screen.height / fit });
+          // The camera also works on a paused pose without starting its ticker or animation.
+          if (typeof renderer.pixiApp.render === 'function') renderer.pixiApp.render();
+          return true;
+        };
+        const resize = renderer.resizeToContainer;
+        if (typeof resize === 'function') renderer.resizeToContainer = function() {
+          const result = resize.apply(this, arguments);
+          applyCamera();
+          return result;
+        };
         const state = () => {
           const spine = renderer.spineLayers[renderer.spineLayers.length - 1].spine;
           const track = spine.state.tracks[0];
@@ -64,6 +91,14 @@ internal val GameKeeLobbyFocusScript = """
         };
         window.keiosLobby = {
           state,
+          cameraState: () => ({ ...camera }),
+          setCamera(scale, panX, panY) {
+            if (![scale, panX, panY].every(Number.isFinite) || scale < 0.5 || scale > 4) return false;
+            const limit = (scale + 1) / 2 - 0.15;
+            camera = { scale, panX: Math.max(-limit, Math.min(limit, panX)),
+              panY: Math.max(-limit, Math.min(limit, panY)) };
+            return applyCamera();
+          },
           setAction(name) {
             if (!state().actions.includes(name)) return false;
             return renderer.setAnimation(name, true);
@@ -80,3 +115,6 @@ internal val GameKeeLobbyFocusScript = """
 
 internal fun gameKeeLobbySelectActionScript(action: String): String =
     "window.keiosLobby && window.keiosLobby.setAction(${JSONObject.quote(action)})"
+
+internal fun gameKeeLobbyCameraScript(camera: GuideLobbyCameraTransform): String =
+    "window.keiosLobby && window.keiosLobby.setCamera(${camera.scale},${camera.panX},${camera.panY})"

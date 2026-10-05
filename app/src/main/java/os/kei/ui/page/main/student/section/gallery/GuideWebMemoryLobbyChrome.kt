@@ -34,7 +34,7 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
 
 @Composable
-internal fun GuideWebMemoryLobbyHeader(backdrop: Backdrop, onDismiss: () -> Unit) {
+internal fun GuideWebMemoryLobbyHeader(backdrop: Backdrop, onDismiss: () -> Unit, camera: GuideWebMemoryLobbyCamera? = null) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val titleModifier = if (maxWidth >= 600.dp) {
             Modifier.widthIn(
@@ -47,7 +47,7 @@ internal fun GuideWebMemoryLobbyHeader(backdrop: Backdrop, onDismiss: () -> Unit
             title = stringResource(R.string.guide_gallery_dynamic_lobby),
             backdrop = backdrop,
             startReserve = AppChromeTokens.topBarTitleNavigationReserve,
-            endReserve = 0.dp,
+            endReserve = if (camera != null) AppChromeTokens.topBarTitleNavigationReserve else 0.dp,
             textOverflow = TextOverflow.Ellipsis,
             modifier = titleModifier.fillMaxWidth(),
         )
@@ -57,6 +57,9 @@ internal fun GuideWebMemoryLobbyHeader(backdrop: Backdrop, onDismiss: () -> Unit
                 LiquidToolbarAction(appLucideCloseIcon(), stringResource(R.string.common_close), onDismiss),
             ),
         )
+        if (camera != null) {
+            GuideWebMemoryLobbyCameraMenu(backdrop, camera, Modifier.align(Alignment.TopEnd))
+        }
     }
 }
 

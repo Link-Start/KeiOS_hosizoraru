@@ -14,9 +14,17 @@ function attach({ missingRenderer = false } = {}) {
     };
     let playing = true;
     let selections = 0;
+    let viewport;
+    let renders = 0;
+    const base = { x: 0, y: -100, width: 200, height: 400 };
     const renderer = {
         spineLayers: [{ spine }],
-        pixiApp: { start() { playing = true; }, stop() { playing = false; } },
+        layerList: [{ position: base }],
+        parsePad: value => Number(value) || 0,
+        applyViewportToAll(value) { viewport = value; },
+        resizeToContainer() { viewport = base; },
+        pixiApp: { screen: { width: 100, height: 200 }, render() { renders++; },
+            start() { playing = true; }, stop() { playing = false; } },
         setAnimation(name, loop) {
             selections++;
             spine.state.tracks[0] = { animation: { name }, trackTime: 0, loop };
@@ -37,6 +45,7 @@ function attach({ missingRenderer = false } = {}) {
     };
     const result = runInNewContext(script, context);
     return { result, controller: context.window.keiosLobby, spine, track,
+        renderer, viewport: () => viewport, renders: () => renders,
         isPlaying: () => playing, selections: () => selections };
 }
 
@@ -70,4 +79,28 @@ test('a replaced or unavailable Wiki renderer stays in the recoverable loading s
     const { result, controller } = attach({ missingRenderer: true });
     assert.equal(result, 'waiting');
     assert.equal(controller, undefined);
+});
+
+test('camera changes and reset redraw a paused pose without replacing its animation', () => {
+    const { controller, viewport, renders, spine, track, selections, isPlaying } = attach();
+    controller.setPlaying(false);
+    assert.equal(controller.setCamera(2, 0.2, -0.1), true);
+    assert.deepEqual(JSON.parse(JSON.stringify(viewport())), { x: 30, y: -20, width: 100, height: 200 });
+    assert.equal(renders(), 1);
+    assert.equal(controller.setCamera(1, 0, 0), true);
+    assert.deepEqual(JSON.parse(JSON.stringify(viewport())), { x: 0, y: -100, width: 200, height: 400 });
+    assert.equal(spine.state.tracks[0], track);
+    assert.equal(track.trackTime, 12.5);
+    assert.equal(selections(), 0);
+    assert.equal(isPlaying(), false);
+});
+
+test('resize preserves normalized zoom and pan, and invalid camera values are rejected', () => {
+    const { controller, renderer, viewport } = attach();
+    controller.setCamera(2, 0.2, 0);
+    renderer.pixiApp.screen = { width: 200, height: 100 };
+    renderer.resizeToContainer();
+    assert.deepEqual(JSON.parse(JSON.stringify(viewport())), { x: 30, y: 0, width: 100, height: 200 });
+    for (const scale of [NaN, Infinity, 0, 5]) assert.equal(controller.setCamera(scale, 0, 0), false);
+    assert.equal(controller.cameraState().scale, 2);
 });

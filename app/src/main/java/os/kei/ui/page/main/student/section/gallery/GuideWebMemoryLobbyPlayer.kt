@@ -51,6 +51,7 @@ internal fun GuideWebMemoryLobbyPlayer(
     stateRequest: Int,
     actionRequest: Int,
     selectedAction: String,
+    camera: GuideWebMemoryLobbyCamera,
     onActionsAvailable: (List<String>, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -106,6 +107,18 @@ internal fun GuideWebMemoryLobbyPlayer(
             view?.let { web ->
                 if (resumed) web.onResume() else web.onPause()
                 if (ready) web.evaluateJavascript("window.keiosLobby.setPlaying(${playing && resumed})", null)
+            }
+        }
+        LaunchedEffect(view, ready, resumed, camera) {
+            if (!ready || !resumed) return@LaunchedEffect
+            camera.transform.collect { transform ->
+                // Await one evaluation so rapid input conflates to the newest absolute view.
+                // No animation selection, lifecycle change or WebView recreation is involved.
+                suspendCancellableCoroutine { continuation ->
+                    view?.evaluateJavascript(gameKeeLobbyCameraScript(transform)) {
+                        if (continuation.isActive) continuation.resume(Unit)
+                    } ?: continuation.resume(Unit)
+                }
             }
         }
         // The page controller only exposes playback; no native app services are exposed to JS.

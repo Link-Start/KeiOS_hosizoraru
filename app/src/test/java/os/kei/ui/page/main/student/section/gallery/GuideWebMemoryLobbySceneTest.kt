@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
@@ -21,6 +22,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -51,6 +54,39 @@ class GuideWebMemoryLobbySceneTest {
     val composeRule = createComposeRule()
     private var playerMounts = 0
     private var playerDisposals = 0
+
+    @Test
+    fun draggingInImmersionMovesTheCameraWithoutRestoringChromeOrRemountingMedia() {
+        val camera = GuideWebMemoryLobbyCamera()
+        setScene(camera = camera)
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_hide_controls)).performClick()
+        composeRule.onNodeWithTag(GuideWebMemoryLobbyRestoreTag).performTouchInput {
+            swipe(center, center + Offset(100f, 60f), 200)
+        }
+        composeRule.onNodeWithTag(GuideWebMemoryLobbyHeaderTag).assertDoesNotExist()
+        assertTrue(camera.transform.value.panX > 0f)
+        assertTrue(camera.transform.value.panY > 0f)
+        assertEquals(1, playerMounts)
+        assertEquals(0, playerDisposals)
+        composeRule.onNodeWithTag(GuideWebMemoryLobbyRestoreTag).performClick()
+        composeRule.onNodeWithTag(GuideWebMemoryLobbyHeaderTag).assertIsDisplayed()
+    }
+
+    @Test
+    fun cameraMenuZoomAndResetKeepTheViewportAndMediaMounted() {
+        val camera = GuideWebMemoryLobbyCamera()
+        setScene(camera = camera)
+        val viewport = bounds(GuideWebMemoryLobbyViewportTag)
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_adjust_view)).performClick()
+        composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby_zoom_in)).performClick()
+        assertTrue(camera.transform.value.scale > 1f)
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_adjust_view)).performClick()
+        composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby_reset_view)).performClick()
+        assertEquals(GuideLobbyCameraTransform(), camera.transform.value)
+        assertBoundsEqual(viewport, bounds(GuideWebMemoryLobbyViewportTag))
+        assertEquals(1, playerMounts)
+        assertEquals(0, playerDisposals)
+    }
 
     @Test
     fun immersionHidesChromeAndTapRestoresItWithoutRemountingThePlayer() {
@@ -135,6 +171,7 @@ class GuideWebMemoryLobbySceneTest {
         fontScale: Float = 1f,
         onSelectAction: (String) -> Unit = {},
         onDismiss: () -> Unit = {},
+        camera: GuideWebMemoryLobbyCamera = GuideWebMemoryLobbyCamera(),
     ) {
         composeRule.setContent {
             val density = LocalDensity.current
@@ -149,7 +186,8 @@ class GuideWebMemoryLobbySceneTest {
                         GuideWebMemoryLobbyScene(
                             controlsVisible = visible,
                             onShowControls = { visible = true },
-                            header = { GuideWebMemoryLobbyHeader(it, onDismiss) },
+                            camera = camera,
+                            header = { GuideWebMemoryLobbyHeader(it, onDismiss, camera) },
                             controls = {
                                 GuideWebMemoryLobbyControls(
                                     backdrop = it,

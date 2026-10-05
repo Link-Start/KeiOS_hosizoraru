@@ -939,7 +939,7 @@
     <string name="ba_daily_template_row_label">デイリーテンプレート</string>
     <string name="ba_daily_done_cd_open_sheet">デイリーを完了</string>
     <string name="guide_gallery_dynamic_lobby">インタラクティブなメモリアルロビー</string>
-    <string name="guide_gallery_dynamic_lobby_entry_body">全画面でアニメーションを楽しみ、キャラクターの動きを切り替えられます</string>
+    <string name="guide_gallery_dynamic_lobby_entry_body">アニメーションを楽しみながら、ピンチで拡大縮小、ドラッグで移動、動きの切り替えができます</string>
     <string name="guide_gallery_dynamic_lobby_open">インタラクティブなメモリアルロビーを開く</string>
     <string name="guide_gallery_dynamic_lobby_actions">動きを切り替える</string>
     <string name="guide_gallery_dynamic_lobby_source">Wiki の掲載ページを開く</string>
@@ -948,4 +948,9 @@
     <string name="guide_gallery_dynamic_lobby_paused">一時停止中。再生ボタンでアニメーションを再開します</string>
     <string name="guide_gallery_dynamic_lobby_hide_controls">操作ボタンを隠す</string>
     <string name="guide_gallery_dynamic_lobby_show_controls">操作ボタンを表示</string>
+    <string name="guide_gallery_dynamic_lobby_adjust_view">表示を調整</string>
+    <string name="guide_gallery_dynamic_lobby_zoom_in">拡大</string>
+    <string name="guide_gallery_dynamic_lobby_zoom_out">縮小</string>
+    <string name="guide_gallery_dynamic_lobby_reset_view">表示をリセット</string>
+    <string name="guide_gallery_dynamic_lobby_gestures">ピンチで拡大縮小、ドラッグで移動、ダブルタップで表示をリセット</string>
 </resources>

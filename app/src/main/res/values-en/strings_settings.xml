@@ -486,4 +486,7 @@
     <string name="settings_search_auto_focus_summary_enabled">Focus the input and open the keyboard after expanding the search bar.</string>
     <string name="settings_search_auto_focus_summary_disabled">Expanding the search bar shows the input first; tap the input to open the keyboard.</string>
     <string name="settings_search_auto_focus_scope">Affects main search bars such as About, Settings, OS, GitHub, and Catalog.</string>
+    <string name="settings_cache_entry_ba_spine_title">Interactive lobby cache</string>
+    <string name="settings_cache_entry_ba_spine_summary">Reuses animation resources to reduce repeat downloads. Resources not used recently are cleared automatically.</string>
+    <string name="settings_cache_entry_ba_spine_detail">%1$d resources · Limit %2$s</string>
 </resources>

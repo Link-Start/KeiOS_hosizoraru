@@ -8,6 +8,7 @@ import android.webkit.CookieManager
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -36,6 +37,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import os.kei.R
 import os.kei.ui.page.main.student.gameKeeMemoryLobbyViewerUrl
 import os.kei.ui.page.main.student.BaGuideWebMemoryLobby
+import os.kei.ui.page.main.student.BaGuideSpineWebCache
+import os.kei.ui.page.main.student.BaGuideSpineWebCacheSession
 import kotlin.coroutines.resume
 
 /** Reuses the Wiki renderer through a narrow playback controller. */
@@ -66,6 +69,7 @@ internal fun GuideWebMemoryLobbyPlayer(
         var view by remember { mutableStateOf<WebView?>(null) }
         var ready by remember { mutableStateOf(false) }
         var failed by remember { mutableStateOf(false) }
+        var cacheSession by remember { mutableStateOf<BaGuideSpineWebCacheSession?>(null) }
         LaunchedEffect(view, failed) {
             notifyActions(emptyList(), "")
             val web = view ?: return@LaunchedEffect
@@ -131,7 +135,15 @@ internal fun GuideWebMemoryLobbyPlayer(
                                     .replace(" Mobile", "").replace("Version/4.0 ", "")
                             }
                             CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
+                            val session = BaGuideSpineWebCacheSession(
+                                resource, { BaGuideSpineWebCache.get(context.applicationContext) },
+                                settings.userAgentString, revalidate = retryToken > 0,
+                            )
+                            cacheSession = session
                             webViewClient = object : WebViewClient() {
+                                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                                    session.intercept(request)
+
                                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
                                     gameKeeMemoryLobbyViewerUrl(request.url.toString()) != viewerUrl
 
@@ -154,6 +166,7 @@ internal fun GuideWebMemoryLobbyPlayer(
                     },
                     onRelease = { web ->
                         web.stopLoading()
+                        cacheSession?.close()
                         web.onPause()
                         web.webViewClient = WebViewClient()
                         web.removeAllViews()

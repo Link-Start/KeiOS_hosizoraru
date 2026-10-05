@@ -80,6 +80,11 @@ internal class BaStudentGuideRepository(
         BaStudentGuideStore.saveInfo(info)
     },
     private val cacheClearer: suspend (Context, String) -> Unit = { context, sourceUrl ->
+        val spineUrls = BaStudentGuideStore.loadInfoSnapshot(sourceUrl).info?.galleryItems.orEmpty()
+            .mapNotNull { it.webMemoryLobby }
+            .flatMap { listOf(it.atlasUrl, it.skeletonUrl, it.jsonUrl) + it.textureUrls }
+            .filter(String::isNotBlank).toSet()
+        if (spineUrls.isNotEmpty()) os.kei.ui.page.main.student.BaGuideSpineWebCache.get(context).removeResources(spineUrls)
         BaStudentGuideStore.clearCachedInfo(sourceUrl)
         BaGuideTempMediaCache.clearGuideCache(context, sourceUrl)
     },

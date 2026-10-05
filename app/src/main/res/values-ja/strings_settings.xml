@@ -486,4 +486,7 @@
     <string name="settings_search_auto_focus_summary_enabled">検索バーを展開したら入力欄に自動フォーカスし、キーボードを開きます。</string>
     <string name="settings_search_auto_focus_summary_disabled">検索バー展開時は入力欄だけを表示し、入力欄をタップしてからキーボードを開きます。</string>
     <string name="settings_search_auto_focus_scope">About / 設定 / OS / GitHub / 図鑑などのメイン検索バーに適用します。</string>
+    <string name="settings_cache_entry_ba_spine_title">動くメモリアルロビーのキャッシュ</string>
+    <string name="settings_cache_entry_ba_spine_summary">アニメーションのリソースを再利用して再ダウンロードを減らします。しばらく使われていないリソースは自動的に削除されます。</string>
+    <string name="settings_cache_entry_ba_spine_detail">%1$d 個のリソース · 上限 %2$s</string>
 </resources>

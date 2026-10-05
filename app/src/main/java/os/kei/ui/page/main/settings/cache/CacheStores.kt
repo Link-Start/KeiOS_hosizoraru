@@ -11,6 +11,7 @@ internal object CacheStores {
             osInfoCacheEntryProvider(),
             appIconCacheEntryProvider(),
             baMediaPlaybackCacheEntryProvider(),
+            baSpineCacheEntryProvider(),
             baTempMediaCacheEntryProvider(),
             debugUiDumpCacheEntryProvider(),
             mcpPrefsCacheEntryProvider(),

@@ -486,4 +486,7 @@
     <string name="settings_home_dynamic_full_effect_summary_enabled">主页上下滑动、左右切页与点击交互时保持完整动态背景与玻璃强度。</string>
     <string name="settings_home_dynamic_full_effect_summary_disabled">主页滑动时使用常规动态背景策略，优先控制瞬时渲染负载。</string>
     <string name="settings_home_dynamic_full_effect_scope">影响 Home 页动态背景、首页卡片玻璃与 Home 顶部 ActionBar 的滑动时特效策略。</string>
+    <string name="settings_cache_entry_ba_spine_title">动态回忆大厅缓存</string>
+    <string name="settings_cache_entry_ba_spine_summary">复用动态回忆大厅的动画资源，减少重复下载。较久未使用的资源会自动清理。</string>
+    <string name="settings_cache_entry_ba_spine_detail">%1$d 个资源 · 上限 %2$s</string>
 </resources>

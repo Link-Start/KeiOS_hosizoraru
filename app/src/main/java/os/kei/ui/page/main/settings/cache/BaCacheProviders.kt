@@ -12,6 +12,8 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.clearBaGuideCatalogCache
 import os.kei.ui.page.main.student.clearGameKeeMediaPlaybackCache
 import os.kei.ui.page.main.student.loadGameKeeMediaCacheDiagnostics
+import os.kei.ui.page.main.student.BaGuideSpineWebCache
+import os.kei.ui.page.main.student.BA_GUIDE_SPINE_CACHE_MAX_BYTES
 
 internal fun baCalendarCacheEntryProvider(): CacheEntryProvider =
     CacheEntryProvider(
@@ -47,6 +49,27 @@ internal fun baTempMediaCacheEntryProvider(): CacheEntryProvider =
         summary = ::baTempMediaSummary,
         clear = { context -> BaGuideTempMediaCache.clearAll(context) },
     )
+
+internal fun baSpineCacheEntryProvider(): CacheEntryProvider = CacheEntryProvider(
+    id = "ba_spine_playback",
+    summary = { context ->
+        val stats = BaGuideSpineWebCache.get(context).stats()
+        val clearedAt = CacheEventStore.loadClearedAt("ba_spine_playback")
+        CacheEntrySummary(
+            id = "ba_spine_playback",
+            title = context.getString(R.string.settings_cache_entry_ba_spine_title),
+            summary = context.getString(R.string.settings_cache_entry_ba_spine_summary),
+            detail = context.getString(R.string.settings_cache_entry_ba_spine_detail, stats.entries, formatBytes(BA_GUIDE_SPINE_CACHE_MAX_BYTES)),
+            activity = formatActivity(context, stats.latestModifiedAtMs, clearedAt),
+            storage = context.getString(R.string.settings_cache_storage_cache_config_disk, formatBytes(stats.bytes), formatBytes(0), formatBytes(stats.bytes)),
+            clearLabel = context.getString(R.string.common_clear),
+            cacheBytes = stats.bytes, configBytes = 0, diskBytes = stats.bytes,
+            updatedAtMs = stats.latestModifiedAtMs, clearedAtMs = clearedAt,
+            freshness = cacheFreshness(stats.latestModifiedAtMs, stats.bytes, rebuildable = true),
+        )
+    },
+    clear = { context -> BaGuideSpineWebCache.get(context).clear() },
+)
 
 private fun baCalendarSummary(context: Context): CacheEntrySummary {
     val snapshot = BASettingsStore.loadSnapshot()

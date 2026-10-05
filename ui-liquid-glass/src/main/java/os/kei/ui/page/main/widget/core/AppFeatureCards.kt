@@ -138,6 +138,7 @@ fun AppFeatureCard(
         ),
     contentVerticalSpacing: Dp = CardLayoutRhythm.sectionGap,
     collapseOnSurfaceClick: Boolean = false,
+    onHeaderClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val contentVisibilityState =
@@ -148,6 +149,7 @@ fun AppFeatureCard(
     val headerClick =
         when {
             collapsible -> toggleExpanded
+            onHeaderClick != null -> onHeaderClick
             onClick != null -> onClick
             else -> null
         }

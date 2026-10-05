@@ -11,7 +11,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -38,7 +37,6 @@ class GuideWebMemoryLobbyActivity : ComponentActivity() {
                     GuideWebMemoryLobbyScreen(
                         resource = lobby,
                         onDismiss = ::finish,
-                        onOpenSource = { startActivity(Intent(Intent.ACTION_VIEW, lobby.viewerUrl.toUri())) },
                         onControlsVisibleChange = ::updateSystemBars,
                     )
                 }

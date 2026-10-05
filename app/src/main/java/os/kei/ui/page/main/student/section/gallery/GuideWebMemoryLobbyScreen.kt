@@ -53,7 +53,6 @@ import top.yukonga.miuix.kmp.basic.Text
 internal fun GuideWebMemoryLobbyScreen(
     resource: BaGuideWebMemoryLobby,
     onDismiss: () -> Unit,
-    onOpenSource: () -> Unit,
     onControlsVisibleChange: (Boolean) -> Unit,
 ) {
     val viewerUrl = resource.viewerUrl
@@ -72,7 +71,7 @@ internal fun GuideWebMemoryLobbyScreen(
         controlsVisible = controlsVisible,
         onShowControls = { controlsVisible = true },
         camera = camera,
-        header = { backdrop -> GuideWebMemoryLobbyHeader(backdrop, onDismiss, camera) },
+        header = { backdrop -> GuideWebMemoryLobbyHeader(backdrop, onDismiss) },
         controls = { backdrop ->
             GuideWebMemoryLobbyControls(
                 backdrop = backdrop,
@@ -82,7 +81,7 @@ internal fun GuideWebMemoryLobbyScreen(
                 onTogglePlayback = { playing = !playing },
                 onSelectAction = { selectedAction = it; actionRequest += 1 },
                 onRetry = { playing = true; retry += 1 },
-                onOpenSource = onOpenSource,
+                onResetView = camera::reset,
                 onHideControls = { controlsVisible = false },
                 onActionsRequested = { stateRequest += 1 },
             )

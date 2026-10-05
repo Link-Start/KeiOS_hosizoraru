@@ -1,9 +1,11 @@
 package os.kei.ui.page.main.widget.core
 
 import android.app.Application
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.click
@@ -96,6 +98,46 @@ class AppFeatureCardInteractionTest {
 
         composeRule.onNodeWithText("Surface card", useUnmergedTree = true).performTouchInput { click() }
         composeRule.runOnIdle { assertEquals(listOf(false, false), expandedChanges) }
+    }
+
+    @Test
+    fun headerHintBodyNavigationAndHeaderActionHandleOnlyTheirOwnTouches() {
+        var hints = 0
+        var opened = 0
+        var sources = 0
+        composeRule.setContent {
+            TestTheme {
+                AppFeatureCard(
+                    title = "Interactive lobby",
+                    subtitle = "",
+                    onClick = { opened += 1 },
+                    onHeaderClick = { hints += 1 },
+                    headerEndActions = {
+                        Box(Modifier.size(36.dp).testTag("source-action").clickable { sources += 1 })
+                    },
+                ) {
+                    Box(Modifier.fillMaxWidth().height(96.dp).testTag("lobby-preview"))
+                }
+            }
+        }
+        composeRule.onNodeWithText("Interactive lobby", useUnmergedTree = true).performTouchInput { click() }
+        composeRule.runOnIdle {
+            assertEquals(1, hints)
+            assertEquals(0, opened)
+            assertEquals(0, sources)
+        }
+        composeRule.onNodeWithTag("source-action", useUnmergedTree = true).performTouchInput { click() }
+        composeRule.runOnIdle {
+            assertEquals(1, hints)
+            assertEquals(0, opened)
+            assertEquals(1, sources)
+        }
+        composeRule.onNodeWithTag("lobby-preview", useUnmergedTree = true).performTouchInput { click() }
+        composeRule.runOnIdle {
+            assertEquals(1, hints)
+            assertEquals(1, opened)
+            assertEquals(1, sources)
+        }
     }
 }
 

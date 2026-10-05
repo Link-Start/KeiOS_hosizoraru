@@ -14,8 +14,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -24,7 +22,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -73,16 +70,15 @@ class GuideWebMemoryLobbySceneTest {
     }
 
     @Test
-    fun cameraMenuZoomAndResetKeepTheViewportAndMediaMounted() {
+    fun resetButtonRestoresTheCameraWithoutChangingPlaybackOrRemountingMedia() {
         val camera = GuideWebMemoryLobbyCamera()
+        camera.zoomIn()
         setScene(camera = camera)
         val viewport = bounds(GuideWebMemoryLobbyViewportTag)
-        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_adjust_view)).performClick()
-        composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby_zoom_in)).performClick()
         assertTrue(camera.transform.value.scale > 1f)
-        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_adjust_view)).performClick()
-        composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby_reset_view)).performClick()
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_reset_view)).performClick()
         assertEquals(GuideLobbyCameraTransform(), camera.transform.value)
+        composeRule.onNodeWithContentDescription(text(R.string.guide_action_pause)).assertIsDisplayed()
         assertBoundsEqual(viewport, bounds(GuideWebMemoryLobbyViewportTag))
         assertEquals(1, playerMounts)
         assertEquals(0, playerDisposals)
@@ -116,6 +112,9 @@ class GuideWebMemoryLobbySceneTest {
         val originalViewport = bounds(GuideWebMemoryLobbyViewportTag)
         assertBoundsEqual(bounds(GuideWebMemoryLobbySceneTag), originalViewport)
         assertFloatingChromeInsideWindow()
+        composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby)).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_adjust_view)).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_source)).assertDoesNotExist()
 
         composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby_actions)).performClick()
         composeRule.onNodeWithText("Idle_01").assertIsDisplayed().performClick()
@@ -130,13 +129,9 @@ class GuideWebMemoryLobbySceneTest {
         setScene(fontScale = 1.5f)
         assertBoundsEqual(bounds(GuideWebMemoryLobbySceneTag), bounds(GuideWebMemoryLobbyViewportTag))
         assertFloatingChromeInsideWindow()
-        listOf(R.string.guide_action_pause, R.string.guide_action_retry, R.string.guide_gallery_dynamic_lobby_source)
+        listOf(R.string.guide_action_pause, R.string.guide_action_retry, R.string.guide_gallery_dynamic_lobby_reset_view,
+            R.string.guide_gallery_dynamic_lobby_hide_controls)
             .forEach { composeRule.onNodeWithContentDescription(text(it)).assertIsDisplayed() }
-        val layouts = mutableListOf<TextLayoutResult>()
-        composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby))
-            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        assertTrue(layouts.isNotEmpty())
-        assertTrue(layouts.all { !it.hasVisualOverflow || it.isLineEllipsized(0) })
     }
 
     @Test
@@ -149,10 +144,7 @@ class GuideWebMemoryLobbySceneTest {
         assertTrue(abs(scene.bottom - viewport.bottom) <= 1f)
         assertTrue(abs(viewport.width / viewport.height - 16f / 9f) <= 0.01f)
         assertTrue(abs(scene.center.x - viewport.center.x) <= 1f)
-        val title = composeRule.onNodeWithText(text(R.string.guide_gallery_dynamic_lobby))
-            .fetchSemanticsNode().boundsInRoot
-        assertTrue(title.right < scene.center.x, "Wide-window title must leave the central character unobscured")
-        listOf(R.string.common_close, R.string.guide_gallery_dynamic_lobby_adjust_view).forEach { label ->
+        listOf(R.string.common_close, R.string.guide_gallery_dynamic_lobby_reset_view).forEach { label ->
             val button = composeRule.onNodeWithContentDescription(text(label)).fetchSemanticsNode().boundsInRoot
             assertTrue(button.left >= viewport.left && button.right <= viewport.right,
                 "Floating actions must remain over the cinematic image rather than its dark margins")
@@ -192,7 +184,7 @@ class GuideWebMemoryLobbySceneTest {
                             controlsVisible = visible,
                             onShowControls = { visible = true },
                             camera = camera,
-                            header = { GuideWebMemoryLobbyHeader(it, onDismiss, camera) },
+                            header = { GuideWebMemoryLobbyHeader(it, onDismiss) },
                             controls = {
                                 GuideWebMemoryLobbyControls(
                                     backdrop = it,
@@ -202,7 +194,7 @@ class GuideWebMemoryLobbySceneTest {
                                     onTogglePlayback = {},
                                     onSelectAction = onSelectAction,
                                     onRetry = {},
-                                    onOpenSource = {},
+                                    onResetView = camera::reset,
                                     onHideControls = { visible = false },
                                 )
                             },

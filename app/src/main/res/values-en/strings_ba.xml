@@ -941,12 +941,12 @@
     <string name="ba_daily_template_row_label">Daily template</string>
     <string name="ba_daily_done_cd_open_sheet">Complete dailies</string>
     <string name="guide_gallery_dynamic_lobby">Interactive Memorial Lobby</string>
-    <string name="guide_gallery_dynamic_lobby_entry_body">Enjoy the animation, pinch to zoom, drag to move, and choose character actions</string>
+    <string name="guide_gallery_dynamic_lobby_entry_body">Pinch to zoom, drag to move, and switch actions.</string>
     <string name="guide_gallery_dynamic_lobby_open">Open interactive memorial lobby</string>
     <string name="guide_gallery_dynamic_lobby_actions">Change action</string>
     <string name="guide_gallery_dynamic_lobby_source">View Wiki source</string>
     <string name="guide_gallery_dynamic_lobby_loading">Loading memorial lobby…</string>
-    <string name="guide_gallery_dynamic_lobby_failed">Could not load the memorial lobby. Retry or view the Wiki source.</string>
+    <string name="guide_gallery_dynamic_lobby_failed">Could not load the memorial lobby. Retry, or return to its card to view the Wiki source.</string>
     <string name="guide_gallery_dynamic_lobby_paused">Paused. Tap play to continue the animation</string>
     <string name="guide_gallery_dynamic_lobby_hide_controls">Hide controls</string>
     <string name="guide_gallery_dynamic_lobby_show_controls">Show controls</string>

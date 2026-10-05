@@ -63,7 +63,7 @@ fun GuideGalleryVideoGroupCardItem(
 ) {
     items.filter { it.webMemoryLobby != null }.forEachIndexed { index, item ->
         if (index > 0) Spacer(Modifier.height(CardLayoutRhythm.sectionGap))
-        GuideWebMemoryLobbyCard(item = item, previewFallbackUrl = previewFallbackUrl)
+        GuideWebMemoryLobbyCard(item = item, previewFallbackUrl = previewFallbackUrl, backdrop = backdrop)
     }
     val videoItems = items.filter { it.webMemoryLobby == null }
     if (videoItems.isEmpty()) return

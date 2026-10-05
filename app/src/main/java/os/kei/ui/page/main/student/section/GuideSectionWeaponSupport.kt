@@ -86,7 +86,8 @@ internal fun GuideEffectLevelPicker(
         options = levelOptions,
         selectedIndex = levelOptions.indexOf(selectedLevel).coerceAtLeast(0),
         expanded = showLevelPopup,
-        anchorBounds = levelPopupAnchorBounds,
+        anchorBounds = null,
+        anchorBoundsProvider = { levelPopupAnchorBounds },
         onExpandedChange = { expanded ->
             if (expanded) onTogglePopup() else onDismissPopup()
         },

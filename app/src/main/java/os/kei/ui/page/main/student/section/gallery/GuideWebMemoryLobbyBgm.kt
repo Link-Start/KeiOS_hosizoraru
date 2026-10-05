@@ -26,17 +26,27 @@ import os.kei.ui.page.main.student.createGameKeeMediaSourceFactory
 /** Music has its own lifetime; chrome, actions, camera and WebView retries do not replace it. */
 internal class GuideWebMemoryLobbyBgmController(private val player: Player, audioUrl: String) {
     private var lastRetryToken = 0
+    private val audioAttributes = player.audioAttributes
+    private var handlesAudioFocus = false
 
     init {
+        player.setAudioAttributes(audioAttributes, false)
         player.repeatMode = Player.REPEAT_MODE_ONE
         player.setMediaItem(MediaItem.fromUri(audioUrl))
         player.prepare()
     }
 
     fun update(playing: Boolean, muted: Boolean, resumed: Boolean, retryToken: Int) {
+        val shouldPlay = playing && resumed && !muted
         player.volume = if (muted) 0f else 1f
-        // Muting also releases audio focus and avoids decoding inaudible music.
-        player.playWhenReady = playing && resumed && !muted
+        if (!shouldPlay) player.playWhenReady = false
+        // Media3 normally retains focus while paused. Release it when this preview is silent,
+        // without changing the media item, audio attributes or current playback position.
+        if (handlesAudioFocus != shouldPlay) {
+            player.setAudioAttributes(audioAttributes, shouldPlay)
+            handlesAudioFocus = shouldPlay
+        }
+        if (shouldPlay) player.playWhenReady = true
         if (retryToken != lastRetryToken && player.playbackState == Player.STATE_IDLE) player.prepare()
         lastRetryToken = retryToken
     }

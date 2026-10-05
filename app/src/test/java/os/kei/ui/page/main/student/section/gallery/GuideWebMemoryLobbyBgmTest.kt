@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.section.gallery
 
 import android.app.Application
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.Player
 import java.lang.reflect.Proxy
 import org.junit.Test
@@ -22,8 +23,10 @@ class GuideWebMemoryLobbyBgmTest {
         assertEquals(1, recording.items)
         controller.update(false, false, true, 0)
         assertFalse(recording.playing)
+        assertFalse(recording.handlesAudioFocus)
         controller.update(true, false, true, 0)
         assertTrue(recording.playing)
+        assertTrue(recording.handlesAudioFocus)
         assertEquals(1, recording.prepares)
     }
 
@@ -32,12 +35,15 @@ class GuideWebMemoryLobbyBgmTest {
         val recording = RecordingPlayer()
         val controller = recording.controller()
         recording.position = 12_000L
+        controller.update(true, false, true, 0)
         controller.update(true, true, true, 0)
         assertEquals(0f, recording.volume)
         assertFalse(recording.playing)
+        assertFalse(recording.handlesAudioFocus)
         controller.update(true, false, true, 0)
         assertEquals(1f, recording.volume)
         assertTrue(recording.playing)
+        assertTrue(recording.handlesAudioFocus)
         assertEquals(12_000L, recording.position)
         assertEquals(1, recording.items)
         assertEquals(1, recording.prepares)
@@ -48,12 +54,17 @@ class GuideWebMemoryLobbyBgmTest {
         val recording = RecordingPlayer()
         val controller = recording.controller()
         recording.position = 34_000L
+        controller.update(true, false, true, 0)
         controller.update(true, false, false, 0)
         assertFalse(recording.playing)
+        assertFalse(recording.handlesAudioFocus)
+        controller.update(true, false, true, 0)
         controller.update(false, false, true, 0)
         assertFalse(recording.playing)
+        assertFalse(recording.handlesAudioFocus)
         controller.update(true, false, true, 0)
         assertTrue(recording.playing)
+        assertTrue(recording.handlesAudioFocus)
         assertEquals(34_000L, recording.position)
         assertEquals(1, recording.items)
     }
@@ -85,6 +96,7 @@ class GuideWebMemoryLobbyBgmTest {
     private class RecordingPlayer {
         var repeatMode = Player.REPEAT_MODE_OFF
         var playing = false
+        var handlesAudioFocus = true
         var volume = 1f
         var state = Player.STATE_READY
         var position = 0L
@@ -93,6 +105,13 @@ class GuideWebMemoryLobbyBgmTest {
         var releases = 0
         private val player = Proxy.newProxyInstance(Player::class.java.classLoader, arrayOf(Player::class.java)) { _, method, args ->
             when (method.name) {
+                "getAudioAttributes" -> AudioAttributes.DEFAULT
+                "setAudioAttributes" -> {
+                    assertEquals(AudioAttributes.DEFAULT, args!![0])
+                    handlesAudioFocus = args[1] as Boolean
+                    if (!handlesAudioFocus) assertFalse(playing)
+                    null
+                }
                 "setRepeatMode" -> { repeatMode = args!![0] as Int; null }
                 "setPlayWhenReady" -> { playing = args!![0] as Boolean; null }
                 "setVolume" -> { volume = args!![0] as Float; null }

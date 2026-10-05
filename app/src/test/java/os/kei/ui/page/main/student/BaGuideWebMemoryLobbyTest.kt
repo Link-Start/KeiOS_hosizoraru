@@ -35,7 +35,9 @@ class BaGuideWebMemoryLobbyTest {
             assertTrue(state.hasRenderableContent)
             assertTrue(state.memoryHallVideoGroup?.second?.single()?.imageUrl?.endsWith(".png") == true)
             val catalogItem = assertNotNull(info(id, gallery).toMemoryLobbyResolvedItem(testCatalogEntry(), false))
-            assertTrue(catalogItem.galleryItems.any { it.webMemoryLobby == lobby })
+            val bgm = gallery.single { it.mediaType == "audio" }.mediaUrl
+            assertTrue(catalogItem.galleryItems.any { it.webMemoryLobby == lobby.copy(bgmUrl = bgm) })
+            assertEquals(bgm, state.memoryHallVideoGroup?.second?.single()?.webMemoryLobby?.bgmUrl)
         }
     }
 
@@ -46,6 +48,9 @@ class BaGuideWebMemoryLobbyTest {
         val items = assertNotNull(state.memoryHallVideoGroup).second
         assertEquals(setOf("web", "video"), items.map { it.mediaType }.toSet())
         assertTrue(items.single { it.mediaType == "video" }.mediaUrl.endsWith("256762.mp4"))
+        val web = assertNotNull(items.single { it.mediaType == "web" }.webMemoryLobby)
+        assertTrue(web.bgmUrl.endsWith("427453.ogg"))
+        assertEquals(web, decodeWebMemoryLobby(web.toJson()))
         assertEquals("8", state.memoryUnlockLevel)
     }
 
@@ -139,6 +144,33 @@ class BaGuideWebMemoryLobbyTest {
         assertTrue(extractWebMemoryLobbies(source, valid.put("atlas", "null")).isEmpty())
         assertFalse(hasRenderableGalleryMedia(BaGuideGalleryItem("回忆大厅视频", "", "web", source)))
         assertEquals(source + "?tab=3", gameKeeMemoryLobbyViewerUrl("https://www.gamekee.com/ba/tj/718266.html"))
+    }
+
+    @Test
+    fun `music derives from old cached gallery metadata without replacing MP4 or fetching again`() {
+        val gallery = fixture("59934")
+        val old = info("59934", gallery).copy(galleryParserVersion = 2)
+        val restored = old.copy(galleryItems = decodeGalleryItemsFromArray(encodeGalleryItems(gallery)))
+        val state = resolveGuideGalleryTabState(restored)
+        val items = assertNotNull(state.memoryHallVideoGroup).second
+        assertTrue(items.any { it.mediaType == "video" })
+        val lobby = assertNotNull(items.single { it.mediaType == "web" }.webMemoryLobby)
+        assertEquals(resolveWebMemoryLobbyBgm(gallery), lobby.bgmUrl)
+        assertTrue(lobby.bgmUrl.isNotBlank())
+        assertEquals(null, BaGuideSpineResourcePolicy(lobby).reuseMs(lobby.bgmUrl))
+    }
+
+    @Test
+    fun `unrelated voice and untrusted audio cannot become lobby music`() {
+        val gallery = fixture("714062")
+        val music = gallery.single { it.mediaType == "audio" }
+        assertEquals("", resolveWebMemoryLobbyBgm(listOf(music.copy(title = "普通语音"))))
+        assertEquals("", resolveWebMemoryLobbyBgm(listOf(music.copy(mediaUrl = "https://evil.test/bgm.mp3"))))
+        val lobby = assertNotNull(gallery.single { it.webMemoryLobby != null }.webMemoryLobby)
+        val decoded = assertNotNull(decodeWebMemoryLobby(lobby.toJson().put("bgm", "javascript:alert(1)")))
+        assertEquals("", decoded.bgmUrl)
+        val noMusic = info("714062", gallery.filterNot { it.mediaType == "audio" })
+        assertEquals("", resolveGuideGalleryTabState(noMusic).memoryHallVideoGroup?.second?.single()?.webMemoryLobby?.bgmUrl)
     }
 
     private fun fixture(id: String): List<BaGuideGalleryItem> = parseGuideDetailFromContentJson(

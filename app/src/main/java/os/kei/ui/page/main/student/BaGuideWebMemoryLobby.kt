@@ -18,6 +18,7 @@ data class BaGuideWebMemoryLobby(
     val animation: String = "",
     val skin: String = "",
     val viewport: BaGuideSpineViewport? = null,
+    val bgmUrl: String = "",
 )
 
 /** Spine coordinates use an upward Y axis, unlike the Android/Pixi viewport. */
@@ -57,6 +58,7 @@ internal fun BaGuideWebMemoryLobby.toJson(): JSONObject = JSONObject().apply {
     put("image", JSONArray(textureUrls))
     put("animation", animation)
     put("skin", skin)
+    put("bgm", bgmUrl)
     viewport?.let {
         put("viewport", JSONObject().put("x", it.x).put("y", it.y).put("width", it.width).put("height", it.height))
     }
@@ -83,5 +85,12 @@ internal fun decodeWebMemoryLobby(value: JSONObject?): BaGuideWebMemoryLobby? {
         animation = value.optString("animation"),
         skin = value.optString("skin"),
         viewport = decodeSpineViewport(value.optJSONObject("viewport")),
+        bgmUrl = gameKeeSpineAssetUrl(value.optString("bgm")).takeIf(::isRenderableGalleryAudioUrl).orEmpty(),
     )
 }
+
+/** Derive music from cached gallery audio too, so older resource metadata needs no refetch. */
+internal fun resolveWebMemoryLobbyBgm(items: List<BaGuideGalleryItem>): String = items.asSequence()
+    .filter { it.mediaType.equals("audio", ignoreCase = true) && isGuideBgmFavoriteCandidateTitle(it.title, it.title) }
+    .map { gameKeeSpineAssetUrl(it.mediaUrl) }
+    .firstOrNull(::isRenderableGalleryAudioUrl).orEmpty()

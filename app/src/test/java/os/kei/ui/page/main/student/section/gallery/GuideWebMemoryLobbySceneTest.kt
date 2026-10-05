@@ -85,6 +85,23 @@ class GuideWebMemoryLobbySceneTest {
     }
 
     @Test
+    fun mutingMusicAndHidingChromeKeepAnimationAndTheMediaViewportMounted() {
+        setScene(hasBgm = true)
+        val viewport = bounds(GuideWebMemoryLobbyViewportTag)
+        composeRule.onNodeWithContentDescription(text(R.string.ba_catalog_bgm_action_mute)).performClick()
+        composeRule.onNodeWithContentDescription(text(R.string.ba_catalog_bgm_action_restore_volume)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(text(R.string.guide_action_pause)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(text(R.string.guide_gallery_dynamic_lobby_hide_controls)).performClick()
+        composeRule.onNodeWithTag(GuideWebMemoryLobbyHeaderTag).assertDoesNotExist()
+        composeRule.onNodeWithTag(GuideWebMemoryLobbyRestoreTag).performClick()
+        composeRule.onNodeWithContentDescription(text(R.string.ba_catalog_bgm_action_restore_volume)).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(text(R.string.guide_action_pause)).assertIsDisplayed()
+        assertBoundsEqual(viewport, bounds(GuideWebMemoryLobbyViewportTag))
+        assertEquals(1, playerMounts)
+        assertEquals(0, playerDisposals)
+    }
+
+    @Test
     fun immersionHidesChromeAndTapRestoresItWithoutRemountingThePlayer() {
         setScene()
         val viewport = bounds(GuideWebMemoryLobbyViewportTag)
@@ -137,14 +154,14 @@ class GuideWebMemoryLobbySceneTest {
     @Test
     @Config(qualifiers = "w960dp-h420dp-land-xxhdpi")
     fun wideWindowKeepsCinematicFramingUsingTheEntireHeight() {
-        setScene()
+        setScene(hasBgm = true)
         val scene = bounds(GuideWebMemoryLobbySceneTag)
         val viewport = bounds(GuideWebMemoryLobbyViewportTag)
         assertTrue(abs(scene.top - viewport.top) <= 1f)
         assertTrue(abs(scene.bottom - viewport.bottom) <= 1f)
         assertTrue(abs(viewport.width / viewport.height - 16f / 9f) <= 0.01f)
         assertTrue(abs(scene.center.x - viewport.center.x) <= 1f)
-        listOf(R.string.common_close, R.string.guide_gallery_dynamic_lobby_reset_view).forEach { label ->
+        listOf(R.string.common_close, R.string.guide_gallery_dynamic_lobby_reset_view, R.string.ba_catalog_bgm_action_mute).forEach { label ->
             val button = composeRule.onNodeWithContentDescription(text(label)).fetchSemanticsNode().boundsInRoot
             assertTrue(button.left >= viewport.left && button.right <= viewport.right,
                 "Floating actions must remain over the cinematic image rather than its dark margins")
@@ -155,7 +172,7 @@ class GuideWebMemoryLobbySceneTest {
     @Test
     @Config(qualifiers = "w1280dp-h800dp-land-xhdpi")
     fun tabletControlsStayCompactAndCenteredOverTheFullViewport() {
-        setScene()
+        setScene(hasBgm = true)
         val scene = bounds(GuideWebMemoryLobbySceneTag)
         assertBoundsEqual(scene, bounds(GuideWebMemoryLobbyViewportTag))
         val controls = bounds(GuideWebMemoryLobbyControlsTag)
@@ -169,10 +186,12 @@ class GuideWebMemoryLobbySceneTest {
         onSelectAction: (String) -> Unit = {},
         onDismiss: () -> Unit = {},
         camera: GuideWebMemoryLobbyCamera = GuideWebMemoryLobbyCamera(),
+        hasBgm: Boolean = false,
     ) {
         composeRule.setContent {
             val density = LocalDensity.current
             var visible by remember { mutableStateOf(true) }
+            var muted by remember { mutableStateOf(false) }
             CompositionLocalProvider(
                 LocalDensity provides Density(density.density, fontScale),
                 LocalLiquidControlsEnabled provides false,
@@ -184,7 +203,7 @@ class GuideWebMemoryLobbySceneTest {
                             controlsVisible = visible,
                             onShowControls = { visible = true },
                             camera = camera,
-                            header = { GuideWebMemoryLobbyHeader(it, onDismiss) },
+                            header = { GuideWebMemoryLobbyHeader(it, onDismiss, hasBgm, muted, { muted = !muted }) },
                             controls = {
                                 GuideWebMemoryLobbyControls(
                                     backdrop = it,

@@ -63,15 +63,20 @@ internal fun GuideWebMemoryLobbyScreen(
     var actions by remember(resource, retry) { mutableStateOf(emptyList<String>()) }
     var selectedAction by remember(resource, retry) { mutableStateOf("") }
     var controlsVisible by rememberSaveable(viewerUrl) { mutableStateOf(true) }
+    var bgmMuted by rememberSaveable(viewerUrl) { mutableStateOf(false) }
     val camera = remember(resource) { GuideWebMemoryLobbyCamera() }
     LaunchedEffect(controlsVisible) { onControlsVisibleChange(controlsVisible) }
     BackHandler(enabled = !controlsVisible) { controlsVisible = true }
+    GuideWebMemoryLobbyBgm(resource.bgmUrl, playing && actions.isNotEmpty(), bgmMuted, retry)
 
     GuideWebMemoryLobbyScene(
         controlsVisible = controlsVisible,
         onShowControls = { controlsVisible = true },
         camera = camera,
-        header = { backdrop -> GuideWebMemoryLobbyHeader(backdrop, onDismiss) },
+        header = { backdrop ->
+            GuideWebMemoryLobbyHeader(backdrop, onDismiss, resource.bgmUrl.isNotBlank(), bgmMuted,
+                onToggleBgm = { bgmMuted = !bgmMuted })
+        },
         controls = { backdrop ->
             GuideWebMemoryLobbyControls(
                 backdrop = backdrop,

@@ -955,4 +955,5 @@
     <string name="guide_gallery_dynamic_lobby_zoom_out">缩小</string>
     <string name="guide_gallery_dynamic_lobby_reset_view">恢复视角</string>
     <string name="guide_gallery_dynamic_lobby_gestures">双指缩放，拖动移动，双击恢复视角</string>
+    <string name="guide_gallery_dynamic_lobby_bgm_failed">BGM 加载失败，可点击重试。</string>
 </resources>

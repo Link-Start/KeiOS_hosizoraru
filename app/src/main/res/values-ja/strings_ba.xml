@@ -953,4 +953,5 @@
     <string name="guide_gallery_dynamic_lobby_zoom_out">縮小</string>
     <string name="guide_gallery_dynamic_lobby_reset_view">表示をリセット</string>
     <string name="guide_gallery_dynamic_lobby_gestures">ピンチで拡大縮小、ドラッグで移動、ダブルタップで表示をリセット</string>
+    <string name="guide_gallery_dynamic_lobby_bgm_failed">BGM を読み込めませんでした。再試行してください。</string>
 </resources>

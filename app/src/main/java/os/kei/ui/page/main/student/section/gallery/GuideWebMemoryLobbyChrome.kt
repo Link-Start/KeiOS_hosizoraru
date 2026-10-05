@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.student.section.gallery
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -23,6 +24,8 @@ import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideUndoIcon
+import os.kei.ui.page.main.os.appLucideVolume2Icon
+import os.kei.ui.page.main.os.appLucideVolumeOffIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
 import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
@@ -31,13 +34,32 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
 
 @Composable
-internal fun GuideWebMemoryLobbyHeader(backdrop: Backdrop, onDismiss: () -> Unit) {
-    LiquidToolbar(
-        backdrop = backdrop,
-        actions = listOf(
-            LiquidToolbarAction(appLucideCloseIcon(), stringResource(R.string.common_close), onDismiss),
-        ),
-    )
+internal fun GuideWebMemoryLobbyHeader(
+    backdrop: Backdrop,
+    onDismiss: () -> Unit,
+    hasBgm: Boolean = false,
+    bgmMuted: Boolean = false,
+    onToggleBgm: () -> Unit = {},
+) {
+    Box(Modifier.fillMaxWidth()) {
+        LiquidToolbar(
+            backdrop = backdrop,
+            actions = listOf(
+                LiquidToolbarAction(appLucideCloseIcon(), stringResource(R.string.common_close), onDismiss),
+            ),
+        )
+        if (hasBgm) {
+            LiquidToolbar(
+                backdrop = backdrop,
+                modifier = Modifier.align(Alignment.TopEnd),
+                actions = listOf(LiquidToolbarAction(
+                    if (bgmMuted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
+                    stringResource(if (bgmMuted) R.string.ba_catalog_bgm_action_restore_volume else R.string.ba_catalog_bgm_action_mute),
+                    onToggleBgm,
+                )),
+            )
+        }
+    }
 }
 
 @Composable

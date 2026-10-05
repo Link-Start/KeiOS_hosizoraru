@@ -955,4 +955,5 @@
     <string name="guide_gallery_dynamic_lobby_zoom_out">Zoom out</string>
     <string name="guide_gallery_dynamic_lobby_reset_view">Reset view</string>
     <string name="guide_gallery_dynamic_lobby_gestures">Pinch to zoom, drag to move, and double-tap to reset the view</string>
+    <string name="guide_gallery_dynamic_lobby_bgm_failed">BGM could not load. Tap Retry to try again.</string>
 </resources>

@@ -18,6 +18,7 @@ import os.kei.ui.page.main.student.isRenderableGalleryAudioUrl
 import os.kei.ui.page.main.student.isRenderableGalleryImageUrl
 import os.kei.ui.page.main.student.normalizeGalleryTitle
 import os.kei.ui.page.main.student.profileRowsForDisplay
+import os.kei.ui.page.main.student.resolveWebMemoryLobbyBgm
 import os.kei.ui.page.main.student.tabcontent.profile.isGalleryRelatedProfileLinkRow
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
 
@@ -78,6 +79,7 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
     }
 
     val cleanedGalleryItems = galleryItems.filterNot(::isMemoryHallFileGalleryItem)
+    val memoryHallBgm = resolveWebMemoryLobbyBgm(cleanedGalleryItems)
     val galleryRelatedLinkRows = guide.profileRowsForDisplay()
         .filter(::isGalleryRelatedProfileLinkRow)
         .distinctBy { row ->
@@ -138,11 +140,9 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
                         categoryFallbackPreview.isNotBlank() -> categoryFallbackPreview
                         else -> ""
                     }
-                    if (preview == currentPreview) {
-                        item
-                    } else {
-                        item.copy(imageUrl = preview)
-                    }
+                    val lobby = item.webMemoryLobby?.let { it.copy(bgmUrl = memoryHallBgm.ifBlank { it.bgmUrl }) }
+                    if (preview == currentPreview && lobby == item.webMemoryLobby) item
+                    else item.copy(imageUrl = preview, webMemoryLobby = lobby)
                 }
                 .toList()
             categoryItems.takeIf { it.isNotEmpty() }?.let { category to it }

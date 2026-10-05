@@ -4,10 +4,17 @@ package os.kei.ui.page.main.widget.glass
 
 import android.app.Application
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.hasClickAction
@@ -18,6 +25,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
@@ -45,6 +54,89 @@ import kotlin.test.assertTrue
 class AppDropdownControlsTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun movingClosedSelectorsDoNotRecomposeTheirCardsWithDeferredBounds() {
+        val position = mutableIntStateOf(0)
+        val compositions = mutableMapOf<String, Int>()
+        composeRule.setContent {
+            DropdownTestTheme {
+                Row {
+                    MovingSelectorCard("eager", position, deferred = false) {
+                        compositions["eager"] = (compositions["eager"] ?: 0) + 1
+                    }
+                    MovingSelectorCard("deferred", position, deferred = true) {
+                        compositions["deferred"] = (compositions["deferred"] ?: 0) + 1
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val before = compositions.toMap()
+        repeat(6) { index ->
+            composeRule.runOnIdle { position.intValue = (index + 1) * 12 }
+            composeRule.waitForIdle()
+        }
+        assertTrue(compositions.getValue("eager") > before.getValue("eager"))
+        assertEquals(before.getValue("deferred"), compositions.getValue("deferred"))
+    }
+
+    @Test
+    fun deferredBoundsAreCurrentWhenOpenedAndTrackedUntilExitFinishes() {
+        val position = mutableIntStateOf(0)
+        var expanded by mutableStateOf(false)
+        var bounds by mutableStateOf<IntRect?>(null)
+        var providerReads = 0
+        composeRule.setContent {
+            DropdownTestTheme {
+                AppDropdownSelector(
+                    selectedText = "Level",
+                    options = listOf("One", "Two"),
+                    selectedIndex = 0,
+                    expanded = expanded,
+                    anchorBounds = null,
+                    anchorBoundsProvider = { providerReads++; bounds },
+                    onExpandedChange = { expanded = it },
+                    onSelectedIndexChange = {},
+                    onAnchorBoundsChange = { bounds = it },
+                    modifier = Modifier.offset { IntOffset(0, position.intValue) },
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        val initialBounds = requireNotNull(bounds)
+        composeRule.runOnIdle { position.intValue = 120 }
+        composeRule.waitForIdle()
+        assertEquals(0, providerReads)
+        assertEquals(initialBounds.top + 120, requireNotNull(bounds).top)
+        composeRule.onNodeWithText("Level").performClick()
+        composeRule.waitForIdle()
+        assertTrue(providerReads > 0)
+        val panelBounds = composeRule.onNodeWithTag(SnapshotMenuPanelTestTag)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(panelBounds.top >= requireNotNull(bounds).bottom - 1f,
+            "menu must open below the current anchor, not its pre-scroll position")
+
+        composeRule.mainClock.autoAdvance = false
+        composeRule.runOnIdle { expanded = false }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        val readsAtExitStart = providerReads
+        composeRule.runOnIdle { position.intValue = 132 }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        assertTrue(providerReads > readsAtExitStart, "exit animation must still track its anchor")
+
+        composeRule.mainClock.advanceTimeBy(5_000)
+        composeRule.waitForIdle()
+        assertEquals(0, composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNodes().size)
+        val afterExit = providerReads
+        composeRule.runOnIdle { position.intValue = 144 }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        assertEquals(afterExit, providerReads, "closed menu must release the coordinate-state observation")
+    }
 
     @Test
     fun emptyOptionsCollapseExpandedStateAndDisableAnchor() {
@@ -236,6 +328,29 @@ class AppDropdownControlsTest {
         assertEquals(false, expandedState)
         assertEquals(0, composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNodes().size)
     }
+}
+
+@Composable
+private fun MovingSelectorCard(
+    tag: String,
+    position: MutableIntState,
+    deferred: Boolean,
+    onComposed: () -> Unit,
+) {
+    var bounds by remember { mutableStateOf<IntRect?>(null) }
+    SideEffect(onComposed)
+    AppDropdownSelector(
+        selectedText = "Level",
+        options = listOf("One", "Two"),
+        selectedIndex = 0,
+        expanded = false,
+        anchorBounds = if (deferred) null else bounds,
+        anchorBoundsProvider = if (deferred) ({ bounds }) else null,
+        onExpandedChange = {},
+        onSelectedIndexChange = {},
+        onAnchorBoundsChange = { bounds = it },
+        modifier = Modifier.testTag(tag).offset { IntOffset(0, position.intValue) },
+    )
 }
 
 @Composable

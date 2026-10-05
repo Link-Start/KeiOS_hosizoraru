@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -145,9 +149,23 @@ fun AppDropdownSelector(
     popupMinWidth: Dp = DropdownSelectorMinWidth,
     dropdownItemVariant: GlassVariant = variant,
     anchorContent: (@Composable (enabled: Boolean, onClick: () -> Unit) -> Unit)? = null,
+    // Moving anchors can supply their state without making the enclosing card observe every scroll
+    // position. It is read for the whole menu presentation, including its exit animation.
+    anchorBoundsProvider: (() -> IntRect?)? = null,
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
+    val popupShow = expanded && enabled && options.isNotEmpty()
+    var popupMounted by remember { mutableStateOf(false) }
+    SideEffect {
+        if (popupShow) popupMounted = true
+    }
+    val presentedAnchorBounds =
+        if (anchorBoundsProvider != null && (popupShow || popupMounted)) {
+            anchorBoundsProvider()
+        } else {
+            anchorBounds
+        }
     val resolvedPopupMinWidth =
         popupMinWidth.takeIf { minWidth ->
             minWidth != Dp.Unspecified && minWidth.value.isFinite() && minWidth > 0.dp
@@ -160,8 +178,8 @@ fun AppDropdownSelector(
             .coerceAtMost(maxScreenWidth)
             .coerceAtLeast(resolvedPopupMinWidth)
     val anchorWidth =
-        remember(anchorBounds, density) {
-            anchorBounds?.let { bounds ->
+        remember(presentedAnchorBounds, density) {
+            presentedAnchorBounds?.let { bounds ->
                 with(density) { bounds.width.toDp() }
             } ?: 0.dp
         }
@@ -212,7 +230,6 @@ fun AppDropdownSelector(
             measuredOptionWidth,
             if (popupMatchAnchorWidth) anchorWidth else 0.dp,
         ).coerceAtMost(resolvedMaxWidth)
-    val popupShow = expanded && enabled && options.isNotEmpty()
     val initialScrollItemIndex =
         if (options.isEmpty()) {
             null
@@ -257,9 +274,10 @@ fun AppDropdownSelector(
         SnapshotWindowListPopup(
             show = popupShow,
             alignment = alignment,
-            anchorBounds = anchorBounds,
+            anchorBounds = presentedAnchorBounds,
             placement = placement,
             onDismissRequest = { onExpandedChange(false) },
+            onDismissFinished = { popupMounted = false },
             minWidth = resolvedPopupWidth,
             maxWidth = resolvedPopupWidth,
             matchAnchorWidth = false,

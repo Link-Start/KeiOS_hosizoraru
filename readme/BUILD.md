@@ -25,7 +25,7 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`. API 37 ships minor
   revisions, and this app pins `compileSdkMinor = 0` — it compiles against **37.0** (SDK extension
   22), not whichever 37.x the local SDK happens to have installed.
-- Gradle Wrapper: `9.8.0`; Kotlin plugin: `2.4.20`; Android Gradle Plugin: `9.4.1`;
+- Gradle Wrapper: `9.8.0`; Kotlin plugin: `2.4.21-RC`; Android Gradle Plugin: `9.4.1`;
   Compose runtime: `1.12.1`; Ktor: `3.6.0`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
@@ -75,7 +75,7 @@ Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-on
 org.gradle.java.home=/path/to/your/jdk
 
 # Optional: pin another Miuix version locally
-miuix.version=0.9.4-2afdbb39-SNAPSHOT
+miuix.version=0.9.4-5c91d5e5-SNAPSHOT
 ```
 
 Miuix iterates fast. When something Miuix-shaped misbehaves, check whether the pin is current

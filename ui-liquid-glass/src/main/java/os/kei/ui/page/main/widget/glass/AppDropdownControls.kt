@@ -144,6 +144,7 @@ fun AppDropdownSelector(
     enabled: Boolean = true,
     popupMinWidth: Dp = DropdownSelectorMinWidth,
     dropdownItemVariant: GlassVariant = variant,
+    anchorContent: (@Composable (enabled: Boolean, onClick: () -> Unit) -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
@@ -233,7 +234,9 @@ fun AppDropdownSelector(
         modifier = modifier.capturePopupAnchor { onAnchorBoundsChange(it) },
         contentAlignment = anchorAlignment,
     ) {
-        AppDropdownAnchorButton(
+        if (anchorContent != null) {
+            anchorContent(enabled && options.isNotEmpty()) { onExpandedChange(!expanded) }
+        } else AppDropdownAnchorButton(
             text = selectedText,
             onClick = { onExpandedChange(!expanded) },
             modifier = if (anchorFillMaxWidth) Modifier.fillMaxWidth() else Modifier,

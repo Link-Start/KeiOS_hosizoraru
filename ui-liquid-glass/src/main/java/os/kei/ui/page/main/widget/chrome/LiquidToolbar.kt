@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -46,11 +47,13 @@ import os.kei.ui.page.main.widget.glass.AppLiquidBadgedIcon
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
 import top.yukonga.miuix.kmp.basic.TooltipBox
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -154,6 +157,56 @@ private fun LiquidToolbarGroup(
     actions: List<LiquidToolbarAction>,
     isBlurEnabled: Boolean,
 ) {
+    LiquidToolbarSurface(backdrop = backdrop, isBlurEnabled = isBlurEnabled) { palette, isInLightTheme ->
+        actions.forEach { action ->
+            LiquidToolbarActionSlot(
+                action = action,
+                palette = palette,
+                accentColor = MiuixTheme.colorScheme.primary,
+                isInLightTheme = isInLightTheme,
+            )
+        }
+    }
+}
+
+/** A text action using the same untinted glass, lens and press feedback as an icon toolbar. */
+@Composable
+fun LiquidToolbarTextButton(
+    backdrop: Backdrop,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isBlurEnabled: Boolean = true,
+) {
+    LiquidToolbarSurface(backdrop = backdrop, modifier = modifier, isBlurEnabled = isBlurEnabled) { palette, _ ->
+        Box(
+            Modifier.weight(1f).height(AppChromeTokens.liquidActionBarInnerHeight)
+                .clickable(enabled = enabled, role = Role.Button, indication = null,
+                    interactionSource = remember { MutableInteractionSource() }, onClick = onClick)
+                .padding(horizontal = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text,
+                color = palette.inactiveContentColor.let { if (enabled) it else it.copy(alpha = AppInteractiveTokens.disabledContentAlpha) },
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LiquidToolbarSurface(
+    backdrop: Backdrop,
+    modifier: Modifier = Modifier,
+    isBlurEnabled: Boolean,
+    content: @Composable RowScope.(LiquidActionBarPalette, Boolean) -> Unit,
+) {
     val isInLightTheme = !isAppInDarkTheme()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val effectiveBlurEnabled = isBlurEnabled && appGlassRuntimeEffectsEnabled()
@@ -191,7 +244,7 @@ private fun LiquidToolbarGroup(
         remember(pressHighlight) { { pressHighlight?.offset ?: Offset.Zero } }
     Row(
         modifier =
-            Modifier
+            modifier
                 .height(AppChromeTokens.liquidActionBarOuterHeight)
                 .drawBackdrop(
                     backdrop = backdrop,
@@ -250,14 +303,7 @@ private fun LiquidToolbarGroup(
                 .padding(horizontal = AppChromeTokens.liquidActionBarHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        actions.forEach { action ->
-            LiquidToolbarActionSlot(
-                action = action,
-                palette = palette,
-                accentColor = MiuixTheme.colorScheme.primary,
-                isInLightTheme = isInLightTheme,
-            )
-        }
+        content(palette, isInLightTheme)
     }
 }
 

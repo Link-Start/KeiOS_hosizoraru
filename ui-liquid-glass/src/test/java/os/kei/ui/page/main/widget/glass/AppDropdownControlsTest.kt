@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
+import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarTextButton
 import os.kei.ui.page.main.widget.sheet.SnapshotMenuPanelTestTag
 import org.junit.Rule
 import org.junit.Test
@@ -198,6 +200,41 @@ class AppDropdownControlsTest {
             }
 
         assertEquals(popupMinWidth, panelWidth)
+    }
+
+    @Test
+    fun toolbarAnchorFollowsAvailabilityAndClosesAfterChoosingAnAction() {
+        var options by mutableStateOf(emptyList<String>())
+        var selected = -1
+        var expandedState = false
+        composeRule.setContent {
+            DropdownTestTheme {
+                var expanded by remember { mutableStateOf(false) }
+                expandedState = expanded
+                val backdrop = LocalSceneBackdrop.current
+                AppDropdownSelector(
+                    selectedText = "Actions",
+                    options = options,
+                    selectedIndex = selected,
+                    expanded = expanded,
+                    anchorBounds = null,
+                    onExpandedChange = { expanded = it },
+                    onSelectedIndexChange = { selected = it },
+                    onAnchorBoundsChange = {},
+                    anchorContent = { enabled, onClick ->
+                        LiquidToolbarTextButton(backdrop, "Actions", onClick, enabled = enabled)
+                    },
+                )
+            }
+        }
+        composeRule.onNodeWithText("Actions").assertIsNotEnabled()
+        composeRule.runOnIdle { options = listOf("First", "Second") }
+        composeRule.onNodeWithText("Actions").performClick()
+        composeRule.onNodeWithText("Second").performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, selected)
+        assertEquals(false, expandedState)
+        assertEquals(0, composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNodes().size)
     }
 }
 

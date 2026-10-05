@@ -5,7 +5,9 @@ package os.kei.ui.page.main.student.section.gallery
 import android.graphics.Rect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMinHeight
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
+import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import top.yukonga.miuix.kmp.basic.Text
@@ -58,7 +61,13 @@ fun GuideGalleryVideoGroupCardItem(
     mediaUrlResolverCacheKey: Any? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (items.isEmpty()) return
+    items.filter { it.webMemoryLobby != null }.forEachIndexed { index, item ->
+        if (index > 0) Spacer(Modifier.height(CardLayoutRhythm.sectionGap))
+        GuideWebMemoryLobbyCard(item = item, previewFallbackUrl = previewFallbackUrl)
+    }
+    val videoItems = items.filter { it.webMemoryLobby == null }
+    if (videoItems.isEmpty()) return
+    if (videoItems.size < items.size) Spacer(Modifier.height(CardLayoutRhythm.sectionGap))
     val context = LocalContext.current
     val displayTitle =
         if (title.isBlank()) {
@@ -66,11 +75,11 @@ fun GuideGalleryVideoGroupCardItem(
         } else {
             guideLocalizedLabel(title)
         }
-    var selectedIndex by rememberSaveable(title, items.size) { mutableStateOf(0) }
-    LaunchedEffect(items.size) {
-        if (selectedIndex !in items.indices) selectedIndex = 0
+    var selectedIndex by rememberSaveable(title, videoItems.size) { mutableStateOf(0) }
+    LaunchedEffect(videoItems.size) {
+        if (selectedIndex !in videoItems.indices) selectedIndex = 0
     }
-    val selectedItem = items.getOrElse(selectedIndex) { items.first() }
+    val selectedItem = videoItems.getOrElse(selectedIndex) { videoItems.first() }
     val resolverCacheKey = mediaUrlResolverCacheKey ?: mediaUrlResolver
     val displayMediaUrl =
         remember(selectedItem.mediaUrl, resolverCacheKey) {
@@ -90,10 +99,10 @@ fun GuideGalleryVideoGroupCardItem(
     var videoControlRequestId by remember(displayMediaUrl) { mutableIntStateOf(0) }
     val noteText = selectedItem.note.trim()
     val optionLabels =
-        if (items.size <= 1) {
+        if (videoItems.size <= 1) {
             listOf(stringResource(R.string.guide_gallery_video_format, 1))
         } else {
-            items.mapIndexed { index, item ->
+            videoItems.mapIndexed { index, item ->
                 val normalized = item.title.trim()
                 if (normalized.isNotBlank() && normalized != title) {
                     guideLocalizedLabel(normalized, R.string.guide_gallery_item_fallback)
@@ -110,7 +119,7 @@ fun GuideGalleryVideoGroupCardItem(
         containerColor = Color(0x223B82F6),
         headerEndActions = {
             GuideGalleryVideoGroupHeaderActions(
-                itemsSize = items.size,
+                itemsSize = videoItems.size,
                 optionLabels = optionLabels,
                 selectedIndex = selectedIndex,
                 onSelectedIndexChange = { selectedIndex = it },

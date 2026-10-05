@@ -43,6 +43,7 @@ fun AppTopBarTitleCard(
     modifier: Modifier = Modifier,
     startReserve: Dp = AppChromeTokens.topBarTitleEdgePadding,
     endReserve: Dp = AppChromeTokens.topBarTitleEdgePadding,
+    textOverflow: TextOverflow = TextOverflow.Clip,
     onClick: () -> Unit = {},
 ) {
     if (title.isBlank()) return
@@ -91,6 +92,7 @@ fun AppTopBarTitleCard(
             textSize = layout.textSize,
             lineHeight = layout.lineHeight,
             horizontalPadding = layout.horizontalPadding,
+            textOverflow = textOverflow,
             onClick = onClick,
         )
     }
@@ -164,6 +166,7 @@ private fun AppTopBarTitleCardSurface(
     textSize: TextUnit,
     lineHeight: TextUnit,
     horizontalPadding: Dp,
+    textOverflow: TextOverflow,
     onClick: () -> Unit,
 ) {
     Box(
@@ -192,7 +195,7 @@ private fun AppTopBarTitleCardSurface(
             horizontalPadding = horizontalPadding,
             verticalPadding = 0.dp,
             textMaxLines = 1,
-            textOverflow = TextOverflow.Clip,
+            textOverflow = textOverflow,
             textSoftWrap = false,
             textSize = textSize,
             textLineHeight = lineHeight,

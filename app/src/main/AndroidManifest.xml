@@ -223,6 +223,15 @@
             android:label="@string/debug_component_lab_liquid_catalog_title" />
 
         <activity
+            android:name=".ui.page.main.student.GuideWebMemoryLobbyActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/guide_gallery_dynamic_lobby"
+            android:launchMode="singleTop"
+            android:screenOrientation="fullUser" />
+
+        <activity
             android:name=".ui.page.main.student.GuideVideoFullscreenActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:enableOnBackInvokedCallback="true"

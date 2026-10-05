@@ -57,6 +57,7 @@ import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.isRenderableGalleryImageUrl
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
+import os.kei.ui.page.main.student.section.gallery.GuideWebMemoryLobbyCard
 import os.kei.ui.page.main.student.section.gallery.GuideImageFullscreenDialog
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -455,6 +456,9 @@ private fun BaGuideMemoryLobbyExpandedContent(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                item.galleryItems.filter { it.webMemoryLobby != null }.forEach { lobby ->
+                    GuideWebMemoryLobbyCard(lobby, mediaGroups.previewImageUrl)
+                }
                 if (mediaGroups.videoItems.isNotEmpty()) {
                     BaGuideMemoryLobbyVideoGroup(
                         items = mediaGroups.videoItems,
@@ -462,6 +466,8 @@ private fun BaGuideMemoryLobbyExpandedContent(
                         unlockLevel = item.memoryUnlockLevel,
                         accent = accent,
                     )
+                } else if (item.galleryItems.any { it.webMemoryLobby != null }) {
+                    // The dynamic lobby card already owns its poster and entry point.
                 } else if (mediaGroups.previewImageUrl.isNotBlank()) {
                     BaGuideMemoryLobbyImagePreviewGroup(
                         previewImageUrl = mediaGroups.previewImageUrl,

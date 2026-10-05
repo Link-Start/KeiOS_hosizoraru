@@ -81,6 +81,7 @@ object GitHubReleaseSelector {
  *
  * @see GitHubReleaseSelectionPlan.shouldConsultForgeLatest
  */
+@ConsistentCopyVisibility
 data class GitHubReleaseSelectionPlan internal constructor(
     val stable: GitHubRankedRelease,
     val preRelease: GitHubRankedRelease,

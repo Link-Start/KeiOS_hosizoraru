@@ -4,6 +4,7 @@ package os.kei.ui.page.main.student.section.gallery
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.view.View
 import android.webkit.CookieManager
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
@@ -134,6 +135,10 @@ internal fun GuideWebMemoryLobbyPlayer(
                     factory = { context ->
                         WebView(context).apply {
                             setBackgroundColor(Color.TRANSPARENT)
+                            // Compose glass samples this view more than once. Cache its hardware
+                            // output so those samples reuse pixels instead of replaying WebView's
+                            // Vulkan draw functor into multiple offscreen layers in one frame.
+                            setLayerType(View.LAYER_TYPE_HARDWARE, null)
                             settings.apply {
                                 javaScriptEnabled = true
                                 domStorageEnabled = true

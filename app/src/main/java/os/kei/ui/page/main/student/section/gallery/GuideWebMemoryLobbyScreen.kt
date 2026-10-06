@@ -3,6 +3,10 @@
 package os.kei.ui.page.main.student.section.gallery
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -44,10 +48,15 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideWebMemoryLobby
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.motion.AppMotionTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GuideWebMemoryLobbyScreen(
@@ -178,6 +187,30 @@ internal fun GuideWebMemoryLobbyScene(
                         onClickLabel = showControls,
                         onClick = onShowControls,
                     ),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun GuideWebMemoryLobbyLoading(visible: Boolean) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = Modifier.fillMaxSize(),
+        enter = EnterTransition.None,
+        exit = fadeOut(tween(resolvedMotionDuration(
+            AppMotionTokens.floatingFadeInMs,
+            LocalTransitionAnimationsEnabled.current,
+        ))),
+    ) {
+        Box(
+            Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = AppChromeTokens.pageHorizontalPadding),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppAronaLoadingPanel(
+                accent = MiuixTheme.colorScheme.primary,
+                // The cinematic viewport stays dark in both app themes.
+                textColor = Color.White,
             )
         }
     }

@@ -945,7 +945,6 @@
     <string name="guide_gallery_dynamic_lobby_open">进入动态回忆大厅</string>
     <string name="guide_gallery_dynamic_lobby_actions">切换动作</string>
     <string name="guide_gallery_dynamic_lobby_source">查看 WIKI 来源</string>
-    <string name="guide_gallery_dynamic_lobby_loading">正在加载动态大厅…</string>
     <string name="guide_gallery_dynamic_lobby_failed">动态大厅加载失败。请重试，或返回入口卡片查看 WIKI 来源。</string>
     <string name="guide_gallery_dynamic_lobby_paused">已暂停，点击播放继续动画</string>
     <string name="guide_gallery_dynamic_lobby_hide_controls">隐藏控件</string>

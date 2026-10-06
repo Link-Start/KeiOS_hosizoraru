@@ -943,7 +943,6 @@
     <string name="guide_gallery_dynamic_lobby_open">インタラクティブなメモリアルロビーを開く</string>
     <string name="guide_gallery_dynamic_lobby_actions">動きを切り替える</string>
     <string name="guide_gallery_dynamic_lobby_source">Wiki の掲載ページを開く</string>
-    <string name="guide_gallery_dynamic_lobby_loading">メモリアルロビーを読み込み中…</string>
     <string name="guide_gallery_dynamic_lobby_failed">メモリアルロビーを読み込めませんでした。再試行するか、ロビーのカードに戻って Wiki の掲載ページを開いてください。</string>
     <string name="guide_gallery_dynamic_lobby_paused">一時停止中。再生ボタンでアニメーションを再開します</string>
     <string name="guide_gallery_dynamic_lobby_hide_controls">操作ボタンを隠す</string>

@@ -40,6 +40,8 @@ import os.kei.ui.page.main.student.gameKeeMemoryLobbyViewerUrl
 import os.kei.ui.page.main.student.BaGuideWebMemoryLobby
 import os.kei.ui.page.main.student.BaGuideSpineWebCache
 import os.kei.ui.page.main.student.BaGuideSpineWebCacheSession
+import os.kei.ui.page.main.widget.motion.AppMotionTokens
+import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import kotlin.coroutines.resume
 
 /** Reuses the Wiki renderer through a narrow playback controller. */
@@ -71,6 +73,11 @@ internal fun GuideWebMemoryLobbyPlayer(
         var view by remember { mutableStateOf<WebView?>(null) }
         var ready by remember { mutableStateOf(false) }
         var failed by remember { mutableStateOf(false) }
+        val playerAlpha = appMotionFloatState(
+            targetValue = if (ready) 1f else 0f,
+            durationMillis = AppMotionTokens.floatingFadeInMs,
+            label = "lobbyPlayerReady",
+        )
         var cacheSession by remember { mutableStateOf<BaGuideSpineWebCacheSession?>(null) }
         LaunchedEffect(view, failed) {
             notifyActions(emptyList(), "")
@@ -131,7 +138,7 @@ internal fun GuideWebMemoryLobbyPlayer(
         Box(modifier, contentAlignment = Alignment.Center) {
             if (!failed) {
                 AndroidView(
-                    modifier = Modifier.fillMaxSize().graphicsLayer { alpha = if (ready) 1f else 0f },
+                    modifier = Modifier.fillMaxSize().graphicsLayer { alpha = playerAlpha.value },
                     factory = { context ->
                         WebView(context).apply {
                             setBackgroundColor(Color.TRANSPARENT)
@@ -193,15 +200,12 @@ internal fun GuideWebMemoryLobbyPlayer(
                     },
                 )
             }
-            if (!ready || failed) {
+            if (failed) {
                 GuideWebMemoryLobbyStatus(
-                    stringResource(
-                        when {
-                            failed -> R.string.guide_gallery_dynamic_lobby_failed
-                            else -> R.string.guide_gallery_dynamic_lobby_loading
-                        },
-                    ),
+                    stringResource(R.string.guide_gallery_dynamic_lobby_failed),
                 )
+            } else {
+                GuideWebMemoryLobbyLoading(visible = !ready)
             }
         }
     }

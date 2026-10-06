@@ -945,7 +945,6 @@
     <string name="guide_gallery_dynamic_lobby_open">Open interactive memorial lobby</string>
     <string name="guide_gallery_dynamic_lobby_actions">Change action</string>
     <string name="guide_gallery_dynamic_lobby_source">View Wiki source</string>
-    <string name="guide_gallery_dynamic_lobby_loading">Loading memorial lobby…</string>
     <string name="guide_gallery_dynamic_lobby_failed">Could not load the memorial lobby. Retry, or return to its card to view the Wiki source.</string>
     <string name="guide_gallery_dynamic_lobby_paused">Paused. Tap play to continue the animation</string>
     <string name="guide_gallery_dynamic_lobby_hide_controls">Hide controls</string>

@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -254,6 +256,9 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     BoxWithConstraints(
         modifier =
             modifier
+                // This floating slot is a sibling of the tagged page content, so it must export
+                // category/search tags itself for UIAutomator and profile journeys.
+                .semantics { testTagsAsResourceId = true }
                 .fillMaxWidth()
                 .offset {
                     IntOffset(x = 0, y = -keyboardLiftProvider().roundToPx())

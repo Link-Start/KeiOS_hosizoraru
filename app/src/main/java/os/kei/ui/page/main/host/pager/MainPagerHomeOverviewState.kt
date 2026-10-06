@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.feature.home.data.HomeOverviewRepository
+import os.kei.LocalMainStartupSnapshot
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -63,7 +64,7 @@ internal class MainPagerHomeOverviewViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = HomeOverviewSnapshot(),
+                initialValue = repository.initialSnapshot,
             )
     val runtimeNowMs: StateFlow<Long> = runtimeTicker.nowMs
 
@@ -110,6 +111,7 @@ internal class MainPagerHomeOverviewViewModel(
         fun factory(
             context: Context,
             mcpServerManager: McpServerManager,
+            initialSnapshot: HomeOverviewSnapshot,
         ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -120,6 +122,7 @@ internal class MainPagerHomeOverviewViewModel(
                                 HomeOverviewRepository(
                                     context = context.applicationContext,
                                     mcpUiState = mcpServerManager.uiState,
+                                    initialSnapshot = initialSnapshot,
                                 ),
                         ) as T
                     }
@@ -137,14 +140,16 @@ internal fun rememberMainPagerHomeOverviewState(
     homeRuntime: MainPageRuntime,
 ): MainPagerHomeOverviewState {
     val context = LocalContext.current
+    val initialSnapshot = LocalMainStartupSnapshot.current?.homeOverview ?: HomeOverviewSnapshot()
     val homeOverviewViewModel: MainPagerHomeOverviewViewModel =
         viewModel(
             key = "main_pager_home_overview",
             factory =
-                remember(context, mcpServerManager) {
+                remember(context, mcpServerManager, initialSnapshot) {
                     MainPagerHomeOverviewViewModel.factory(
                         context = context,
                         mcpServerManager = mcpServerManager,
+                        initialSnapshot = initialSnapshot,
                     )
                 },
         )

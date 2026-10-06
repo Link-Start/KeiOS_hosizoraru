@@ -5,6 +5,32 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
+    <!-- Native API 31+ launch surface; MainActivity owns the exit into the prepared Compose UI. -->
+    <style name="Theme.KeiOS.Starting" parent="Theme.KeiOS">
+        <item name="android:windowSplashScreenBehavior">icon_preferred</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenBackground">@color/kei_startup_background</item>
+        <item name="android:windowBackground">@color/kei_startup_background</item>
+        <item name="android:windowLightStatusBar">@bool/kei_startup_light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/kei_startup_light_system_bars</item>
+        <item name="android:navigationBarColor">@color/kei_startup_background</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+    <style name="Theme.KeiOS.Starting.Light" parent="Theme.KeiOS.Starting">
+        <item name="android:windowSplashScreenBackground">@color/kei_startup_light</item>
+        <item name="android:windowBackground">@color/kei_startup_light</item>
+        <item name="android:navigationBarColor">@color/kei_startup_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+    <style name="Theme.KeiOS.Starting.Dark" parent="Theme.KeiOS.Starting">
+        <item name="android:windowSplashScreenBackground">@color/kei_startup_dark</item>
+        <item name="android:windowBackground">@color/kei_startup_dark</item>
+        <item name="android:navigationBarColor">@color/kei_startup_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
     <!--
         A window that is nothing but a liquid sheet: translucent, undimmed, and edge to edge.
 

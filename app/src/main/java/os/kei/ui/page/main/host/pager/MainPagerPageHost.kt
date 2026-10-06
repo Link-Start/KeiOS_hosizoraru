@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +34,7 @@ import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.testing.KeiOsTestTags
 import os.kei.core.privilege.PrivilegeStatus
+import os.kei.LocalMainStartupTransition
 
 @Immutable
 internal data class MainPagerHomePageState(
@@ -109,6 +111,10 @@ internal fun MainPagerPageHost(
     mcpPageState: MainPagerMcpPageState?,
     githubPageState: MainPagerGitHubPageState?,
 ) {
+    val startupTransition = LocalMainStartupTransition.current
+    if (runtime.isSettledDataActive) {
+        SideEffect { startupTransition?.onMainPageReady() }
+    }
     val glassRuntime = remember { GlassEffectRuntime() }
     CompositionLocalProvider(
         LocalAppScaffoldContainerColor provides

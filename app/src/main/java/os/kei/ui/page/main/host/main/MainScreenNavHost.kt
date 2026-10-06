@@ -93,7 +93,10 @@ internal fun MainScreenNavHost(
     SideEffect {
         backRuntimeController.updatePolicy(predictiveBackPolicy)
     }
-    val routeAnimationsEnabled = prefsState.transitionAnimationsEnabled
+    // Initial intent routing is covered by the system splash; subsequent navigation keeps its
+    // normal Miuix motion. This avoids revealing Home halfway through a cold shortcut push.
+    val routeAnimationsEnabled = prefsState.transitionAnimationsEnabled &&
+        (os.kei.LocalMainStartupTransition.current?.hasPresented != false)
     val isDarkTheme = isAppInDarkTheme()
     // miuix-nav keeps one visual contract for push/pop/predictive back (visual = f(depth)), so the
     // former transitionSpec/popTransitionSpec/predictivePopTransitionSpec trio collapses into a

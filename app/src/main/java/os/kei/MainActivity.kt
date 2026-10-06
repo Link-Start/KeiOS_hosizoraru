@@ -13,14 +13,21 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.debug.DebugFpsOverlay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.LocalOverscrollFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
@@ -28,8 +35,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.metrics.performance.JankStats
 import os.kei.core.icon.LauncherIconController
@@ -52,6 +63,13 @@ import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
 import os.kei.ui.page.main.host.main.MainHostCallbacks
 import os.kei.ui.page.main.host.main.MainHostUiState
 import os.kei.ui.page.main.host.main.MainScreen
+import os.kei.ui.page.main.host.main.MainStartupSnapshot
+import os.kei.ui.page.main.host.main.MainStartupViewModel
+import os.kei.feature.home.data.HomeOverviewRepository
+import os.kei.feature.home.model.HomeAppOverview
+import os.kei.feature.home.model.HomeBaOverview
+import os.kei.feature.home.model.HomeGitHubOverview
+import os.kei.feature.home.model.HomeOverviewSnapshot
 import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -99,6 +117,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var localMcpService: LocalMcpService
     private lateinit var mcpServerManager: McpServerManager
     private var jankStats: JankStats? = null
+    private lateinit var startupTransition: MainStartupTransition
     private val transientExternalLaunchGuard = TransientExternalLaunchGuard()
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -129,6 +148,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        startupTransition = MainStartupTransition(this)
         enableEdgeToEdge()
         LauncherIconController.applyDesign(this, UiPrefs.getLauncherIconDesign())
         window.isNavigationBarContrastEnforced = false
@@ -166,11 +186,49 @@ class MainActivity : ComponentActivity() {
                 appContext = applicationContext,
                 localMcpService = localMcpService,
             )
+        val initialAppOverview = HomeAppOverview(
+            versionName = packageInfo?.versionName ?: BuildConfig.VERSION_NAME,
+            versionCode = packageInfo?.longVersionCode ?: BuildConfig.VERSION_CODE.toLong(),
+            loaded = true,
+        )
+        val startupContext = applicationContext
+        val startupMcpState = mcpServerManager.uiState
+        val fallbackTheme = hostUiState.appThemeMode
+        val startupViewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                require(modelClass.isAssignableFrom(MainStartupViewModel::class.java))
+                return MainStartupViewModel(
+                    load = {
+                        MainStartupSnapshot(
+                            preferences = withContext(AppDispatchers.fileIo) { UiPrefs.loadSnapshot() },
+                            homeOverview = HomeOverviewRepository(
+                                context = startupContext,
+                                mcpUiState = startupMcpState,
+                            ).loadInitialOverview().copy(appOverview = initialAppOverview),
+                        )
+                    },
+                    fallback = {
+                        MainStartupSnapshot(
+                            preferences = UiPrefs.defaultSnapshot().copy(appThemeMode = fallbackTheme),
+                            homeOverview = HomeOverviewSnapshot(
+                                appOverview = initialAppOverview,
+                                githubOverview = HomeGitHubOverview(loaded = true),
+                                baOverview = HomeBaOverview(loaded = true),
+                            ),
+                        )
+                    },
+                ) as T
+            }
+        })[MainStartupViewModel::class.java]
         applyPendingShortcutActions()
         // Defer non-first-frame work: shortcut sync writes to system storage, Xiaomi network
         // restoration may trigger system calls. Neither affects the first Compose frame.
         lifecycleScope.launch(AppDispatchers.fileIo) {
             delay(DEFERRED_ACTIVITY_STARTUP_WORK_DELAY_MS)
+            // This persists a PackageManager override for the next launch, not the active view.
+            // Keep its binder/storage work out of this launch's first frame.
+            persistStartupTheme(hostUiState.appThemeMode)
             runCatching { McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this@MainActivity) }
             runCatching { AppShortcuts.sync(this@MainActivity) }
             // Collapses every BA write down to real account-identity changes; see the class doc.
@@ -189,6 +247,7 @@ class MainActivity : ComponentActivity() {
             onAppThemeModeChanged = { mode ->
                 hostUiState = hostUiState.copy(appThemeMode = mode)
                 UiPrefs.setAppThemeMode(mode)
+                lifecycleScope.launch(AppDispatchers.fileIo) { persistStartupTheme(mode) }
             },
             onRequestedBottomPageConsumed = {
                 hostUiState = hostUiState.copy(requestedBottomPage = null)
@@ -197,6 +256,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val state = hostUiState
+            val startupSnapshot by startupViewModel.snapshot.collectAsStateWithLifecycle()
             val colorSchemeMode =
                 when (state.appThemeMode) {
                     AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
@@ -206,20 +266,44 @@ class MainActivity : ComponentActivity() {
             val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
-                CompositionLocalProvider(LocalOverscrollFactory provides MiuixOverscrollFactory) {
+                CompositionLocalProvider(
+                    LocalOverscrollFactory provides MiuixOverscrollFactory,
+                    LocalMainStartupSnapshot provides startupSnapshot,
+                    LocalMainStartupTransition provides startupTransition,
+                ) {
                     SystemBarAutoStyle(state.appThemeMode)
                     Box(Modifier.fillMaxSize()) {
                         // Capture only real app content. The FPS overlay updates at 2 Hz and is
                         // intentionally kept outside this producer so debug telemetry cannot
                         // invalidate or become part of descendant Liquid Glass samples.
                         SceneBackdropHost(backgroundColor = MiuixTheme.colorScheme.background) {
-                            MainScreen(
-                                appLabel = appLabel,
-                                hostState = state,
-                                hostCallbacks = hostCallbacks,
-                                privilegedShell = privilegedShell,
-                                mcpServerManager = mcpServerManager,
-                            )
+                            if (startupSnapshot != null) {
+                                MainScreen(
+                                    appLabel = appLabel,
+                                    hostState = state,
+                                    hostCallbacks = hostCallbacks,
+                                    privilegedShell = privilegedShell,
+                                    mcpServerManager = mcpServerManager,
+                                )
+                            } else {
+                                // A bounded draw gate protects launch. If storage is slow, keep a
+                                // truthful brand surface instead of exposing default Home values.
+                                val startupBackground = colorResource(when (state.appThemeMode) {
+                                    AppThemeMode.FOLLOW_SYSTEM -> R.color.kei_startup_background
+                                    AppThemeMode.LIGHT -> R.color.kei_startup_light
+                                    AppThemeMode.DARK -> R.color.kei_startup_dark
+                                })
+                                Box(
+                                    Modifier.fillMaxSize().background(startupBackground),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(96.dp),
+                                    )
+                                }
+                            }
                         }
                         if (BuildConfig.DEBUG) {
                             DebugFpsOverlay()
@@ -262,6 +346,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        startupTransition.dispose()
         jankStats?.isTrackingEnabled = false
         jankStats = null
         // Only stop the MCP server when the user is intentionally leaving (back press / finish).

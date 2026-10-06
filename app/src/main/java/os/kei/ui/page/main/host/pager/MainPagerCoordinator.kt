@@ -180,7 +180,8 @@ internal fun rememberMainPagerCoordinator(
             pagerState = pagerState,
             pagerRuntime = pagerRuntime,
             pageScrollBoundsState = pageScrollBoundsState,
-            transitionAnimationsEnabled = transitionAnimationsEnabled,
+            transitionAnimationsEnabled = transitionAnimationsEnabled &&
+                (os.kei.LocalMainStartupTransition.current?.hasPresented != false),
             requestedBottomPage = requestedBottomPage,
             requestedBottomPageToken = requestedBottomPageToken,
             onRequestedBottomPageConsumed = onRequestedBottomPageConsumed,

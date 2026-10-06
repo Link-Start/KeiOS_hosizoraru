@@ -3,6 +3,7 @@ package os.kei.ui.page.main.host.main
 import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.MainActivity
+import os.kei.LocalMainStartupSnapshot
+import os.kei.LocalMainStartupTransition
 import os.kei.R
 import os.kei.core.privilege.PrivilegedShell
 import os.kei.mcp.server.McpServerManager
@@ -44,7 +47,11 @@ fun MainScreen(
     val currentNotificationPermissionGranted by rememberUpdatedState(hostState.notificationPermissionGranted)
     val currentOnCheckOrRequestPrivilege by rememberUpdatedState(hostCallbacks.onCheckOrRequestPrivilege)
     val currentOnAppThemeModeChanged by rememberUpdatedState(hostCallbacks.onAppThemeModeChanged)
-    val prefsViewModel: MainScreenPrefsViewModel = viewModel()
+    val initialPreferences = LocalMainStartupSnapshot.current?.preferences
+    val startupTransition = LocalMainStartupTransition.current
+    val prefsViewModel: MainScreenPrefsViewModel = viewModel(
+        factory = remember(initialPreferences) { MainScreenPrefsViewModel.factory(initialPreferences) },
+    )
     val guideNavigationViewModel: MainScreenGuideNavigationViewModel = viewModel()
     var localRequestedBottomPage by rememberSaveable { mutableStateOf<String?>(null) }
     var localRequestedBottomPageToken by rememberSaveable { mutableIntStateOf(0) }
@@ -78,6 +85,14 @@ fun MainScreen(
         prefsViewModel.loadInitialSnapshot()
     }
     val uiPrefsSnapshot by prefsViewModel.snapshot.collectAsStateWithLifecycle()
+    val destinationReady = isMainStartupDestinationReady(hostState, backStack.lastOrNull() as? KeiosRoute)
+    SideEffect {
+        startupTransition?.onContentReady(
+            ready = destinationReady,
+            transitionAnimationsEnabled = uiPrefsSnapshot.transitionAnimationsEnabled,
+            waitForMainPage = backStack.lastOrNull() == KeiosRoute.Main,
+        )
+    }
     val mainReturnState = rememberMainScreenSettingsReturnState(backStack)
     BindMainScreenBottomPageReturnEffect(
         requestedBottomPageToken = effectiveRequestedBottomPageToken,

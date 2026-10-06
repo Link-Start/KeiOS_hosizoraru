@@ -87,6 +87,42 @@ The Gradle merge is the authority for combining method flags and duplicate rules
 from the six journeys. Regenerate obsolete signatures from current code; do not
 delete library or animation rules merely to reduce the textual rule count.
 
+### Accepted Phone and Tablet capture, 2026-10-06
+
+The complete connected matrix captured source `18414116a` on
+`KeiOS_API37_Validation` (`emulator-5560`, 1280×2856 at 480 dpi) and
+`KeiOS_Pad_API37_Validation` (`emulator-5562`, 2560×1600 at 320 dpi), both API 37.
+The standard `:app:generateReleaseBaselineProfile` task exited successfully in
+11m55s. Both devices completed all six journeys with zero failures, errors or
+skips; the guard accepted 12 fresh exports before the normal Gradle merge copied
+the source profiles. Device test time was 670.863s on Phone and 646.456s on Tablet.
+
+| Generated output | Before | After |
+| --- | ---: | ---: |
+| Baseline rules | 62,313 | 60,337 |
+| Startup rules | 24,263 | 24,434 |
+
+The regenerated baseline has 1,522 added and 3,498 removed signatures; startup
+has 341 added and 170 removed. Both outputs contain zero duplicate signatures
+and pass rule-syntax checks. Every startup signature exists in the merged
+baseline. Removed external dropdown-coordinate getters/callbacks have zero
+matches in either output; no rules were removed manually.
+
+Named merged coverage includes 5,580 Student Guide rules, 55 Gallery, 4,913
+Media3, 48 dropdown selector, 37 snapshot popup, 134 Liquid Sheet, 2,453 Liquid
+glass and 1,636 Backdrop rules. Both devices' main-navigation exports contain
+`startUserScroll`, `dragBy`, `settleAfterDrag` and
+`animateLoadedPagerSettlePosition`, so actual finger paging was reached.
+
+The fresh capture required two UI fixes discovered by real AVD input: floating
+Settings chrome now exports its existing test tags, and the Home pill material
+uses a decorative sibling layer so its outline cannot clip card hit targets.
+On Tablet, the same WebDAV card center failed before that fix and opened the
+actual Sync route afterward. Blur, refraction, highlight and press animations
+were retained. The producer also waits for stable tap bounds and saves failures
+before target cleanup. Capture duration and rule counts establish collection
+metadata; they do not establish a user-perceived performance improvement.
+
 ## The switch a tab tap cannot stand in for
 
 Every page switch in the profile used to be a tab tap, and a tap and a swipe do not run the same code.

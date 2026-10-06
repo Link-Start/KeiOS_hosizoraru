@@ -35,6 +35,7 @@ fun AppAronaLoadingPanel(
     progressSize: Dp = 22.dp,
     textSize: TextUnit = 16.sp,
     showProgress: Boolean = true,
+    textColor: Color = MiuixTheme.colorScheme.onBackground,
 ) {
     Box(
         modifier = modifier
@@ -73,7 +74,7 @@ fun AppAronaLoadingPanel(
                 }
                 Text(
                     text = stringResource(R.string.guide_loading_title),
-                    color = MiuixTheme.colorScheme.onBackground,
+                    color = textColor,
                     fontSize = textSize,
                 )
             }

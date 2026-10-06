@@ -139,7 +139,7 @@ internal fun BaGuideBgmTrackRow(
             )
             BaGuideBgmTrackMorePopup(
                 show = moreExpanded,
-                anchorBounds = moreAnchorBounds,
+                anchorBoundsProvider = { moreAnchorBounds },
                 favorite = favorite,
                 offlineSaved = offlineSaved,
                 onDismissRequest = { moreExpanded = false },
@@ -155,7 +155,7 @@ internal fun BaGuideBgmTrackRow(
 @Composable
 internal fun BaGuideBgmTrackMorePopup(
     show: Boolean,
-    anchorBounds: IntRect?,
+    anchorBoundsProvider: () -> IntRect?,
     favorite: Boolean,
     offlineSaved: Boolean,
     onDismissRequest: () -> Unit,
@@ -177,7 +177,7 @@ internal fun BaGuideBgmTrackMorePopup(
     SnapshotWindowListPopup(
         show = show,
         alignment = PopupPositionProvider.Align.BottomEnd,
-        anchorBounds = anchorBounds,
+        anchorBoundsProvider = anchorBoundsProvider,
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
     ) {

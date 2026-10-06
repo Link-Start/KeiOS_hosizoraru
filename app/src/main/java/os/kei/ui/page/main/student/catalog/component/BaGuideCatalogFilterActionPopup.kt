@@ -28,7 +28,7 @@ private val BaCatalogFilterMenuMaxHeight = 392.dp
 @Composable
 internal fun BaGuideCatalogFilterActionPopup(
     show: Boolean,
-    anchorBounds: IntRect?,
+    anchorBoundsProvider: () -> IntRect?,
     definitions: List<BaGuideCatalogFilterDefinition>,
     selectedOptionIdsByFilterId: Map<Int, Set<Int>>,
     onDismissRequest: () -> Unit,
@@ -38,7 +38,7 @@ internal fun BaGuideCatalogFilterActionPopup(
     SnapshotWindowListPopup(
         show = show && definitions.isNotEmpty(),
         alignment = PopupPositionProvider.Align.BottomEnd,
-        anchorBounds = anchorBounds,
+        anchorBoundsProvider = anchorBoundsProvider,
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
     ) {

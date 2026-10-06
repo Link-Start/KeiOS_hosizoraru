@@ -518,7 +518,7 @@ private fun BaGuideMemoryLobbyMoreActions(
             SnapshotWindowListPopup(
                 show = menuExpanded,
                 alignment = PopupPositionProvider.Align.BottomEnd,
-                anchorBounds = menuAnchorBounds,
+                anchorBoundsProvider = { menuAnchorBounds },
                 placement = SnapshotPopupPlacement.ButtonEnd,
                 onDismissRequest = { menuExpanded = false },
             ) {
@@ -719,7 +719,6 @@ internal fun BaGuideMemoryLobbyVariantSelector(
     modifier: Modifier = Modifier,
 ) {
     var showPicker by remember(optionLabels) { mutableStateOf(false) }
-    var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     if (optionLabels.size <= 1) return
 
     AppDropdownSelector(
@@ -730,10 +729,8 @@ internal fun BaGuideMemoryLobbyVariantSelector(
         options = optionLabels,
         selectedIndex = selectedIndex,
         expanded = showPicker,
-        anchorBounds = pickerPopupAnchorBounds,
         onExpandedChange = { showPicker = it },
         onSelectedIndexChange = onSelectedIndexChange,
-        onAnchorBoundsChange = { pickerPopupAnchorBounds = it },
         modifier = modifier.widthIn(min = 54.dp, max = 96.dp),
         variant = GlassVariant.Compact,
         textColor = Color(0xFF3B82F6),

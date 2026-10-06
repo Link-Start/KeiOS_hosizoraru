@@ -158,7 +158,7 @@ internal fun GitHubTrackedItemMoreActions(
             SnapshotWindowListPopup(
                 show = menuExpanded,
                 alignment = PopupPositionProvider.Align.BottomEnd,
-                anchorBounds = menuAnchorBounds,
+                anchorBoundsProvider = { menuAnchorBounds },
                 placement = SnapshotPopupPlacement.ButtonEnd,
                 onDismissRequest = { menuExpanded = false },
             ) {

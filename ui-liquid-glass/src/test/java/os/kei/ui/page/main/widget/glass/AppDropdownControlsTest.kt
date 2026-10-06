@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -32,7 +33,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
 import os.kei.ui.page.main.widget.chrome.LiquidToolbarTextButton
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarPopupAnchors
 import os.kei.ui.page.main.widget.sheet.SnapshotMenuPanelTestTag
+import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
+import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.basic.Text
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,6 +60,131 @@ import kotlin.test.assertTrue
 class AppDropdownControlsTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun internallyOwnedAnchorDoesNotRecomposeItsCardAndOpensAtItsMovedPosition() {
+        val position = mutableIntStateOf(0)
+        var expanded by mutableStateOf(false)
+        var selected by mutableIntStateOf(0)
+        var cardCompositions = 0
+        composeRule.setContent {
+            DropdownTestTheme {
+                SideEffect { cardCompositions++ }
+                AppDropdownSelector(
+                    selectedText = "Owned level",
+                    options = listOf("One", "Two"),
+                    selectedIndex = selected,
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                    onSelectedIndexChange = { selected = it },
+                    modifier = Modifier.testTag("owned-anchor").offset { IntOffset(0, position.intValue) },
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        val before = cardCompositions
+        repeat(6) { index ->
+            composeRule.runOnIdle { position.intValue = (index + 1) * 20 }
+            composeRule.waitForIdle()
+        }
+        assertEquals(before, cardCompositions)
+        val anchor = composeRule.onNodeWithTag("owned-anchor").fetchSemanticsNode().boundsInRoot
+        composeRule.onNodeWithText("Owned level").performClick()
+        composeRule.waitForIdle()
+        val panel = composeRule.onNodeWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNode().boundsInRoot
+        assertTrue(panel.top >= anchor.bottom - 1f, "owned menu must open at the moved button")
+        composeRule.onNode(hasText("Two") and hasClickAction()).performClick()
+        composeRule.waitForIdle()
+        assertEquals(1, selected)
+        assertEquals(false, expanded)
+        assertEquals(0, composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun rawPopupObservesItsProviderThroughExitThenReleasesItAndCallsDismissFinished() {
+        var show by mutableStateOf(false)
+        var bounds by mutableStateOf(IntRect(32, 120, 192, 168))
+        var reads = 0
+        var dismissals = 0
+        composeRule.setContent {
+            DropdownTestTheme {
+                SnapshotWindowListPopup(
+                    show = show,
+                    alignment = PopupPositionProvider.Align.BottomEnd,
+                    placement = SnapshotPopupPlacement.ButtonEnd,
+                    anchorBoundsProvider = { reads++; bounds },
+                    onDismissFinished = { dismissals++ },
+                    minWidth = 80.dp,
+                ) { Text("Deferred raw menu") }
+            }
+        }
+        composeRule.runOnIdle { bounds = IntRect(32, 240, 192, 288) }
+        composeRule.waitForIdle()
+        assertEquals(0, reads)
+        composeRule.runOnIdle { show = true }
+        composeRule.waitForIdle()
+        assertTrue(reads > 0)
+        val panel = composeRule.onNodeWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNode().boundsInRoot
+        assertTrue(panel.top >= bounds.bottom - 1f)
+
+        composeRule.mainClock.autoAdvance = false
+        composeRule.runOnIdle { show = false }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        val exitReads = reads
+        composeRule.runOnIdle { bounds = IntRect(32, 252, 192, 300) }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        assertTrue(reads > exitReads, "raw menu must retain its live anchor during exit")
+        composeRule.mainClock.advanceTimeBy(5_000)
+        composeRule.waitForIdle()
+        assertEquals(1, dismissals)
+        val finishedReads = reads
+        composeRule.runOnIdle { bounds = IntRect(32, 264, 192, 312) }
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        assertEquals(finishedReads, reads)
+        assertEquals(0, composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun movingToolbarSlotsDoNotRecomposeClosedMenuContent() {
+        val position = mutableIntStateOf(0)
+        var show by mutableStateOf(false)
+        var slotCompositions = 0
+        var reads = 0
+        var presentedBounds: IntRect? = null
+        composeRule.setContent {
+            DropdownTestTheme {
+                Box(Modifier.offset { IntOffset(0, position.intValue) }) {
+                    LiquidToolbarPopupAnchors(itemCount = 3) { index, anchor ->
+                        SideEffect { slotCompositions++ }
+                        if (index == 1) {
+                            SnapshotWindowListPopup(
+                                show = show,
+                                anchorBoundsProvider = { reads++; anchor().also { presentedBounds = it } },
+                                alignment = PopupPositionProvider.Align.BottomEnd,
+                                placement = SnapshotPopupPlacement.ButtonEnd,
+                            ) { Text("Toolbar menu") }
+                        }
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        val before = slotCompositions
+        repeat(6) { index ->
+            composeRule.runOnIdle { position.intValue = (index + 1) * 20 }
+            composeRule.waitForIdle()
+        }
+        assertEquals(before, slotCompositions)
+        assertEquals(0, reads)
+        composeRule.runOnIdle { show = true }
+        composeRule.waitForIdle()
+        val panel = composeRule.onNodeWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNode().boundsInRoot
+        assertTrue(panel.top >= requireNotNull(presentedBounds).bottom - 1f)
+    }
 
     @Test
     fun movingClosedSelectorsDoNotRecomposeTheirCardsWithDeferredBounds() {

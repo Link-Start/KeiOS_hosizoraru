@@ -210,7 +210,7 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                 SnapshotWindowListPopup(
                     show = showActionMenuPopup,
                     alignment = PopupPositionProvider.Align.BottomEnd,
-                    anchorBounds = popupAnchorBounds,
+                    anchorBoundsProvider = popupAnchorBounds,
                     placement = SnapshotPopupPlacement.ButtonEnd,
                     onDismissRequest = { onShowActionMenuPopupChange(false) },
                     maxWidth = actionMenuMaxWidth,

@@ -164,7 +164,7 @@ internal fun DebugLiquidActionMenuCard(
             SnapshotWindowListPopup(
                 show = expanded,
                 alignment = PopupPositionProvider.Align.BottomEnd,
-                anchorBounds = anchorBounds,
+                anchorBoundsProvider = { anchorBounds },
                 placement = SnapshotPopupPlacement.ButtonEnd,
                 onDismissRequest = { expanded = false },
                 onDismissFinished = { dismissFinishedCount += 1 },

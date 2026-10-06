@@ -141,7 +141,7 @@ internal fun BaGuideCatalogMusicTopBar(
                         0 -> {
                             BaGuideCatalogFilterActionPopup(
                                 show = showFilterPopup && filterEnabled,
-                                anchorBounds = actionBarAnchorBounds ?: popupAnchorBounds,
+                                anchorBoundsProvider = { actionBarAnchorBounds ?: popupAnchorBounds() },
                                 definitions = filterDefinitions,
                                 selectedOptionIdsByFilterId = selectedFilterOptions,
                                 onDismissRequest = onDismissFilter,
@@ -153,7 +153,7 @@ internal fun BaGuideCatalogMusicTopBar(
                         1 -> {
                             BaGuideCatalogMoreActionPopup(
                                 show = showMorePopup,
-                                anchorBounds = popupAnchorBounds,
+                                anchorBoundsProvider = popupAnchorBounds,
                                 backdrop = backdrop,
                                 sortMode = sortMode,
                                 incrementalRefreshIntervalHours = incrementalRefreshIntervalHours,

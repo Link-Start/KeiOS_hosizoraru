@@ -450,7 +450,7 @@ private const val LiquidToolbarPressScaleDurationMillis = 110
 fun LiquidToolbarPopupAnchors(
     itemCount: Int,
     modifier: Modifier = Modifier,
-    content: @Composable (Int, IntRect?) -> Unit,
+    content: @Composable (Int, () -> IntRect?) -> Unit,
 ) {
     if (itemCount <= 0) return
     val anchorBounds =
@@ -485,7 +485,7 @@ fun LiquidToolbarPopupAnchors(
                         },
                 contentAlignment = Alignment.Center,
             ) {
-                content(index, anchorBounds.getOrNull(index))
+                content(index) { anchorBounds.getOrNull(index) }
             }
         }
     }

@@ -120,10 +120,10 @@ fun AppDropdownSelector(
     options: List<String>,
     selectedIndex: Int,
     expanded: Boolean,
-    anchorBounds: IntRect?,
+    anchorBounds: IntRect? = null,
     onExpandedChange: (Boolean) -> Unit,
     onSelectedIndexChange: (Int) -> Unit,
-    onAnchorBoundsChange: (IntRect?) -> Unit,
+    onAnchorBoundsChange: (IntRect?) -> Unit = {},
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
     variant: GlassVariant = GlassVariant.SheetAction,
@@ -156,13 +156,16 @@ fun AppDropdownSelector(
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
     val popupShow = expanded && enabled && options.isNotEmpty()
+    // Button geometry belongs to the selector, not the page's UI/StateFlow snapshot. Capture it
+    // continuously without observing it while the popup is closed.
+    var capturedAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var popupMounted by remember { mutableStateOf(false) }
     SideEffect {
         if (popupShow) popupMounted = true
     }
     val presentedAnchorBounds =
-        if (anchorBoundsProvider != null && (popupShow || popupMounted)) {
-            anchorBoundsProvider()
+        if (popupShow || popupMounted) {
+            if (anchorBoundsProvider != null) anchorBoundsProvider() else anchorBounds ?: capturedAnchorBounds
         } else {
             anchorBounds
         }
@@ -248,7 +251,10 @@ fun AppDropdownSelector(
     }
 
     Box(
-        modifier = modifier.capturePopupAnchor { onAnchorBoundsChange(it) },
+        modifier = modifier.capturePopupAnchor {
+            capturedAnchorBounds = it
+            onAnchorBoundsChange(it)
+        },
         contentAlignment = anchorAlignment,
     ) {
         if (anchorContent != null) {

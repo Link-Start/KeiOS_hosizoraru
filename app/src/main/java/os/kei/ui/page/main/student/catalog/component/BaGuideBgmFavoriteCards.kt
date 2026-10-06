@@ -313,7 +313,7 @@ internal fun BaGuideBgmFavoriteCard(
                     SnapshotWindowListPopup(
                         show = actionExpanded,
                         alignment = PopupPositionProvider.Align.BottomEnd,
-                        anchorBounds = actionAnchorBounds,
+                        anchorBoundsProvider = { actionAnchorBounds },
                         placement = SnapshotPopupPlacement.ButtonEnd,
                         onDismissRequest = { actionExpanded = false },
                     ) {

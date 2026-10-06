@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -60,7 +61,6 @@ internal data class SnapshotPopupSafeInsets(
 /** Identifies the anchored panel itself, as opposed to anything inside it. */
 const val SnapshotMenuPanelTestTag = "snapshot_menu_panel"
 
-
 /**
  * An anchored menu or dropdown panel.
  *
@@ -98,12 +98,19 @@ fun SnapshotWindowListPopup(
     minWidth: Dp = 0.dp,
     maxWidth: Dp? = 280.dp,
     matchAnchorWidth: Boolean = false,
+    anchorBoundsProvider: (() -> IntRect?)? = null,
     content: @Composable () -> Unit,
 ) {
+    var mounted by remember { mutableStateOf(false) }
+    SideEffect {
+        if (show) mounted = true
+    }
+    val presentedAnchorBounds =
+        if (anchorBoundsProvider != null && (show || mounted)) anchorBoundsProvider() else anchorBounds
     val density = LocalDensity.current
     val anchorWidthDp =
-        remember(anchorBounds, density) {
-            anchorBounds?.let { with(density) { it.width.toDp() } } ?: 0.dp
+        remember(presentedAnchorBounds, density) {
+            presentedAnchorBounds?.let { with(density) { it.width.toDp() } } ?: 0.dp
         }
     val resolvedMinWidth =
         if (matchAnchorWidth) maxOf(minWidth, anchorWidthDp) else minWidth
@@ -111,12 +118,15 @@ fun SnapshotWindowListPopup(
 
     LiquidMenuPresentation(
         show = show,
-        anchorBounds = anchorBounds,
+        anchorBounds = presentedAnchorBounds,
         popupPositionProvider = popupPositionProvider,
         alignment = alignment,
         placement = placement,
         onDismissRequest = onDismissRequest,
-        onDismissFinished = onDismissFinished,
+        onDismissFinished = {
+            mounted = false
+            onDismissFinished?.invoke()
+        },
     ) {
         Box(
             modifier =
@@ -225,7 +235,6 @@ internal class BlockedDismissRequestGate(
         return true
     }
 }
-
 
 private fun PaddingValues.toIntRect(
     density: androidx.compose.ui.unit.Density,

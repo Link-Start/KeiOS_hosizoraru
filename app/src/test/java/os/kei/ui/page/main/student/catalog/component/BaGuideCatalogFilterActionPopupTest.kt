@@ -68,7 +68,7 @@ class BaGuideCatalogFilterActionPopupTest {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     BaGuideCatalogFilterActionPopup(
                         show = true,
-                        anchorBounds = IntRect(left = 180, top = 100, right = 300, bottom = 180),
+                        anchorBoundsProvider = { IntRect(left = 180, top = 100, right = 300, bottom = 180) },
                         definitions = filterDefinitions,
                         selectedOptionIdsByFilterId = selectedOptions,
                         onDismissRequest = { dismissCount += 1 },

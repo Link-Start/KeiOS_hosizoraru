@@ -36,7 +36,7 @@ private val BaCatalogMoreMenuMaxHeight = 420.dp
 @Composable
 internal fun BaGuideCatalogMoreActionPopup(
     show: Boolean,
-    anchorBounds: IntRect?,
+    anchorBoundsProvider: () -> IntRect?,
     backdrop: Backdrop,
     sortMode: BaGuideCatalogSortMode,
     incrementalRefreshIntervalHours: Int,
@@ -52,7 +52,7 @@ internal fun BaGuideCatalogMoreActionPopup(
     SnapshotWindowListPopup(
         show = show,
         alignment = PopupPositionProvider.Align.BottomEnd,
-        anchorBounds = anchorBounds,
+        anchorBoundsProvider = anchorBoundsProvider,
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
     ) {

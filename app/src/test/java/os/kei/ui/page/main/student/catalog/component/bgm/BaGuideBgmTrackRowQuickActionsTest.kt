@@ -229,7 +229,7 @@ class BaGuideBgmTrackRowQuickActionsTest {
                     ) {
                         BaGuideBgmTrackMorePopup(
                             show = show.value,
-                            anchorBounds = anchorBounds,
+                            anchorBoundsProvider = { anchorBounds },
                             favorite = favorite.value,
                             offlineSaved = offlineSaved.value,
                             onDismissRequest = onDismissRequest,

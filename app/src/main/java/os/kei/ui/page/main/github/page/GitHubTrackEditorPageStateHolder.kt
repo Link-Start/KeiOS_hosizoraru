@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
 import os.kei.feature.github.model.FdroidAppSearchRepoReport
@@ -63,23 +62,14 @@ internal class GitHubTrackEditorPageStateHolder {
     var appListLoaded by mutableStateOf(false)
     var appListRefreshing by mutableStateOf(false)
     var sourceModeDropdownExpanded by mutableStateOf(false)
-    var sourceModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var updateIntervalDropdownExpanded by mutableStateOf(false)
-    var updateIntervalDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var actionsIntervalDropdownExpanded by mutableStateOf(false)
-    var actionsIntervalDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var preciseModeDropdownExpanded by mutableStateOf(false)
-    var preciseModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var ignoreModeDropdownExpanded by mutableStateOf(false)
-    var ignoreModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var fdroidVersionSelectionDropdownExpanded by mutableStateOf(false)
-    var fdroidVersionSelectionDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var fdroidTrustPolicyDropdownExpanded by mutableStateOf(false)
-    var fdroidTrustPolicyDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var fdroidAntiFeaturePolicyDropdownExpanded by mutableStateOf(false)
-    var fdroidAntiFeaturePolicyDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var fdroidRepoScopeDropdownExpanded by mutableStateOf(false)
-    var fdroidRepoScopeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
 
     fun reset() {
         repoUrlInput = ""
@@ -119,22 +109,13 @@ internal class GitHubTrackEditorPageStateHolder {
 
     fun resetDropdownState() {
         sourceModeDropdownExpanded = false
-        sourceModeDropdownAnchorBounds = null
         updateIntervalDropdownExpanded = false
-        updateIntervalDropdownAnchorBounds = null
         actionsIntervalDropdownExpanded = false
-        actionsIntervalDropdownAnchorBounds = null
         preciseModeDropdownExpanded = false
-        preciseModeDropdownAnchorBounds = null
         ignoreModeDropdownExpanded = false
-        ignoreModeDropdownAnchorBounds = null
         fdroidVersionSelectionDropdownExpanded = false
-        fdroidVersionSelectionDropdownAnchorBounds = null
         fdroidTrustPolicyDropdownExpanded = false
-        fdroidTrustPolicyDropdownAnchorBounds = null
         fdroidAntiFeaturePolicyDropdownExpanded = false
-        fdroidAntiFeaturePolicyDropdownAnchorBounds = null
         fdroidRepoScopeDropdownExpanded = false
-        fdroidRepoScopeDropdownAnchorBounds = null
     }
 }

@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.ba.card.filterVisibleCalendarEntries
@@ -51,9 +50,7 @@ internal fun BaCalendarPoolTwoColumnLayout(
     syncText: String,
     syncTextColor: Color,
     showServerPopup: Boolean,
-    serverPopupAnchorBounds: IntRect?,
     onServerPopupChange: (Boolean) -> Unit,
-    onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
     primary: LazyListScope.() -> Unit,
     secondary: LazyListScope.() -> Unit,
@@ -88,9 +85,7 @@ internal fun BaCalendarPoolTwoColumnLayout(
                         syncText = syncText,
                         syncTextColor = syncTextColor,
                         expanded = showServerPopup,
-                        anchorBounds = serverPopupAnchorBounds,
                         onExpandedChange = onServerPopupChange,
-                        onAnchorBoundsChange = onServerPopupAnchorBoundsChange,
                         onServerSelected = onServerSelected,
                     )
                 },
@@ -112,9 +107,7 @@ internal fun BaCalendarPoolStackedLayout(
     syncText: String,
     syncTextColor: Color,
     showServerPopup: Boolean,
-    serverPopupAnchorBounds: IntRect?,
     onServerPopupChange: (Boolean) -> Unit,
-    onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
     content: LazyListScope.() -> Unit,
 ) {
@@ -139,9 +132,7 @@ internal fun BaCalendarPoolStackedLayout(
                 syncText = syncText,
                 syncTextColor = syncTextColor,
                 expanded = showServerPopup,
-                anchorBounds = serverPopupAnchorBounds,
                 onExpandedChange = onServerPopupChange,
-                onAnchorBoundsChange = onServerPopupAnchorBoundsChange,
                 onServerSelected = onServerSelected,
             )
         }
@@ -193,7 +184,6 @@ internal fun BaCalendarPoolBothColumnsContent(
     serverOptions: List<String>,
     serverIndex: Int,
     showServerPopup: Boolean,
-    serverPopupAnchorBounds: IntRect?,
     showEndedActivities: Boolean,
     showEndedPools: Boolean,
     showCalendarPoolImages: Boolean,
@@ -202,7 +192,6 @@ internal fun BaCalendarPoolBothColumnsContent(
     syncText: String,
     syncTextColor: Color,
     onServerPopupChange: (Boolean) -> Unit,
-    onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
@@ -243,9 +232,7 @@ internal fun BaCalendarPoolBothColumnsContent(
         syncText = syncText,
         syncTextColor = syncTextColor,
         showServerPopup = showServerPopup,
-        serverPopupAnchorBounds = serverPopupAnchorBounds,
         onServerPopupChange = onServerPopupChange,
-        onServerPopupAnchorBoundsChange = onServerPopupAnchorBoundsChange,
         onServerSelected = onServerSelected,
         primary = {
             baActivityCalendarEntryItems(

@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.core.privilege.PrivilegeMode
 import os.kei.ui.page.main.settings.support.SettingsPickerItem
@@ -296,7 +295,6 @@ private fun PrivilegedModePickerItem(
     actions: SettingsPermissionKeepAliveSectionActions,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val options =
         listOf(
             PrivilegeMode.Disabled to stringResource(R.string.settings_privileged_mode_disabled),
@@ -320,13 +318,11 @@ private fun PrivilegedModePickerItem(
             options = options.map { it.second },
             selectedIndex = selectedIndex,
             expanded = expanded,
-            anchorBounds = anchorBounds,
             onExpandedChange = { expanded = it },
             onSelectedIndexChange = { index ->
                 options.getOrNull(index)?.first?.let(actions.onPrivilegeModeChanged)
                 expanded = false
             },
-            onAnchorBoundsChange = { anchorBounds = it },
             variant = GlassVariant.SheetAction,
             popupMaxWidth = 260.dp,
             popupMatchAnchorWidth = true,

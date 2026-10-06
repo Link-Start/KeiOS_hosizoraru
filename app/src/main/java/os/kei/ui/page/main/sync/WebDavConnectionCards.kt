@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
@@ -43,9 +42,7 @@ internal fun WebDavConnectionOverviewCard(
     state: WebDavSyncUiState,
     cardColor: Color,
     providerExpanded: Boolean,
-    providerAnchorBounds: IntRect?,
     onProviderExpandedChange: (Boolean) -> Unit,
-    onProviderAnchorBoundsChange: (IntRect?) -> Unit,
     onSelectProvider: (WebDavProvider) -> Unit,
 ) {
     val providerEntries = remember { WebDavProvider.entries.toList() }
@@ -127,13 +124,11 @@ internal fun WebDavConnectionOverviewCard(
                     options = providerLabels,
                     selectedIndex = selectedProviderIndex,
                     expanded = providerExpanded,
-                    anchorBounds = providerAnchorBounds,
                     onExpandedChange = onProviderExpandedChange,
                     onSelectedIndexChange = { index ->
                         providerEntries.getOrNull(index)?.let(onSelectProvider)
                         onProviderExpandedChange(false)
                     },
-                    onAnchorBoundsChange = onProviderAnchorBoundsChange,
                     popupMaxWidth = 220.dp,
                     popupMatchAnchorWidth = true,
                 )

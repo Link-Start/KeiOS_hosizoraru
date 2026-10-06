@@ -5,7 +5,6 @@ import androidx.compose.runtime.LongState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.state.PageRouteState
 
@@ -18,7 +17,6 @@ internal data class BaPageClockState(
 @Stable
 internal data class BaPagePopupState(
     val showCafeLevelPopup: Boolean,
-    val cafeLevelPopupAnchorBounds: IntRect?,
 )
 
 @Stable
@@ -79,7 +77,6 @@ internal fun buildBaPageRouteState(
         popupState =
             BaPagePopupState(
                 showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
-                cafeLevelPopupAnchorBounds = chromeUiState.cafeLevelPopupAnchorBounds,
             ),
         accountUiState = accountUiState,
         serverIndex = serverUiState.serverIndex,

@@ -2,10 +2,8 @@ package os.kei.ui.page.main.os.shell.page
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.os.shell.OsShellRunnerPageChromeState
 
 @Stable
@@ -61,14 +59,8 @@ internal class OsShellRunnerPageStateHolder(
     val timeoutDropdownExpanded: Boolean
         get() = chromeState().timeoutDropdownExpanded
 
-    val timeoutDropdownAnchorBounds: IntRect?
-        get() = chromeState().timeoutDropdownAnchorBounds
-
     val outputLimitDropdownExpanded: Boolean
         get() = chromeState().outputLimitDropdownExpanded
-
-    val outputLimitDropdownAnchorBounds: IntRect?
-        get() = chromeState().outputLimitDropdownAnchorBounds
 
     fun requestStartupFocus() {
         actions().onRequestStartupFocus()
@@ -94,16 +86,8 @@ internal class OsShellRunnerPageStateHolder(
         actions().onTimeoutDropdownExpandedChange(expanded)
     }
 
-    fun updateTimeoutDropdownAnchorBounds(bounds: IntRect?) {
-        actions().onTimeoutDropdownAnchorBoundsChange(bounds)
-    }
-
     fun updateOutputLimitDropdownExpanded(expanded: Boolean) {
         actions().onOutputLimitDropdownExpandedChange(expanded)
-    }
-
-    fun updateOutputLimitDropdownAnchorBounds(bounds: IntRect?) {
-        actions().onOutputLimitDropdownAnchorBoundsChange(bounds)
     }
 
     fun consumeCloseCleanupRequest(): Boolean = actions().onConsumeCloseCleanupRequest()
@@ -122,9 +106,7 @@ internal data class OsShellRunnerPageChromeActions(
     val onOpenDangerousCommandConfirm: (String) -> Unit,
     val onDismissDangerousCommandConfirm: () -> Unit,
     val onTimeoutDropdownExpandedChange: (Boolean) -> Unit,
-    val onTimeoutDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     val onOutputLimitDropdownExpandedChange: (Boolean) -> Unit,
-    val onOutputLimitDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     val onConsumeCloseCleanupRequest: () -> Boolean,
 )
 

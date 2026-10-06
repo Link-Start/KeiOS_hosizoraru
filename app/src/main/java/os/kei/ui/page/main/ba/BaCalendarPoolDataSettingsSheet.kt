@@ -8,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -37,9 +36,7 @@ internal fun BaCalendarPoolDataSettingsSheet(
     pageKind: BaCalendarPoolPageKind,
     snapshot: BaPageSnapshot,
     refreshIntervalDropdownExpanded: Boolean,
-    refreshIntervalDropdownAnchorBounds: IntRect?,
     onRefreshIntervalDropdownExpandedChange: (Boolean) -> Unit,
-    onRefreshIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onRefreshIntervalSelected: (Int) -> Unit,
     onShowEndedActivitiesChange: (Boolean) -> Unit,
     onShowEndedPoolsChange: (Boolean) -> Unit,
@@ -77,9 +74,7 @@ internal fun BaCalendarPoolDataSettingsSheet(
                         backdrop = backdrop,
                         selectedHours = snapshot.calendarRefreshIntervalHours,
                         expanded = refreshIntervalDropdownExpanded,
-                        anchorBounds = refreshIntervalDropdownAnchorBounds,
                         onExpandedChange = onRefreshIntervalDropdownExpandedChange,
-                        onAnchorBoundsChange = onRefreshIntervalDropdownAnchorBoundsChange,
                         onSelected = onRefreshIntervalSelected,
                     )
                 }
@@ -121,9 +116,7 @@ private fun BaCalendarPoolRefreshIntervalDropdown(
     backdrop: Backdrop?,
     selectedHours: Int,
     expanded: Boolean,
-    anchorBounds: IntRect?,
     onExpandedChange: (Boolean) -> Unit,
-    onAnchorBoundsChange: (IntRect?) -> Unit,
     onSelected: (Int) -> Unit,
 ) {
     val options = BaCalendarRefreshIntervalOption.entries
@@ -134,7 +127,6 @@ private fun BaCalendarPoolRefreshIntervalDropdown(
         options = options.map { stringResource(it.labelRes) },
         selectedIndex = options.indexOf(selected).coerceAtLeast(0),
         expanded = expanded,
-        anchorBounds = anchorBounds,
         onExpandedChange = onExpandedChange,
         onSelectedIndexChange = { index ->
             options.getOrNull(index)?.let { option ->
@@ -142,7 +134,6 @@ private fun BaCalendarPoolRefreshIntervalDropdown(
             }
             onExpandedChange(false)
         },
-        onAnchorBoundsChange = onAnchorBoundsChange,
         backdrop = backdrop,
         variant = GlassVariant.SheetAction,
         textColor = MiuixTheme.colorScheme.primary,

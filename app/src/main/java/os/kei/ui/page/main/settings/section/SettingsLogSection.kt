@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.core.log.AppLogLevel
@@ -36,9 +35,7 @@ internal fun SettingsLogSection(
     exportingLogZip: Boolean,
     clearingLogs: Boolean,
     levelExpanded: Boolean,
-    levelAnchorBounds: IntRect?,
     onLevelExpandedChange: (Boolean) -> Unit,
-    onLevelAnchorBoundsChange: (IntRect?) -> Unit,
     onExportZipClick: () -> Unit,
     onClearLogsClick: () -> Unit,
     onFeedbackClick: () -> Unit,
@@ -90,13 +87,11 @@ internal fun SettingsLogSection(
                             options = levelLabels,
                             selectedIndex = selectedLevelIndex,
                             expanded = levelExpanded,
-                            anchorBounds = levelAnchorBounds,
                             onExpandedChange = onLevelExpandedChange,
                             onSelectedIndexChange = { index ->
                                 logLevels.getOrNull(index)?.let(onLogLevelChanged)
                                 onLevelExpandedChange(false)
                             },
-                            onAnchorBoundsChange = onLevelAnchorBoundsChange,
                             popupMaxWidth = 220.dp,
                             popupMatchAnchorWidth = true,
                         )

@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
@@ -175,7 +174,6 @@ internal fun WebDavSyncAutoSyncCard(
         intervalOptions.indexOf(state.autoSyncIntervalHours).takeIf { it >= 0 }
             ?: intervalOptions.indexOf(WebDavSyncStore.DEFAULT_AUTO_SYNC_INTERVAL_HOURS).coerceAtLeast(0)
     var intervalExpanded by remember { mutableStateOf(false) }
-    var intervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     SettingsGroupCard(
         header = stringResource(R.string.webdav_sync_section_data),
         title = stringResource(R.string.webdav_sync_auto_card_title),
@@ -209,7 +207,6 @@ internal fun WebDavSyncAutoSyncCard(
                     options = intervalLabels,
                     selectedIndex = selectedIntervalIndex,
                     expanded = intervalExpanded,
-                    anchorBounds = intervalAnchorBounds,
                     onExpandedChange = { expanded ->
                         intervalExpanded = expanded && syncReady && !state.interactionLocked
                     },
@@ -217,7 +214,6 @@ internal fun WebDavSyncAutoSyncCard(
                         intervalOptions.getOrNull(index)?.let(onAutoSyncIntervalHoursChange)
                         intervalExpanded = false
                     },
-                    onAnchorBoundsChange = { intervalAnchorBounds = it },
                     popupMaxWidth = 180.dp,
                     popupMatchAnchorWidth = true,
                 )

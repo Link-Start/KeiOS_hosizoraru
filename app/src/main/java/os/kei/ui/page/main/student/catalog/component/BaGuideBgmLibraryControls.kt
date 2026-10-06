@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideAddIcon
@@ -317,9 +316,7 @@ internal fun BaGuideBgmSortGroupDropdownRow(
     onGroupModeChange: (BaGuideBgmFavoriteGroupMode) -> Unit
 ) {
     var sortExpanded by remember { mutableStateOf(false) }
-    var sortAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var groupExpanded by remember { mutableStateOf(false) }
-    var groupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val sortModes = BaGuideBgmFavoriteSortMode.entries
     val groupModes = BaGuideBgmFavoriteGroupMode.entries
     val sortOptions = sortModes.map { mode -> stringResource(mode.labelRes) }
@@ -340,12 +337,10 @@ internal fun BaGuideBgmSortGroupDropdownRow(
             options = sortOptions,
             selectedIndex = sortIndex,
             expanded = sortExpanded,
-            anchorBounds = sortAnchorBounds,
             onExpandedChange = { sortExpanded = it },
             onSelectedIndexChange = { index ->
                 sortModes.getOrNull(index)?.let(onSortModeChange)
             },
-            onAnchorBoundsChange = { sortAnchorBounds = it },
             modifier = Modifier.weight(1f),
             variant = GlassVariant.Compact,
             textColor = accent,
@@ -361,12 +356,10 @@ internal fun BaGuideBgmSortGroupDropdownRow(
             options = groupOptions,
             selectedIndex = groupIndex,
             expanded = groupExpanded,
-            anchorBounds = groupAnchorBounds,
             onExpandedChange = { groupExpanded = it },
             onSelectedIndexChange = { index ->
                 groupModes.getOrNull(index)?.let(onGroupModeChange)
             },
-            onAnchorBoundsChange = { groupAnchorBounds = it },
             modifier = Modifier.weight(1f),
             variant = GlassVariant.Compact,
             textColor = accent,

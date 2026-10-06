@@ -298,7 +298,6 @@ fun BAPage(
                 onSettingsCafeLevelChange = { level ->
                     officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
                 },
-                onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
                 onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
                 onOpenApLimitTools = officeViewModel::showApLimitToolsSheet,
                 onOpenCafeApTools = officeViewModel::showCafeApToolsSheet,

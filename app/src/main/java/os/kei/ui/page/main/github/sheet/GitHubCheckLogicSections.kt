@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -238,7 +237,6 @@ internal fun GitHubCheckTransferSection(
     allDownloaderOptions: List<DownloaderOption>,
     preferredDownloaderPackageInput: String,
     showDownloaderPopup: Boolean,
-    downloaderPopupAnchorBounds: IntRect?,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
     appManagedShareInstallEnabledInput: Boolean,
     foregroundManagedDownloadBoostEnabledInput: Boolean,
@@ -248,8 +246,6 @@ internal fun GitHubCheckTransferSection(
     onlineShareTargetPackageInput: String,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
-    onlineShareTargetPopupAnchorBounds: IntRect?,
-    shareImportFlowModePopupAnchorBounds: IntRect?,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
@@ -258,9 +254,6 @@ internal fun GitHubCheckTransferSection(
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
-    onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val context = LocalContext.current
     val flowModeOptions = GitHubShareImportFlowMode.entries
@@ -293,12 +286,10 @@ internal fun GitHubCheckTransferSection(
                 options = flowModeLabels,
                 selectedIndex = selectedFlowModeIndex,
                 expanded = showShareImportFlowModePopup,
-                anchorBounds = shareImportFlowModePopupAnchorBounds,
                 onExpandedChange = onShowShareImportFlowModePopupChange,
                 onSelectedIndexChange = { selectedIndex ->
                     onShareImportFlowModeInputChange(flowModeOptions[selectedIndex])
                 },
-                onAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange,
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
             )
@@ -356,14 +347,12 @@ internal fun GitHubCheckTransferSection(
                         }.coerceAtLeast(0)
                         .takeUnless { appManagedShareInstallEnabledInput } ?: 0,
                 expanded = showOnlineShareTargetPopup && !appManagedShareInstallEnabledInput,
-                anchorBounds = onlineShareTargetPopupAnchorBounds,
                 onExpandedChange = onShowOnlineShareTargetPopupChange,
                 onSelectedIndexChange = { selectedIndex ->
                     onOnlineShareTargetPackageInputChange(
                         onlineShareTargetOptions[selectedIndex].packageName,
                     )
                 },
-                onAnchorBoundsChange = onOnlineShareTargetPopupAnchorBoundsChange,
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
                 enabled = !appManagedShareInstallEnabledInput,
@@ -395,14 +384,12 @@ internal fun GitHubCheckTransferSection(
                         }.coerceAtLeast(0)
                         .takeUnless { appManagedShareInstallEnabledInput } ?: 0,
                 expanded = showDownloaderPopup && !appManagedShareInstallEnabledInput,
-                anchorBounds = downloaderPopupAnchorBounds,
                 onExpandedChange = onShowDownloaderPopupChange,
                 onSelectedIndexChange = { selectedIndex ->
                     onPreferredDownloaderPackageInputChange(
                         allDownloaderOptions[selectedIndex].packageName,
                     )
                 },
-                onAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
                 enabled = !appManagedShareInstallEnabledInput,

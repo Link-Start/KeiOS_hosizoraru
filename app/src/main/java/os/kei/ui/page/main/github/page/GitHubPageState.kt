@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
@@ -117,23 +116,14 @@ internal class GitHubPageState(
     var fdroidAppSearchRunning by trackEditorState::fdroidAppSearchRunning
     var trackSourceModeInput by trackEditorState::trackSourceModeInput
     var sourceModeDropdownExpanded by trackEditorState::sourceModeDropdownExpanded
-    var sourceModeDropdownAnchorBounds by trackEditorState::sourceModeDropdownAnchorBounds
     var updateIntervalDropdownExpanded by trackEditorState::updateIntervalDropdownExpanded
-    var updateIntervalDropdownAnchorBounds by trackEditorState::updateIntervalDropdownAnchorBounds
     var actionsIntervalDropdownExpanded by trackEditorState::actionsIntervalDropdownExpanded
-    var actionsIntervalDropdownAnchorBounds by trackEditorState::actionsIntervalDropdownAnchorBounds
     var preciseModeDropdownExpanded by trackEditorState::preciseModeDropdownExpanded
-    var preciseModeDropdownAnchorBounds by trackEditorState::preciseModeDropdownAnchorBounds
     var ignoreModeDropdownExpanded by trackEditorState::ignoreModeDropdownExpanded
-    var ignoreModeDropdownAnchorBounds by trackEditorState::ignoreModeDropdownAnchorBounds
     var fdroidVersionSelectionDropdownExpanded by trackEditorState::fdroidVersionSelectionDropdownExpanded
-    var fdroidVersionSelectionDropdownAnchorBounds by trackEditorState::fdroidVersionSelectionDropdownAnchorBounds
     var fdroidTrustPolicyDropdownExpanded by trackEditorState::fdroidTrustPolicyDropdownExpanded
-    var fdroidTrustPolicyDropdownAnchorBounds by trackEditorState::fdroidTrustPolicyDropdownAnchorBounds
     var fdroidAntiFeaturePolicyDropdownExpanded by trackEditorState::fdroidAntiFeaturePolicyDropdownExpanded
-    var fdroidAntiFeaturePolicyDropdownAnchorBounds by trackEditorState::fdroidAntiFeaturePolicyDropdownAnchorBounds
     var fdroidRepoScopeDropdownExpanded by trackEditorState::fdroidRepoScopeDropdownExpanded
-    var fdroidRepoScopeDropdownAnchorBounds by trackEditorState::fdroidRepoScopeDropdownAnchorBounds
     var repoUrlScanRunning by trackEditorState::repoUrlScanRunning
     var packageNameScanRunning by trackEditorState::packageNameScanRunning
     var selectedApp by trackEditorState::selectedApp
@@ -147,9 +137,6 @@ internal class GitHubPageState(
     var deferredTrackStoreSyncAfterRefresh by mutableStateOf(false)
     var showActionMenuPopup by sheetState::showActionMenuPopup
     var showOnlineShareTargetPopup by sheetState::showOnlineShareTargetPopup
-    var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var pendingTrackImportPreview by sheetState::pendingTrackImportPreview
     var pendingShareImportPreview by sheetState::pendingShareImportPreview
     var pendingShareImportTrack by sheetState::pendingShareImportTrack

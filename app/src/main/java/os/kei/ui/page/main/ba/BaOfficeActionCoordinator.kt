@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
@@ -25,7 +24,6 @@ internal class BaOfficeActionCoordinator(
     private val serverIndexProvider: () -> Int,
     private val accountIdProvider: () -> BaAccountId?,
     private val onSettingsCafeLevelChange: (Int) -> Unit,
-    private val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     private val onCafeLevelPopupChange: (Boolean) -> Unit,
     private val onOpenApLimitTools: () -> Unit,
     private val onOpenCafeApTools: () -> Unit,
@@ -51,7 +49,6 @@ internal class BaOfficeActionCoordinator(
             onCafeStoredApInputChange = { office.cafeStoredApInput = normalizeCafeStoredApInput(it) },
             onCafeStoredApDone = ::saveCafeStoredApInput,
             onOpenCafeApTools = onOpenCafeApTools,
-            onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
             onCafeLevelPopupChange = onCafeLevelPopupChange,
             onAccountSelected = onAccountSelected,
             onEditAccount = onEditAccount,

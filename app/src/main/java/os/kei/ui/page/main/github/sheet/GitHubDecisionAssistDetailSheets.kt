@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -188,7 +187,6 @@ private fun GitHubReleaseNotesDetailContent(
     val lines = releaseNotesDetailState.lines
     val rawMarkdown = releaseNotesDetailState.rawMarkdown
     var releaseDropdownExpanded by remember { mutableStateOf(false) }
-    var releaseDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val selectedTarget =
         selectedReleaseNotesTarget
             ?: releaseNotesTargets.firstOrNull()
@@ -304,12 +302,10 @@ private fun GitHubReleaseNotesDetailContent(
                 options = releaseOptions,
                 selectedIndex = selectedIndex,
                 expanded = releaseDropdownExpanded,
-                anchorBounds = releaseDropdownAnchorBounds,
                 onExpandedChange = { releaseDropdownExpanded = it },
                 onSelectedIndexChange = { index ->
                     releaseNotesTargets.getOrNull(index)?.let(onSelectReleaseNotesTarget)
                 },
-                onAnchorBoundsChange = { releaseDropdownAnchorBounds = it },
                 backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
                 anchorFillMaxWidth = true,

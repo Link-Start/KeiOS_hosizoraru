@@ -3,7 +3,6 @@ package os.kei.ui.page.main.os.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
 import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtraType
@@ -12,12 +11,10 @@ import os.kei.ui.page.main.os.shortcut.ensureEditorShortcutIntentExtras
 internal data class OsGoogleSystemServiceIntentExtraController(
     val editableExtras: List<ShortcutIntentExtra>,
     val intentExtraTypePopupExpanded: Map<Int, Boolean>,
-    val intentExtraTypePopupAnchors: Map<Int, IntRect?>,
     val onAddIntentExtra: () -> Unit,
     val onExtraKeyChange: (Int, String) -> Unit,
     val onExtraTypeChange: (Int, ShortcutIntentExtraType) -> Unit,
     val onExtraTypeExpandedChange: (Int, Boolean) -> Unit,
-    val onExtraTypeAnchorBoundsChange: (Int, IntRect?) -> Unit,
     val onExtraValueChange: (Int, String) -> Unit,
     val onRemoveIntentExtra: (Int) -> Unit
 )
@@ -28,7 +25,6 @@ internal fun rememberOsGoogleSystemServiceIntentExtraController(
     onDraftChange: (OsGoogleSystemServiceConfig) -> Unit
 ): OsGoogleSystemServiceIntentExtraController {
     val intentExtraTypePopupExpanded = remember { mutableStateMapOf<Int, Boolean>() }
-    val intentExtraTypePopupAnchors = remember { mutableStateMapOf<Int, IntRect?>() }
     val editableExtras = ensureEditorShortcutIntentExtras(draft.intentExtras)
 
     fun cleanupIntentExtraPopupState(size: Int) {
@@ -36,7 +32,6 @@ internal fun rememberOsGoogleSystemServiceIntentExtraController(
             .filter { it >= size }
             .forEach { key ->
                 intentExtraTypePopupExpanded.remove(key)
-                intentExtraTypePopupAnchors.remove(key)
             }
     }
 
@@ -70,9 +65,6 @@ internal fun rememberOsGoogleSystemServiceIntentExtraController(
     val onExtraTypeExpandedChange: (Int, Boolean) -> Unit = { index, expanded ->
         intentExtraTypePopupExpanded[index] = expanded
     }
-    val onExtraTypeAnchorBoundsChange: (Int, IntRect?) -> Unit = { index, bounds ->
-        intentExtraTypePopupAnchors[index] = bounds
-    }
     val onExtraValueChange: (Int, String) -> Unit = { index, input ->
         updateIntentExtra(index) { current -> current.copy(value = input) }
     }
@@ -87,12 +79,10 @@ internal fun rememberOsGoogleSystemServiceIntentExtraController(
     return OsGoogleSystemServiceIntentExtraController(
         editableExtras = editableExtras,
         intentExtraTypePopupExpanded = intentExtraTypePopupExpanded,
-        intentExtraTypePopupAnchors = intentExtraTypePopupAnchors,
         onAddIntentExtra = onAddIntentExtra,
         onExtraKeyChange = onExtraKeyChange,
         onExtraTypeChange = onExtraTypeChange,
         onExtraTypeExpandedChange = onExtraTypeExpandedChange,
-        onExtraTypeAnchorBoundsChange = onExtraTypeAnchorBoundsChange,
         onExtraValueChange = onExtraValueChange,
         onRemoveIntentExtra = onRemoveIntentExtra
     )

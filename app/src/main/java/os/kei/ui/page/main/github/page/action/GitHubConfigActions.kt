@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.page.action
 
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
@@ -210,18 +209,6 @@ internal class GitHubConfigActions(
 
     fun setShowShareImportFlowModePopup(value: Boolean) {
         state.showShareImportFlowModePopup = value
-    }
-
-    fun setDownloaderPopupAnchorBounds(value: IntRect?) {
-        state.downloaderPopupAnchorBounds = value
-    }
-
-    fun setOnlineShareTargetPopupAnchorBounds(value: IntRect?) {
-        state.onlineShareTargetPopupAnchorBounds = value
-    }
-
-    fun setShareImportFlowModePopupAnchorBounds(value: IntRect?) {
-        state.shareImportFlowModePopupAnchorBounds = value
     }
 
     fun selectRefreshIntervalHours(hours: Int) {

@@ -3,9 +3,9 @@
 package os.kei.ui.page.main.github.page
 
 import android.content.Context
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidRepositoryPresets
@@ -146,9 +146,6 @@ internal fun GitHubPageSheetHost(
         showDownloaderPopup = state.showDownloaderPopup,
         showOnlineShareTargetPopup = state.showOnlineShareTargetPopup,
         showShareImportFlowModePopup = state.showShareImportFlowModePopup,
-        downloaderPopupAnchorBounds = state.downloaderPopupAnchorBounds,
-        onlineShareTargetPopupAnchorBounds = state.onlineShareTargetPopupAnchorBounds,
-        shareImportFlowModePopupAnchorBounds = state.shareImportFlowModePopupAnchorBounds,
         downloaderOptions = checkLogicDownloaderOptions,
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
         exportInProgress = tracksExporting,
@@ -174,9 +171,6 @@ internal fun GitHubPageSheetHost(
         onShowDownloaderPopupChange = actions::setShowDownloaderPopup,
         onShowOnlineShareTargetPopupChange = actions::setShowOnlineShareTargetPopup,
         onShowShareImportFlowModePopupChange = actions::setShowShareImportFlowModePopup,
-        onDownloaderPopupAnchorBoundsChange = actions::setDownloaderPopupAnchorBounds,
-        onOnlineShareTargetPopupAnchorBoundsChange = actions::setOnlineShareTargetPopupAnchorBounds,
-        onShareImportFlowModePopupAnchorBoundsChange = actions::setShareImportFlowModePopupAnchorBounds,
     )
 
     GitHubDroidSourcesSheet(
@@ -333,25 +327,14 @@ internal fun GitHubPageSheetHost(
         fdroidAppSearchRunning = state.fdroidAppSearchRunning,
         enabledFdroidCommonRepos = enabledFdroidCommonRepos,
         sourceModeDropdownExpanded = state.sourceModeDropdownExpanded,
-        sourceModeDropdownAnchorBounds = state.sourceModeDropdownAnchorBounds,
         updateIntervalDropdownExpanded = state.updateIntervalDropdownExpanded,
-        updateIntervalDropdownAnchorBounds = state.updateIntervalDropdownAnchorBounds,
         actionsIntervalDropdownExpanded = state.actionsIntervalDropdownExpanded,
-        actionsIntervalDropdownAnchorBounds = state.actionsIntervalDropdownAnchorBounds,
         preciseModeDropdownExpanded = state.preciseModeDropdownExpanded,
-        preciseModeDropdownAnchorBounds = state.preciseModeDropdownAnchorBounds,
         ignoreModeDropdownExpanded = state.ignoreModeDropdownExpanded,
-        ignoreModeDropdownAnchorBounds = state.ignoreModeDropdownAnchorBounds,
         fdroidVersionSelectionDropdownExpanded = state.fdroidVersionSelectionDropdownExpanded,
-        fdroidVersionSelectionDropdownAnchorBounds =
-            state.fdroidVersionSelectionDropdownAnchorBounds,
         fdroidTrustPolicyDropdownExpanded = state.fdroidTrustPolicyDropdownExpanded,
-        fdroidTrustPolicyDropdownAnchorBounds = state.fdroidTrustPolicyDropdownAnchorBounds,
         fdroidAntiFeaturePolicyDropdownExpanded = state.fdroidAntiFeaturePolicyDropdownExpanded,
-        fdroidAntiFeaturePolicyDropdownAnchorBounds =
-            state.fdroidAntiFeaturePolicyDropdownAnchorBounds,
         fdroidRepoScopeDropdownExpanded = state.fdroidRepoScopeDropdownExpanded,
-        fdroidRepoScopeDropdownAnchorBounds = state.fdroidRepoScopeDropdownAnchorBounds,
         globalRefreshIntervalHours = state.refreshIntervalHours,
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
@@ -393,31 +376,18 @@ internal fun GitHubPageSheetHost(
         onFdroidSearchFailuresExpandedChange = actions::setTrackFdroidSearchFailuresExpanded,
         onFdroidAppSearchCandidateSelected = actions::selectTrackFdroidAppSearchCandidate,
         onSourceModeDropdownExpandedChange = actions::setTrackSourceModeDropdownExpanded,
-        onSourceModeDropdownAnchorBoundsChange = actions::setTrackSourceModeDropdownAnchorBounds,
         onUpdateIntervalDropdownExpandedChange = actions::setTrackUpdateIntervalDropdownExpanded,
-        onUpdateIntervalDropdownAnchorBoundsChange = actions::setTrackUpdateIntervalDropdownAnchorBounds,
         onActionsIntervalDropdownExpandedChange = actions::setTrackActionsIntervalDropdownExpanded,
-        onActionsIntervalDropdownAnchorBoundsChange = actions::setTrackActionsIntervalDropdownAnchorBounds,
         onPreciseModeDropdownExpandedChange = actions::setTrackPreciseModeDropdownExpanded,
-        onPreciseModeDropdownAnchorBoundsChange = actions::setTrackPreciseModeDropdownAnchorBounds,
         onIgnoreModeDropdownExpandedChange = actions::setTrackIgnoreModeDropdownExpanded,
-        onIgnoreModeDropdownAnchorBoundsChange = actions::setTrackIgnoreModeDropdownAnchorBounds,
         onFdroidVersionSelectionDropdownExpandedChange =
             actions::setTrackFdroidVersionSelectionDropdownExpanded,
-        onFdroidVersionSelectionDropdownAnchorBoundsChange =
-            actions::setTrackFdroidVersionSelectionDropdownAnchorBounds,
         onFdroidTrustPolicyDropdownExpandedChange =
             actions::setTrackFdroidTrustPolicyDropdownExpanded,
-        onFdroidTrustPolicyDropdownAnchorBoundsChange =
-            actions::setTrackFdroidTrustPolicyDropdownAnchorBounds,
         onFdroidAntiFeaturePolicyDropdownExpandedChange =
             actions::setTrackFdroidAntiFeaturePolicyDropdownExpanded,
-        onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange =
-            actions::setTrackFdroidAntiFeaturePolicyDropdownAnchorBounds,
         onFdroidRepoScopeDropdownExpandedChange =
             actions::setTrackFdroidRepoScopeDropdownExpanded,
-        onFdroidRepoScopeDropdownAnchorBoundsChange =
-            actions::setTrackFdroidRepoScopeDropdownAnchorBounds,
     )
 
     GitHubDeleteTrackDialog(

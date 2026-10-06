@@ -291,9 +291,7 @@ internal fun BaPageSheetHost(
             viewModel.updateNotificationDraft { draft -> draft.copy(calendarPoolNotifyLeadHours = hours) }
         },
         leadDropdownExpanded = chromeUiState.notificationLeadDropdownExpanded,
-        leadDropdownAnchorBounds = chromeUiState.notificationLeadDropdownAnchorBounds,
         onLeadDropdownExpandedChange = viewModel::updateNotificationLeadDropdownExpanded,
-        onLeadDropdownAnchorBoundsChange = viewModel::updateNotificationLeadDropdownAnchorBounds,
         onApNotifyThresholdTextChange = { text ->
             viewModel.updateNotificationDraft { draft -> draft.copy(apNotifyThresholdText = text) }
         },

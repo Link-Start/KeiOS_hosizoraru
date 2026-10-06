@@ -8,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -32,9 +31,7 @@ internal fun OsShellBehaviorSettingsSheet(
     onPersistInputEnabledChange: (Boolean) -> Unit,
     onTimeoutSecondsChange: (Int) -> Unit,
     timeoutDropdownExpanded: Boolean,
-    timeoutDropdownAnchorBounds: IntRect?,
     onTimeoutDropdownExpandedChange: (Boolean) -> Unit,
-    onTimeoutDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onDangerousCommandConfirmChange: (Boolean) -> Unit,
     onCompletionToastChange: (Boolean) -> Unit,
     onStartupBehaviorChange: (OsShellRunnerStartupBehavior) -> Unit,
@@ -76,9 +73,7 @@ internal fun OsShellBehaviorSettingsSheet(
                             },
                         selectedIndex = shellRunnerTimeoutOptionsSeconds.indexOf(settings.commandTimeoutSeconds),
                         expanded = timeoutDropdownExpanded,
-                        anchorBounds = timeoutDropdownAnchorBounds,
                         onExpandedChange = onTimeoutDropdownExpandedChange,
-                        onAnchorBoundsChange = onTimeoutDropdownAnchorBoundsChange,
                         onSelectedIndexChange = { index ->
                             shellRunnerTimeoutOptionsSeconds
                                 .getOrNull(index)
@@ -163,9 +158,7 @@ internal fun OsShellOutputSettingsSheet(
     onAutoScrollOutputChange: (Boolean) -> Unit,
     onOutputLimitCharsChange: (Int) -> Unit,
     outputLimitDropdownExpanded: Boolean,
-    outputLimitDropdownAnchorBounds: IntRect?,
     onOutputLimitDropdownExpandedChange: (Boolean) -> Unit,
-    onOutputLimitDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onOutputSaveModeChange: (OsShellRunnerOutputSaveMode) -> Unit,
     onCopyModeChange: (OsShellRunnerCopyMode) -> Unit,
 ) {
@@ -223,9 +216,7 @@ internal fun OsShellOutputSettingsSheet(
                             },
                         selectedIndex = shellRunnerOutputLimitOptionsChars.indexOf(settings.outputLimitChars),
                         expanded = outputLimitDropdownExpanded,
-                        anchorBounds = outputLimitDropdownAnchorBounds,
                         onExpandedChange = onOutputLimitDropdownExpandedChange,
-                        onAnchorBoundsChange = onOutputLimitDropdownAnchorBoundsChange,
                         onSelectedIndexChange = { index ->
                             shellRunnerOutputLimitOptionsChars
                                 .getOrNull(index)
@@ -322,9 +313,7 @@ private fun OsShellSettingsDropdown(
     options: List<String>,
     selectedIndex: Int,
     expanded: Boolean,
-    anchorBounds: IntRect?,
     onExpandedChange: (Boolean) -> Unit,
-    onAnchorBoundsChange: (IntRect?) -> Unit,
     onSelectedIndexChange: (Int) -> Unit,
 ) {
     AppDropdownSelector(
@@ -332,10 +321,8 @@ private fun OsShellSettingsDropdown(
         options = options,
         selectedIndex = selectedIndex.coerceAtLeast(0),
         expanded = expanded,
-        anchorBounds = anchorBounds,
         onExpandedChange = onExpandedChange,
         onSelectedIndexChange = onSelectedIndexChange,
-        onAnchorBoundsChange = onAnchorBoundsChange,
         variant = GlassVariant.SheetAction,
         anchorAlignment = Alignment.CenterEnd,
     )

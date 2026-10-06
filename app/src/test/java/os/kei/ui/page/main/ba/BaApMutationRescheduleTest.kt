@@ -3,7 +3,6 @@ package os.kei.ui.page.main.ba
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -143,7 +142,6 @@ class BaApMutationRescheduleTest {
                 serverIndexProvider = { 2 },
                 accountIdProvider = { ACCOUNT_ID },
                 onSettingsCafeLevelChange = {},
-                onCafeLevelPopupAnchorBoundsChange = { _: IntRect? -> },
                 onCafeLevelPopupChange = {},
                 onOpenApLimitTools = {},
                 onOpenCafeApTools = {},

@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -32,9 +31,7 @@ internal fun BaCalendarPoolServerPanel(
     syncText: String,
     syncTextColor: Color,
     expanded: Boolean,
-    anchorBounds: IntRect?,
     onExpandedChange: (Boolean) -> Unit,
-    onAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
 ) {
     BaLiquidPanel(
@@ -67,10 +64,8 @@ internal fun BaCalendarPoolServerPanel(
                 options = serverOptions,
                 selectedIndex = serverIndex,
                 expanded = expanded,
-                anchorBounds = anchorBounds,
                 onExpandedChange = onExpandedChange,
                 onSelectedIndexChange = onServerSelected,
-                onAnchorBoundsChange = onAnchorBoundsChange,
                 backdrop = backdrop,
                 variant = GlassVariant.Content,
             )

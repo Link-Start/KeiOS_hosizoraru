@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.os.shell
 
-import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
@@ -199,32 +198,12 @@ internal class OsShellRunnerViewModel : ViewModel() {
         }
     }
 
-    fun updateTimeoutDropdownAnchorBounds(bounds: IntRect?) {
-        pageChromeMutableState.update { state ->
-            if (state.timeoutDropdownAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(timeoutDropdownAnchorBounds = bounds)
-            }
-        }
-    }
-
     fun updateOutputLimitDropdownExpanded(expanded: Boolean) {
         pageChromeMutableState.update { state ->
             if (state.outputLimitDropdownExpanded == expanded) {
                 state
             } else {
                 state.copy(outputLimitDropdownExpanded = expanded)
-            }
-        }
-    }
-
-    fun updateOutputLimitDropdownAnchorBounds(bounds: IntRect?) {
-        pageChromeMutableState.update { state ->
-            if (state.outputLimitDropdownAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(outputLimitDropdownAnchorBounds = bounds)
             }
         }
     }

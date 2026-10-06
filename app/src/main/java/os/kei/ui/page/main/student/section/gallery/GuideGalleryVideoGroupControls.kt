@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -40,7 +39,6 @@ internal fun GuideGalleryVideoGroupHeaderActions(
 ) {
     val fullscreenIcon = appLucideFullscreenIcon()
     var showPicker by remember(itemsSize, optionLabels) { mutableStateOf(false) }
-    var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     if (itemsSize > 1) {
         AppDropdownSelector(
             selectedText =
@@ -50,10 +48,8 @@ internal fun GuideGalleryVideoGroupHeaderActions(
             options = optionLabels,
             selectedIndex = selectedIndex,
             expanded = showPicker,
-            anchorBounds = pickerPopupAnchorBounds,
             onExpandedChange = { showPicker = it },
             onSelectedIndexChange = onSelectedIndexChange,
-            onAnchorBoundsChange = { pickerPopupAnchorBounds = it },
             backdrop = backdrop,
             textColor = Color(0xFF3B82F6),
             variant = GlassVariant.Compact,

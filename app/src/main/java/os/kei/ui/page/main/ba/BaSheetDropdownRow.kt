@@ -7,7 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
@@ -30,20 +29,17 @@ internal fun BaSheetDropdownRow(
     enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
     SheetControlRow(label = label) {
         AppDropdownSelector(
             selectedText = options.getOrElse(selectedIndex) { options.first() },
             options = options,
             selectedIndex = selectedIndex,
             expanded = expanded && enabled,
-            anchorBounds = anchorBounds,
             onExpandedChange = { expanded = it && enabled },
             onSelectedIndexChange = {
                 expanded = false
                 onSelectedIndexChange(it)
             },
-            onAnchorBoundsChange = { anchorBounds = it },
             backdrop = backdrop,
         )
     }

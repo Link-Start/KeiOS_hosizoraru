@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -265,9 +264,7 @@ private fun BaAccountEditorCard(
     onSave: (BaAccountEditorDraft) -> Unit,
 ) {
     var serverDropdownExpanded by remember(draft.editingAccountId) { mutableStateOf(false) }
-    var serverDropdownAnchorBounds by remember(draft.editingAccountId) { mutableStateOf<IntRect?>(null) }
     var reminderModeDropdownExpanded by remember(draft.editingAccountId) { mutableStateOf(false) }
-    var reminderModeDropdownAnchorBounds by remember(draft.editingAccountId) { mutableStateOf<IntRect?>(null) }
     val canSave = draft.displayName.isNotBlank() || draft.nickname.isNotBlank()
     val identityPolicy = remember(draft.serverIndex) { baIdentityPolicy(draft.serverIndex) }
     val friendCodeRuleRes =
@@ -337,7 +334,6 @@ private fun BaAccountEditorCard(
                 options = serverOptions,
                 selectedIndex = draft.serverIndex.coerceIn(0, 2),
                 expanded = serverDropdownExpanded,
-                anchorBounds = serverDropdownAnchorBounds,
                 onExpandedChange = { serverDropdownExpanded = it },
                 onSelectedIndexChange = { index ->
                     val nextServerIndex = index.coerceIn(0, 2)
@@ -349,7 +345,6 @@ private fun BaAccountEditorCard(
                     )
                     serverDropdownExpanded = false
                 },
-                onAnchorBoundsChange = { serverDropdownAnchorBounds = it },
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
                 textColor = settingsAccent,
@@ -388,7 +383,6 @@ private fun BaAccountEditorCard(
                             BaAccountNotificationMode.Custom -> 1
                         },
                     expanded = reminderModeDropdownExpanded,
-                    anchorBounds = reminderModeDropdownAnchorBounds,
                     onExpandedChange = { reminderModeDropdownExpanded = it },
                     onSelectedIndexChange = { index ->
                         onDraftChange(
@@ -403,7 +397,6 @@ private fun BaAccountEditorCard(
                         )
                         reminderModeDropdownExpanded = false
                     },
-                    onAnchorBoundsChange = { reminderModeDropdownAnchorBounds = it },
                     backdrop = backdrop,
                     variant = GlassVariant.SheetAction,
                     textColor = settingsAccent,

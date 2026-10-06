@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -53,9 +52,6 @@ internal fun GitHubCheckLogicSheet(
     showDownloaderPopup: Boolean,
     showOnlineShareTargetPopup: Boolean,
     showShareImportFlowModePopup: Boolean,
-    downloaderPopupAnchorBounds: IntRect?,
-    onlineShareTargetPopupAnchorBounds: IntRect?,
-    shareImportFlowModePopupAnchorBounds: IntRect?,
     downloaderOptions: List<DownloaderOption>,
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
@@ -80,9 +76,6 @@ internal fun GitHubCheckLogicSheet(
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
     onShowShareImportFlowModePopupChange: (Boolean) -> Unit,
-    onDownloaderPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onOnlineShareTargetPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    onShareImportFlowModePopupAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val context = LocalContext.current
     val logicChanged =
@@ -195,7 +188,6 @@ internal fun GitHubCheckLogicSheet(
                 allDownloaderOptions = allDownloaderOptions,
                 preferredDownloaderPackageInput = preferredDownloaderPackageInput,
                 showDownloaderPopup = showDownloaderPopup,
-                downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
                 shareImportFlowModeInput = shareImportFlowModeInput,
                 appManagedShareInstallEnabledInput = appManagedShareInstallEnabledInput,
                 foregroundManagedDownloadBoostEnabledInput =
@@ -206,8 +198,6 @@ internal fun GitHubCheckLogicSheet(
                 onlineShareTargetPackageInput = onlineShareTargetPackageInput,
                 showOnlineShareTargetPopup = showOnlineShareTargetPopup,
                 showShareImportFlowModePopup = showShareImportFlowModePopup,
-                onlineShareTargetPopupAnchorBounds = onlineShareTargetPopupAnchorBounds,
-                shareImportFlowModePopupAnchorBounds = shareImportFlowModePopupAnchorBounds,
                 onPreferredDownloaderPackageInputChange = onPreferredDownloaderPackageInputChange,
                 onShareImportFlowModeInputChange = onShareImportFlowModeInputChange,
                 onAppManagedShareInstallEnabledInputChange =
@@ -218,9 +208,6 @@ internal fun GitHubCheckLogicSheet(
                 onShowDownloaderPopupChange = onShowDownloaderPopupChange,
                 onShowOnlineShareTargetPopupChange = onShowOnlineShareTargetPopupChange,
                 onShowShareImportFlowModePopupChange = onShowShareImportFlowModePopupChange,
-                onDownloaderPopupAnchorBoundsChange = onDownloaderPopupAnchorBoundsChange,
-                onOnlineShareTargetPopupAnchorBoundsChange = onOnlineShareTargetPopupAnchorBoundsChange,
-                onShareImportFlowModePopupAnchorBoundsChange = onShareImportFlowModePopupAnchorBoundsChange,
             )
             GitHubCheckEnhancementSection(
                 decisionAssistEnabledInput = decisionAssistEnabledInput,

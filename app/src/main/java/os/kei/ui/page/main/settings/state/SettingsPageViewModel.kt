@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -97,11 +96,8 @@ internal data class SettingsPageChromeState(
     val bottomBarVisible: Boolean = true,
     val sliderInteractionActive: Boolean = false,
     val showThemeModePopup: Boolean = false,
-    val themePopupAnchorBounds: IntRect? = null,
     val showLauncherIconDesignPopup: Boolean = false,
-    val launcherIconDesignPopupAnchorBounds: IntRect? = null,
     val showLogLevelPopup: Boolean = false,
-    val logLevelPopupAnchorBounds: IntRect? = null,
     val expandedCards: Map<SettingsCardExpansionId, Boolean> = emptyMap(),
     val privilegeRefreshToken: Int = 0,
 ) {
@@ -405,37 +401,15 @@ internal class SettingsPageViewModel(
         }
     }
 
-    fun updateThemePopupAnchorBounds(bounds: IntRect?) {
-        _chromeState.update { state ->
-            if (state.themePopupAnchorBounds == bounds) state else state.copy(themePopupAnchorBounds = bounds)
-        }
-    }
-
     fun updateShowLauncherIconDesignPopup(show: Boolean) {
         _chromeState.update { state ->
             if (state.showLauncherIconDesignPopup == show) state else state.copy(showLauncherIconDesignPopup = show)
         }
     }
 
-    fun updateLauncherIconDesignPopupAnchorBounds(bounds: IntRect?) {
-        _chromeState.update { state ->
-            if (state.launcherIconDesignPopupAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(launcherIconDesignPopupAnchorBounds = bounds)
-            }
-        }
-    }
-
     fun updateShowLogLevelPopup(show: Boolean) {
         _chromeState.update { state ->
             if (state.showLogLevelPopup == show) state else state.copy(showLogLevelPopup = show)
-        }
-    }
-
-    fun updateLogLevelPopupAnchorBounds(bounds: IntRect?) {
-        _chromeState.update { state ->
-            if (state.logLevelPopupAnchorBounds == bounds) state else state.copy(logLevelPopupAnchorBounds = bounds)
         }
     }
 

@@ -12,7 +12,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.core.prefs.SuperIslandAutoClose
@@ -45,7 +44,6 @@ internal fun SettingsNotifySection(
 ) {
     val presentation = deriveNotifyPresentation(state)
     var floatBehaviorExpanded by remember { mutableStateOf(false) }
-    var floatBehaviorAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val floatBehaviorOptions =
         listOf(
             SuperIslandFloatBehavior.StartAndFinish to
@@ -73,7 +71,6 @@ internal fun SettingsNotifySection(
                 stringResource(R.string.settings_super_island_float_behavior_summary_summary_only)
         }
     var autoCloseExpanded by remember { mutableStateOf(false) }
-    var autoCloseAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val autoCloseOptions =
         listOf(
             SuperIslandAutoClose.Never to stringResource(R.string.settings_super_island_auto_close_never),
@@ -121,7 +118,6 @@ internal fun SettingsNotifySection(
                 options = floatBehaviorOptions.map { it.second },
                 selectedIndex = selectedFloatBehaviorIndex,
                 expanded = floatBehaviorExpanded && state.superIslandNotificationEnabled,
-                anchorBounds = floatBehaviorAnchorBounds,
                 onExpandedChange = { expanded ->
                     floatBehaviorExpanded = expanded && state.superIslandNotificationEnabled
                 },
@@ -132,7 +128,6 @@ internal fun SettingsNotifySection(
                         ?.let(actions.onSuperIslandFloatBehaviorChanged)
                     floatBehaviorExpanded = false
                 },
-                onAnchorBoundsChange = { floatBehaviorAnchorBounds = it },
                 enabled = state.superIslandNotificationEnabled,
                 variant = GlassVariant.SheetAction,
                 popupMaxWidth = 260.dp,
@@ -155,7 +150,6 @@ internal fun SettingsNotifySection(
                 options = autoCloseOptions.map { it.second },
                 selectedIndex = selectedAutoCloseIndex,
                 expanded = autoCloseExpanded && state.superIslandNotificationEnabled,
-                anchorBounds = autoCloseAnchorBounds,
                 onExpandedChange = { expanded ->
                     autoCloseExpanded = expanded && state.superIslandNotificationEnabled
                 },
@@ -166,7 +160,6 @@ internal fun SettingsNotifySection(
                         ?.let(actions.onSuperIslandAutoCloseChanged)
                     autoCloseExpanded = false
                 },
-                onAnchorBoundsChange = { autoCloseAnchorBounds = it },
                 enabled = state.superIslandNotificationEnabled,
                 variant = GlassVariant.SheetAction,
                 popupMaxWidth = 260.dp,

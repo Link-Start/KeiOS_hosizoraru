@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.page.action
 
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.BuildConfig
@@ -234,10 +233,6 @@ internal class GitHubTrackActions(
         state.fdroidRepoScopeDropdownExpanded = value
     }
 
-    fun setFdroidRepoScopeDropdownAnchorBounds(value: IntRect?) {
-        state.fdroidRepoScopeDropdownAnchorBounds = value
-    }
-
     fun setPreferPreReleaseInput(value: Boolean) {
         state.preferPreReleaseInput = value
     }
@@ -297,40 +292,20 @@ internal class GitHubTrackActions(
         state.sourceModeDropdownExpanded = value
     }
 
-    fun setSourceModeDropdownAnchorBounds(value: IntRect?) {
-        state.sourceModeDropdownAnchorBounds = value
-    }
-
     fun setUpdateIntervalDropdownExpanded(value: Boolean) {
         state.updateIntervalDropdownExpanded = value
-    }
-
-    fun setUpdateIntervalDropdownAnchorBounds(value: IntRect?) {
-        state.updateIntervalDropdownAnchorBounds = value
     }
 
     fun setActionsIntervalDropdownExpanded(value: Boolean) {
         state.actionsIntervalDropdownExpanded = value
     }
 
-    fun setActionsIntervalDropdownAnchorBounds(value: IntRect?) {
-        state.actionsIntervalDropdownAnchorBounds = value
-    }
-
     fun setPreciseModeDropdownExpanded(value: Boolean) {
         state.preciseModeDropdownExpanded = value
     }
 
-    fun setPreciseModeDropdownAnchorBounds(value: IntRect?) {
-        state.preciseModeDropdownAnchorBounds = value
-    }
-
     fun setIgnoreModeDropdownExpanded(value: Boolean) {
         state.ignoreModeDropdownExpanded = value
-    }
-
-    fun setIgnoreModeDropdownAnchorBounds(value: IntRect?) {
-        state.ignoreModeDropdownAnchorBounds = value
     }
 
     fun setFdroidVersionSelectionModeInput(value: FdroidVersionSelectionMode) {
@@ -360,24 +335,12 @@ internal class GitHubTrackActions(
         state.fdroidVersionSelectionDropdownExpanded = value
     }
 
-    fun setFdroidVersionSelectionDropdownAnchorBounds(value: IntRect?) {
-        state.fdroidVersionSelectionDropdownAnchorBounds = value
-    }
-
     fun setFdroidTrustPolicyDropdownExpanded(value: Boolean) {
         state.fdroidTrustPolicyDropdownExpanded = value
     }
 
-    fun setFdroidTrustPolicyDropdownAnchorBounds(value: IntRect?) {
-        state.fdroidTrustPolicyDropdownAnchorBounds = value
-    }
-
     fun setFdroidAntiFeaturePolicyDropdownExpanded(value: Boolean) {
         state.fdroidAntiFeaturePolicyDropdownExpanded = value
-    }
-
-    fun setFdroidAntiFeaturePolicyDropdownAnchorBounds(value: IntRect?) {
-        state.fdroidAntiFeaturePolicyDropdownAnchorBounds = value
     }
 
     private fun ensureAppListForTrackSheet() {

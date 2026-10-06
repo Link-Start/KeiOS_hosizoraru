@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.core.prefs.NonHomeBackgroundAlignment
@@ -95,11 +94,8 @@ internal fun SettingsBackgroundSection(
     onlyCardId: SettingsCardExpansionId? = null,
 ) {
     var scaleDropdownExpanded by remember { mutableStateOf(false) }
-    var scaleDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var alignmentDropdownExpanded by remember { mutableStateOf(false) }
-    var alignmentDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var pageStyleDropdownExpanded by remember { mutableStateOf(false) }
-    var pageStyleDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var previewSheetVisible by remember { mutableStateOf(false) }
     // `isAppInDarkTheme()`, not `isSystemInDarkTheme()`: an explicit Light/Dark choice in the app
     // overrides the system, and reading the system directly made this suggestion compute for the
@@ -263,12 +259,10 @@ internal fun SettingsBackgroundSection(
                         options = contentScaleOptions.map { it.second },
                         selectedIndex = contentScaleIndex,
                         expanded = scaleDropdownExpanded,
-                        anchorBounds = scaleDropdownAnchorBounds,
                         onExpandedChange = { scaleDropdownExpanded = it },
                         onSelectedIndexChange = { selectedIndex ->
                             onNonHomeBackgroundContentScaleChanged(contentScaleOptions[selectedIndex].first)
                         },
-                        onAnchorBoundsChange = { scaleDropdownAnchorBounds = it },
                         variant = GlassVariant.SheetAction,
                         enabled = nonHomeBackgroundEnabled,
                         popupMatchAnchorWidth = true,
@@ -289,12 +283,10 @@ internal fun SettingsBackgroundSection(
                         options = alignmentOptions.map { it.second },
                         selectedIndex = alignmentIndex,
                         expanded = alignmentDropdownExpanded,
-                        anchorBounds = alignmentDropdownAnchorBounds,
                         onExpandedChange = { alignmentDropdownExpanded = it },
                         onSelectedIndexChange = { selectedIndex ->
                             onNonHomeBackgroundAlignmentChanged(alignmentOptions[selectedIndex].first)
                         },
-                        onAnchorBoundsChange = { alignmentDropdownAnchorBounds = it },
                         variant = GlassVariant.SheetAction,
                         enabled = nonHomeBackgroundEnabled,
                         popupMatchAnchorWidth = true,
@@ -315,12 +307,10 @@ internal fun SettingsBackgroundSection(
                         options = pageStyleOptions.map { it.second },
                         selectedIndex = pageStyleIndex,
                         expanded = pageStyleDropdownExpanded,
-                        anchorBounds = pageStyleDropdownAnchorBounds,
                         onExpandedChange = { pageStyleDropdownExpanded = it },
                         onSelectedIndexChange = { selectedIndex ->
                             onNonHomeBackgroundPageStyleChanged(pageStyleOptions[selectedIndex].first)
                         },
-                        onAnchorBoundsChange = { pageStyleDropdownAnchorBounds = it },
                         variant = GlassVariant.SheetAction,
                         enabled = nonHomeBackgroundEnabled,
                         popupMatchAnchorWidth = true,

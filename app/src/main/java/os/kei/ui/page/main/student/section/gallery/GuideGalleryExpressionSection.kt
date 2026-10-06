@@ -37,7 +37,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -278,7 +277,6 @@ fun GuideGalleryExpressionCardItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
                 AppDropdownSelector(
                     selectedText =
                         optionLabels.getOrElse(selectedIndex) {
@@ -287,13 +285,11 @@ fun GuideGalleryExpressionCardItem(
                     options = optionLabels,
                     selectedIndex = selectedIndex,
                     expanded = showPicker,
-                    anchorBounds = pickerPopupAnchorBounds,
                     onExpandedChange = { showPicker = it },
                     onSelectedIndexChange = { selected ->
                         showSwipeHint = false
                         selectedIndex = selected
                     },
-                    onAnchorBoundsChange = { pickerPopupAnchorBounds = it },
                     backdrop = backdrop,
                     textColor = Color(0xFF3B82F6),
                     variant = GlassVariant.Compact,

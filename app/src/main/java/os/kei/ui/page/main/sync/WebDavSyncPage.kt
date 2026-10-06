@@ -27,7 +27,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -305,14 +304,11 @@ private fun LazyListScope.webDavCategoryItems(
         WebDavSyncCategory.Connection -> {
             item(key = "webdav-connection-overview", contentType = "webdav_overview_card") {
                 var providerExpanded by remember { mutableStateOf(false) }
-                var providerAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
                 WebDavConnectionOverviewCard(
                     state = state,
                     cardColor = cardColor,
                     providerExpanded = providerExpanded,
-                    providerAnchorBounds = providerAnchorBounds,
                     onProviderExpandedChange = { providerExpanded = it },
-                    onProviderAnchorBoundsChange = { providerAnchorBounds = it },
                     onSelectProvider = viewModel::selectProvider,
                 )
             }

@@ -5,7 +5,6 @@ package os.kei.ui.page.main.github.sheet
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
@@ -29,22 +28,16 @@ internal fun GitHubTrackEditFdroidOptions(
     trustPolicy: FdroidTrustPolicy,
     antiFeaturePolicy: FdroidAntiFeaturePolicy,
     versionSelectionDropdownExpanded: Boolean,
-    versionSelectionDropdownAnchorBounds: IntRect?,
     trustPolicyDropdownExpanded: Boolean,
-    trustPolicyDropdownAnchorBounds: IntRect?,
     antiFeaturePolicyDropdownExpanded: Boolean,
-    antiFeaturePolicyDropdownAnchorBounds: IntRect?,
     onVersionSelectionModeChange: (FdroidVersionSelectionMode) -> Unit,
     onVersionNameRegexChange: (String) -> Unit,
     onApkNameRegexChange: (String) -> Unit,
     onTrustPolicyChange: (FdroidTrustPolicy) -> Unit,
     onAntiFeaturePolicyChange: (FdroidAntiFeaturePolicy) -> Unit,
     onVersionSelectionDropdownExpandedChange: (Boolean) -> Unit,
-    onVersionSelectionDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onTrustPolicyDropdownExpandedChange: (Boolean) -> Unit,
-    onTrustPolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onAntiFeaturePolicyDropdownExpandedChange: (Boolean) -> Unit,
-    onAntiFeaturePolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val versionSelectionModes = FdroidVersionSelectionMode.entries
     val versionSelectionOptions =
@@ -84,12 +77,10 @@ internal fun GitHubTrackEditFdroidOptions(
                 options = versionSelectionOptions,
                 selectedIndex = versionSelectionIndex,
                 expanded = versionSelectionDropdownExpanded,
-                anchorBounds = versionSelectionDropdownAnchorBounds,
                 onExpandedChange = onVersionSelectionDropdownExpandedChange,
                 onSelectedIndexChange = { index ->
                     versionSelectionModes.getOrNull(index)?.let(onVersionSelectionModeChange)
                 },
-                onAnchorBoundsChange = onVersionSelectionDropdownAnchorBoundsChange,
                 backdrop = backdrop,
                 dropdownItemTextMaxLines = 2,
             )
@@ -132,12 +123,10 @@ internal fun GitHubTrackEditFdroidOptions(
                 options = trustPolicyOptions,
                 selectedIndex = trustPolicyIndex,
                 expanded = trustPolicyDropdownExpanded,
-                anchorBounds = trustPolicyDropdownAnchorBounds,
                 onExpandedChange = onTrustPolicyDropdownExpandedChange,
                 onSelectedIndexChange = { index ->
                     trustPolicies.getOrNull(index)?.let(onTrustPolicyChange)
                 },
-                onAnchorBoundsChange = onTrustPolicyDropdownAnchorBoundsChange,
                 backdrop = backdrop,
                 dropdownItemTextMaxLines = 2,
             )
@@ -154,12 +143,10 @@ internal fun GitHubTrackEditFdroidOptions(
                 options = antiFeaturePolicyOptions,
                 selectedIndex = antiFeaturePolicyIndex,
                 expanded = antiFeaturePolicyDropdownExpanded,
-                anchorBounds = antiFeaturePolicyDropdownAnchorBounds,
                 onExpandedChange = onAntiFeaturePolicyDropdownExpandedChange,
                 onSelectedIndexChange = { index ->
                     antiFeaturePolicies.getOrNull(index)?.let(onAntiFeaturePolicyChange)
                 },
-                onAnchorBoundsChange = onAntiFeaturePolicyDropdownAnchorBoundsChange,
                 backdrop = backdrop,
                 dropdownItemTextMaxLines = 2,
                 anchorTextOverflow = TextOverflow.Ellipsis,

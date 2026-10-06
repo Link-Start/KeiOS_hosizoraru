@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -55,10 +54,8 @@ internal data class BaCalendarPoolChromeUiState(
     val calendarReloadSignal: Int = 0,
     val poolReloadSignal: Int = 0,
     val showServerPopup: Boolean = false,
-    val serverPopupAnchorBounds: IntRect? = null,
     val showDataSettingsSheet: Boolean = false,
     val dataRefreshIntervalDropdownExpanded: Boolean = false,
-    val dataRefreshIntervalDropdownAnchorBounds: IntRect? = null,
 )
 
 internal enum class BaCalendarPoolPageKind {
@@ -336,12 +333,6 @@ internal class BaCalendarPoolViewModel(
                         } else {
                             false
                         },
-                    dataRefreshIntervalDropdownAnchorBounds =
-                        if (visible) {
-                            state.dataRefreshIntervalDropdownAnchorBounds
-                        } else {
-                            null
-                        },
                 )
             }
         }
@@ -353,16 +344,6 @@ internal class BaCalendarPoolViewModel(
                 state
             } else {
                 state.copy(dataRefreshIntervalDropdownExpanded = expanded)
-            }
-        }
-    }
-
-    fun updateDataRefreshIntervalDropdownAnchorBounds(bounds: IntRect?) {
-        _chromeUiState.update { state ->
-            if (state.dataRefreshIntervalDropdownAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(dataRefreshIntervalDropdownAnchorBounds = bounds)
             }
         }
     }
@@ -434,30 +415,14 @@ internal class BaCalendarPoolViewModel(
         }
     }
 
-    fun updateServerPopupAnchorBounds(bounds: IntRect?) {
-        _chromeUiState.update { state ->
-            if (state.serverPopupAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(serverPopupAnchorBounds = bounds)
-            }
-        }
-    }
-
     fun clearServerPopup() {
         _chromeUiState.update { state ->
-            if (!state.showServerPopup &&
-                state.serverPopupAnchorBounds == null &&
-                !state.dataRefreshIntervalDropdownExpanded &&
-                state.dataRefreshIntervalDropdownAnchorBounds == null
-            ) {
+            if (!state.showServerPopup && !state.dataRefreshIntervalDropdownExpanded) {
                 state
             } else {
                 state.copy(
                     showServerPopup = false,
-                    serverPopupAnchorBounds = null,
                     dataRefreshIntervalDropdownExpanded = false,
-                    dataRefreshIntervalDropdownAnchorBounds = null,
                 )
             }
         }

@@ -86,7 +86,6 @@ class BaCalendarPoolBottomChromeScrollTest {
                         serverOptions = listOf("CN", "Global", "JP"),
                         serverIndex = 0,
                         showServerPopup = false,
-                        serverPopupAnchorBounds = null,
                         showEndedActivities = true,
                         showCalendarPoolImages = false,
                         entries = runningEntries(),
@@ -96,7 +95,6 @@ class BaCalendarPoolBottomChromeScrollTest {
                         syncText = "synced",
                         syncTextColor = Color.Blue,
                         onServerPopupChange = {},
-                        onServerPopupAnchorBoundsChange = {},
                         onServerSelected = {},
                         onOpenCalendarLink = {},
                     )

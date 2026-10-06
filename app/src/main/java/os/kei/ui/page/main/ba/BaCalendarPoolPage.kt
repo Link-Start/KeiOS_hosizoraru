@@ -403,7 +403,6 @@ internal fun BaCalendarPoolPage(
                     serverOptions = serverOptions,
                     serverIndex = serverIndex,
                     showServerPopup = chromeUiState.showServerPopup,
-                    serverPopupAnchorBounds = chromeUiState.serverPopupAnchorBounds,
                     showEndedActivities = snapshot.showEndedActivities,
                     showEndedPools = snapshot.showEndedPools,
                     showCalendarPoolImages = snapshot.showCalendarPoolImages,
@@ -412,7 +411,6 @@ internal fun BaCalendarPoolPage(
                     syncText = syncText,
                     syncTextColor = countdownBlue,
                     onServerPopupChange = calendarPoolViewModel::updateServerPopupExpanded,
-                    onServerPopupAnchorBoundsChange = calendarPoolViewModel::updateServerPopupAnchorBounds,
                     onServerSelected = { selected ->
                         calendarPoolViewModel.selectServer(selected.coerceIn(serverOptions.indices))
                     },
@@ -449,7 +447,6 @@ internal fun BaCalendarPoolPage(
                                 serverOptions = serverOptions,
                                 serverIndex = serverIndex,
                                 showServerPopup = chromeUiState.showServerPopup,
-                                serverPopupAnchorBounds = chromeUiState.serverPopupAnchorBounds,
                                 showEndedActivities = snapshot.showEndedActivities,
                                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
                                 entries = calendarUiState.entries,
@@ -459,7 +456,6 @@ internal fun BaCalendarPoolPage(
                                 syncText = syncText,
                                 syncTextColor = countdownBlue,
                                 onServerPopupChange = calendarPoolViewModel::updateServerPopupExpanded,
-                                onServerPopupAnchorBoundsChange = calendarPoolViewModel::updateServerPopupAnchorBounds,
                                 onServerSelected = { selected ->
                                     calendarPoolViewModel.selectServer(selected.coerceIn(serverOptions.indices))
                                 },
@@ -477,7 +473,6 @@ internal fun BaCalendarPoolPage(
                                 serverOptions = serverOptions,
                                 serverIndex = serverIndex,
                                 showServerPopup = chromeUiState.showServerPopup,
-                                serverPopupAnchorBounds = chromeUiState.serverPopupAnchorBounds,
                                 showEndedPools = snapshot.showEndedPools,
                                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
                                 entries = poolUiState.entries,
@@ -487,7 +482,6 @@ internal fun BaCalendarPoolPage(
                                 syncText = syncText,
                                 syncTextColor = countdownBlue,
                                 onServerPopupChange = calendarPoolViewModel::updateServerPopupExpanded,
-                                onServerPopupAnchorBoundsChange = calendarPoolViewModel::updateServerPopupAnchorBounds,
                                 onServerSelected = { selected ->
                                     calendarPoolViewModel.selectServer(selected.coerceIn(serverOptions.indices))
                                 },
@@ -515,9 +509,7 @@ internal fun BaCalendarPoolPage(
         pageKind = activePageKind,
         snapshot = snapshot,
         refreshIntervalDropdownExpanded = chromeUiState.dataRefreshIntervalDropdownExpanded,
-        refreshIntervalDropdownAnchorBounds = chromeUiState.dataRefreshIntervalDropdownAnchorBounds,
         onRefreshIntervalDropdownExpandedChange = calendarPoolViewModel::updateDataRefreshIntervalDropdownExpanded,
-        onRefreshIntervalDropdownAnchorBoundsChange = calendarPoolViewModel::updateDataRefreshIntervalDropdownAnchorBounds,
         onRefreshIntervalSelected = { hours ->
             calendarPoolViewModel.saveRefreshInterval(
                 hours = hours,

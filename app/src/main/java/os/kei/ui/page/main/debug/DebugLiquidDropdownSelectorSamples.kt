@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -170,7 +169,6 @@ private fun DebugLiquidProductionDropdownSelector(
             )
         }
     var expanded by remember { mutableStateOf(false) }
-    var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val selectedText = options.getOrNull(selectedIndex) ?: unavailableText
 
     AppDropdownSelector(
@@ -178,10 +176,8 @@ private fun DebugLiquidProductionDropdownSelector(
         options = options,
         selectedIndex = selectedIndex,
         expanded = expanded,
-        anchorBounds = anchorBounds,
         onExpandedChange = { expanded = it },
         onSelectedIndexChange = { selectedIndex = it },
-        onAnchorBoundsChange = { anchorBounds = it },
         modifier = modifier,
         backdrop = backdrop,
         variant = GlassVariant.SheetAction,

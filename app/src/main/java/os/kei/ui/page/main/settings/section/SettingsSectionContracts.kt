@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.settings.section
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.unit.IntRect
 import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
@@ -94,9 +93,7 @@ internal data class SettingsVisualSectionState(
     val appThemeMode: AppThemeMode,
     val appLanguageActionAvailable: Boolean,
     val showThemeModePopup: Boolean,
-    val themePopupAnchorBounds: IntRect?,
     val showLauncherIconDesignPopup: Boolean,
-    val launcherIconDesignPopupAnchorBounds: IntRect?,
 )
 
 internal data class SettingsVisualSectionActions(
@@ -107,9 +104,7 @@ internal data class SettingsVisualSectionActions(
     val onAppThemeModeChanged: (AppThemeMode) -> Unit,
     val onOpenAppLanguageSettings: () -> Unit,
     val onShowThemeModePopupChange: (Boolean) -> Unit,
-    val onThemePopupAnchorBoundsChange: (IntRect?) -> Unit,
     val onShowLauncherIconDesignPopupChange: (Boolean) -> Unit,
-    val onLauncherIconDesignPopupAnchorBoundsChange: (IntRect?) -> Unit,
 )
 
 @Immutable

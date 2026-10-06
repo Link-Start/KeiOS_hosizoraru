@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -66,15 +65,10 @@ internal fun GitHubTrackEditFormContent(
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     ignoreModeInput: GitHubTrackedIgnoreMode,
     sourceModeDropdownExpanded: Boolean,
-    sourceModeDropdownAnchorBounds: IntRect?,
     updateIntervalDropdownExpanded: Boolean,
-    updateIntervalDropdownAnchorBounds: IntRect?,
     actionsIntervalDropdownExpanded: Boolean,
-    actionsIntervalDropdownAnchorBounds: IntRect?,
     preciseModeDropdownExpanded: Boolean,
-    preciseModeDropdownAnchorBounds: IntRect?,
     ignoreModeDropdownExpanded: Boolean,
-    ignoreModeDropdownAnchorBounds: IntRect?,
     fdroidVersionSelectionModeInput: FdroidVersionSelectionMode,
     fdroidVersionNameRegexInput: String,
     fdroidApkNameRegexInput: String,
@@ -90,13 +84,9 @@ internal fun GitHubTrackEditFormContent(
     fdroidAppSearchRunning: Boolean,
     enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
     fdroidVersionSelectionDropdownExpanded: Boolean,
-    fdroidVersionSelectionDropdownAnchorBounds: IntRect?,
     fdroidTrustPolicyDropdownExpanded: Boolean,
-    fdroidTrustPolicyDropdownAnchorBounds: IntRect?,
     fdroidAntiFeaturePolicyDropdownExpanded: Boolean,
-    fdroidAntiFeaturePolicyDropdownAnchorBounds: IntRect?,
     fdroidRepoScopeDropdownExpanded: Boolean,
-    fdroidRepoScopeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
@@ -127,23 +117,14 @@ internal fun GitHubTrackEditFormContent(
     onFdroidSearchFailuresExpandedChange: (Boolean) -> Unit,
     onFdroidAppSearchCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
-    onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
-    onUpdateIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onActionsIntervalDropdownExpandedChange: (Boolean) -> Unit,
-    onActionsIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onPreciseModeDropdownExpandedChange: (Boolean) -> Unit,
-    onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onIgnoreModeDropdownExpandedChange: (Boolean) -> Unit,
-    onIgnoreModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidVersionSelectionDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidVersionSelectionDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidTrustPolicyDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidTrustPolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidAntiFeaturePolicyDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     var checkOptionsExpanded by rememberSaveable { mutableStateOf(false) }
     val sourceModes = GitHubTrackedSourceMode.entries
@@ -306,12 +287,10 @@ internal fun GitHubTrackEditFormContent(
                         options = sourceModeOptions,
                         selectedIndex = sourceModeIndex,
                         expanded = sourceModeDropdownExpanded,
-                        anchorBounds = sourceModeDropdownAnchorBounds,
                         onExpandedChange = onSourceModeDropdownExpandedChange,
                         onSelectedIndexChange = { index ->
                             sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
                         },
-                        onAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
                         backdrop = backdrop,
                     )
                 }
@@ -331,7 +310,6 @@ internal fun GitHubTrackEditFormContent(
                 searching = fdroidAppSearchRunning,
                 enabledCommonRepos = enabledFdroidCommonRepos,
                 repoScopeDropdownExpanded = fdroidRepoScopeDropdownExpanded,
-                repoScopeDropdownAnchorBounds = fdroidRepoScopeDropdownAnchorBounds,
                 onRepoUrlInputChange = onRepoUrlInputChange,
                 onRepoScopeIdChange = onFdroidRepoScopeIdInputChange,
                 onAppSearchQueryChange = onFdroidAppSearchQueryInputChange,
@@ -343,7 +321,6 @@ internal fun GitHubTrackEditFormContent(
                 onCandidateSelected = onFdroidAppSearchCandidateSelected,
                 onPickerExpandedChange = onPickerExpandedChange,
                 onRepoScopeDropdownExpandedChange = onFdroidRepoScopeDropdownExpandedChange,
-                onRepoScopeDropdownAnchorBoundsChange = onFdroidRepoScopeDropdownAnchorBoundsChange,
             )
         } else {
             SheetSectionCard {
@@ -359,12 +336,10 @@ internal fun GitHubTrackEditFormContent(
                         options = sourceModeOptions,
                         selectedIndex = sourceModeIndex,
                         expanded = sourceModeDropdownExpanded,
-                        anchorBounds = sourceModeDropdownAnchorBounds,
                         onExpandedChange = onSourceModeDropdownExpandedChange,
                         onSelectedIndexChange = { index ->
                             sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
                         },
-                        onAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
                         backdrop = backdrop,
                     )
                 }
@@ -479,11 +454,8 @@ internal fun GitHubTrackEditFormContent(
                 trustPolicy = fdroidTrustPolicyInput,
                 antiFeaturePolicy = fdroidAntiFeaturePolicyInput,
                 versionSelectionDropdownExpanded = fdroidVersionSelectionDropdownExpanded,
-                versionSelectionDropdownAnchorBounds = fdroidVersionSelectionDropdownAnchorBounds,
                 trustPolicyDropdownExpanded = fdroidTrustPolicyDropdownExpanded,
-                trustPolicyDropdownAnchorBounds = fdroidTrustPolicyDropdownAnchorBounds,
                 antiFeaturePolicyDropdownExpanded = fdroidAntiFeaturePolicyDropdownExpanded,
-                antiFeaturePolicyDropdownAnchorBounds = fdroidAntiFeaturePolicyDropdownAnchorBounds,
                 onVersionSelectionModeChange = onFdroidVersionSelectionModeInputChange,
                 onVersionNameRegexChange = onFdroidVersionNameRegexInputChange,
                 onApkNameRegexChange = onFdroidApkNameRegexInputChange,
@@ -491,15 +463,9 @@ internal fun GitHubTrackEditFormContent(
                 onAntiFeaturePolicyChange = onFdroidAntiFeaturePolicyInputChange,
                 onVersionSelectionDropdownExpandedChange =
                 onFdroidVersionSelectionDropdownExpandedChange,
-                onVersionSelectionDropdownAnchorBoundsChange =
-                onFdroidVersionSelectionDropdownAnchorBoundsChange,
                 onTrustPolicyDropdownExpandedChange = onFdroidTrustPolicyDropdownExpandedChange,
-                onTrustPolicyDropdownAnchorBoundsChange =
-                onFdroidTrustPolicyDropdownAnchorBoundsChange,
                 onAntiFeaturePolicyDropdownExpandedChange =
                 onFdroidAntiFeaturePolicyDropdownExpandedChange,
-                onAntiFeaturePolicyDropdownAnchorBoundsChange =
-                onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange,
             )
         }
 
@@ -531,12 +497,10 @@ internal fun GitHubTrackEditFormContent(
                     options = updateIntervalOptions,
                     selectedIndex = updateIntervalIndex,
                     expanded = updateIntervalDropdownExpanded,
-                    anchorBounds = updateIntervalDropdownAnchorBounds,
                     onExpandedChange = onUpdateIntervalDropdownExpandedChange,
                     onSelectedIndexChange = { index ->
                         updateIntervalModes.getOrNull(index)?.let(onUpdateIntervalModeInputChange)
                     },
-                    onAnchorBoundsChange = onUpdateIntervalDropdownAnchorBoundsChange,
                     backdrop = backdrop,
                 )
             }
@@ -552,12 +516,10 @@ internal fun GitHubTrackEditFormContent(
                     options = ignoreModeOptions,
                     selectedIndex = ignoreModeIndex,
                     expanded = ignoreModeDropdownExpanded,
-                    anchorBounds = ignoreModeDropdownAnchorBounds,
                     onExpandedChange = onIgnoreModeDropdownExpandedChange,
                     onSelectedIndexChange = { index ->
                         ignoreModes.getOrNull(index)?.let(onIgnoreModeInputChange)
                     },
-                    onAnchorBoundsChange = onIgnoreModeDropdownAnchorBoundsChange,
                     backdrop = backdrop,
                 )
             }
@@ -640,14 +602,12 @@ internal fun GitHubTrackEditFormContent(
                                 options = actionsIntervalOptions,
                                 selectedIndex = actionsIntervalIndex,
                                 expanded = actionsIntervalDropdownExpanded,
-                                anchorBounds = actionsIntervalDropdownAnchorBounds,
                                 onExpandedChange = onActionsIntervalDropdownExpandedChange,
                                 onSelectedIndexChange = { index ->
                                     actionsIntervalModes
                                         .getOrNull(index)
                                         ?.let(onActionsUpdateIntervalModeInputChange)
                                 },
-                                onAnchorBoundsChange = onActionsIntervalDropdownAnchorBoundsChange,
                                 backdrop = backdrop,
                             )
                         }
@@ -671,12 +631,10 @@ internal fun GitHubTrackEditFormContent(
                             options = preciseModeOptions,
                             selectedIndex = preciseModeIndex,
                             expanded = preciseModeDropdownExpanded,
-                            anchorBounds = preciseModeDropdownAnchorBounds,
                             onExpandedChange = onPreciseModeDropdownExpandedChange,
                             onSelectedIndexChange = { index ->
                                 preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
                             },
-                            onAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
                             backdrop = backdrop,
                         )
                     }

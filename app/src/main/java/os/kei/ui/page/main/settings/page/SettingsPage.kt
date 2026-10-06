@@ -160,10 +160,7 @@ fun SettingsPage(
             actions =
                 SettingsPageUiActions(
                     onShowThemeModePopupChange = settingsPageViewModel::updateShowThemeModePopup,
-                    onThemePopupAnchorBoundsChange = settingsPageViewModel::updateThemePopupAnchorBounds,
                     onShowLauncherIconDesignPopupChange = settingsPageViewModel::updateShowLauncherIconDesignPopup,
-                    onLauncherIconDesignPopupAnchorBoundsChange =
-                        settingsPageViewModel::updateLauncherIconDesignPopupAnchorBounds,
                 ),
         )
     val backgroundController =

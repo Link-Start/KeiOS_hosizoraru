@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.ba
 
 import android.app.Application
-import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -206,7 +205,6 @@ internal class BaOfficeViewModel private constructor(
             state.copy(
                 showNotificationSettingsSheet = false,
                 notificationLeadDropdownExpanded = false,
-                notificationLeadDropdownAnchorBounds = null,
             )
         }
     }
@@ -407,16 +405,6 @@ internal class BaOfficeViewModel private constructor(
         }
     }
 
-    fun updateCafeLevelPopupAnchorBounds(bounds: IntRect?) {
-        _chromeUiState.update { state ->
-            if (state.cafeLevelPopupAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(cafeLevelPopupAnchorBounds = bounds)
-            }
-        }
-    }
-
     fun updateConsumedScrollToTopSignal(signal: Int) {
         _chromeUiState.update { state ->
             if (state.consumedScrollToTopSignal == signal) {
@@ -433,16 +421,6 @@ internal class BaOfficeViewModel private constructor(
                 state
             } else {
                 state.copy(notificationLeadDropdownExpanded = expanded)
-            }
-        }
-    }
-
-    fun updateNotificationLeadDropdownAnchorBounds(bounds: IntRect?) {
-        _chromeUiState.update { state ->
-            if (state.notificationLeadDropdownAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(notificationLeadDropdownAnchorBounds = bounds)
             }
         }
     }

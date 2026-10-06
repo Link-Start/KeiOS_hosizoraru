@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -82,9 +81,7 @@ internal fun BaNotificationSettingsSheet(
     onCalendarPoolChangeNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarPoolNotifyLeadHoursSelected: (Int) -> Unit,
     leadDropdownExpanded: Boolean,
-    leadDropdownAnchorBounds: IntRect?,
     onLeadDropdownExpandedChange: (Boolean) -> Unit,
-    onLeadDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onApNotifyThresholdTextChange: (String) -> Unit,
     onApNotifyThresholdDone: () -> Unit,
     onCafeApNotifyThresholdTextChange: (String) -> Unit,
@@ -277,9 +274,7 @@ internal fun BaNotificationSettingsSheet(
                         backdrop = backdrop,
                         selectedHours = state.calendarPoolNotifyLeadHours,
                         expanded = leadDropdownExpanded,
-                        anchorBounds = leadDropdownAnchorBounds,
                         onExpandedChange = onLeadDropdownExpandedChange,
-                        onAnchorBoundsChange = onLeadDropdownAnchorBoundsChange,
                         onSelected = onCalendarPoolNotifyLeadHoursSelected,
                     )
                 }
@@ -427,9 +422,7 @@ private fun BaCalendarPoolNotifyLeadDropdown(
     backdrop: Backdrop?,
     selectedHours: Int,
     expanded: Boolean,
-    anchorBounds: IntRect?,
     onExpandedChange: (Boolean) -> Unit,
-    onAnchorBoundsChange: (IntRect?) -> Unit,
     onSelected: (Int) -> Unit,
 ) {
     val options = BaCalendarPoolNotifyLeadOption.entries
@@ -440,7 +433,6 @@ private fun BaCalendarPoolNotifyLeadDropdown(
         options = options.map { stringResource(it.labelRes) },
         selectedIndex = options.indexOf(selected).coerceAtLeast(0),
         expanded = expanded,
-        anchorBounds = anchorBounds,
         onExpandedChange = onExpandedChange,
         onSelectedIndexChange = { index ->
             options.getOrNull(index)?.let { option ->
@@ -448,7 +440,6 @@ private fun BaCalendarPoolNotifyLeadDropdown(
             }
             onExpandedChange(false)
         },
-        onAnchorBoundsChange = onAnchorBoundsChange,
         backdrop = backdrop,
         variant = GlassVariant.SheetAction,
         textColor = MiuixTheme.colorScheme.primary,

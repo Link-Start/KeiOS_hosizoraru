@@ -28,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -57,7 +56,6 @@ fun GuideSkillCardItem(
     modifier: Modifier = Modifier
 ) {
     var showLevelPopup by remember(card.id) { mutableStateOf(false) }
-    var levelPopupAnchorBounds by remember(card.id) { mutableStateOf<IntRect?>(null) }
     var skillTitleRowHeightPx by remember(card.id) { mutableStateOf(0) }
     val levelOptions = card.levelOptions
     var selectedLevel by rememberSaveable(card.id) { mutableStateOf(card.defaultLevel) }
@@ -292,13 +290,10 @@ fun GuideSkillCardItem(
                                         options = levelOptions,
                                         selectedIndex = levelOptions.indexOf(selectedLevel).coerceAtLeast(0),
                                         expanded = showLevelPopup,
-                                        anchorBounds = null,
-                                        anchorBoundsProvider = { levelPopupAnchorBounds },
                                         onExpandedChange = { showLevelPopup = it },
                                         onSelectedIndexChange = { selected ->
                                             selectedLevel = levelOptions[selected]
                                         },
-                                        onAnchorBoundsChange = { levelPopupAnchorBounds = it },
                                         backdrop = backdrop,
                                         variant = GlassVariant.Compact,
                                         minHeight = 30.dp,

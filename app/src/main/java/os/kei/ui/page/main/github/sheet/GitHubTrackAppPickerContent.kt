@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -84,8 +83,6 @@ internal fun GitHubTrackAppPickerControls(
 ) {
     var sortModeExpanded by remember { mutableStateOf(false) }
     var sortDirectionExpanded by remember { mutableStateOf(false) }
-    var sortModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    var sortDirectionAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val sortModes = GitHubTrackAppPickerSortMode.entries
     val sortDirections = GitHubTrackAppPickerSortDirection.entries
     val sortOptions = sortModes.map { mode -> stringResource(mode.labelRes) }
@@ -127,7 +124,6 @@ internal fun GitHubTrackAppPickerControls(
                 options = sortOptions,
                 selectedIndex = sortIndex,
                 expanded = sortModeExpanded,
-                anchorBounds = sortModeAnchorBounds,
                 onExpandedChange = { sortModeExpanded = it },
                 onSelectedIndexChange = { index ->
                     sortModes.getOrNull(index)?.let { mode ->
@@ -137,7 +133,6 @@ internal fun GitHubTrackAppPickerControls(
                         }
                     }
                 },
-                onAnchorBoundsChange = { sortModeAnchorBounds = it },
                 modifier = Modifier.weight(1f),
                 backdrop = backdrop,
                 variant = GlassVariant.Content,
@@ -153,12 +148,10 @@ internal fun GitHubTrackAppPickerControls(
                 options = directionOptions,
                 selectedIndex = directionIndex,
                 expanded = sortDirectionExpanded,
-                anchorBounds = sortDirectionAnchorBounds,
                 onExpandedChange = { sortDirectionExpanded = it },
                 onSelectedIndexChange = { index ->
                     sortDirections.getOrNull(index)?.let(onSortDirectionChange)
                 },
-                onAnchorBoundsChange = { sortDirectionAnchorBounds = it },
                 modifier = Modifier.weight(1f),
                 backdrop = backdrop,
                 variant = GlassVariant.Content,

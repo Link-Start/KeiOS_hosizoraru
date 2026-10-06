@@ -342,16 +342,12 @@ internal fun OsGoogleSystemServiceEditorSheet(
                                             options = intentExtraTypeOptions,
                                             selectedIndex = selectedTypeIndex,
                                             expanded = intentExtraController.intentExtraTypePopupExpanded[index] == true,
-                                            anchorBounds = intentExtraController.intentExtraTypePopupAnchors[index],
                                             onExpandedChange = { expanded ->
                                                 intentExtraController.onExtraTypeExpandedChange(index, expanded)
                                             },
                                             onSelectedIndexChange = { selected ->
                                                 val nextType = ShortcutIntentExtraType.entries[selected]
                                                 intentExtraController.onExtraTypeChange(index, nextType)
-                                            },
-                                            onAnchorBoundsChange = { bounds ->
-                                                intentExtraController.onExtraTypeAnchorBoundsChange(index, bounds)
                                             },
                                             modifier = Modifier.width(intentExtraTypeWidth),
                                             backdrop = sheetBackdrop,

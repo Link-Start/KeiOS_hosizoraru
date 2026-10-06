@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -59,7 +58,6 @@ internal data class BaPageContentState(
     val cafeLevelOptions: List<Int>,
     val serverIndex: Int,
     val showCafeLevelPopup: Boolean,
-    val cafeLevelPopupAnchorBounds: IntRect?,
     val baCalendarEntries: List<BaCalendarEntry>,
     val baCalendarLoading: Boolean,
     val baCalendarRefreshing: Boolean,
@@ -84,7 +82,6 @@ internal data class BaPageContentActions(
     val onCafeStoredApInputChange: (String) -> Unit,
     val onCafeStoredApDone: () -> Unit,
     val onOpenCafeApTools: () -> Unit,
-    val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     val onCafeLevelPopupChange: (Boolean) -> Unit,
     val onAccountSelected: (BaAccountId) -> Unit,
     val onEditAccount: (BaAccountId) -> Unit,
@@ -438,8 +435,6 @@ private fun BaPageCardContent(
                 cafeStoredApInput = state.officeState.cafeStoredApInput,
                 cafeLevelOptions = state.cafeLevelOptions,
                 showCafeLevelPopup = state.showCafeLevelPopup,
-                cafeLevelPopupAnchorBounds = state.cafeLevelPopupAnchorBounds,
-                onCafeLevelPopupAnchorBoundsChange = actions.onCafeLevelPopupAnchorBoundsChange,
                 onCafeLevelPopupChange = actions.onCafeLevelPopupChange,
                 onCafeLevelChange = actions.onCafeLevelChange,
                 onCafeStoredApInputChange = actions.onCafeStoredApInputChange,

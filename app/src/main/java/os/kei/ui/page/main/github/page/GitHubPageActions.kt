@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.page
 
 import android.content.Context
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -156,13 +155,6 @@ internal class GitHubPageActions(
     fun setShowOnlineShareTargetPopup(value: Boolean) = configActions.setShowOnlineShareTargetPopup(value)
 
     fun setShowShareImportFlowModePopup(value: Boolean) = configActions.setShowShareImportFlowModePopup(value)
-
-    fun setDownloaderPopupAnchorBounds(value: IntRect?) = configActions.setDownloaderPopupAnchorBounds(value)
-
-    fun setOnlineShareTargetPopupAnchorBounds(value: IntRect?) = configActions.setOnlineShareTargetPopupAnchorBounds(value)
-
-    fun setShareImportFlowModePopupAnchorBounds(value: IntRect?) =
-        configActions.setShareImportFlowModePopupAnchorBounds(value)
 
     fun sendDebugActionsUpdateNotification() = debugNotificationActions.sendActionsUpdateNotification()
 
@@ -695,25 +687,13 @@ internal class GitHubPageActions(
 
     fun setTrackSourceModeDropdownExpanded(value: Boolean) = trackActions.setSourceModeDropdownExpanded(value)
 
-    fun setTrackSourceModeDropdownAnchorBounds(value: IntRect?) = trackActions.setSourceModeDropdownAnchorBounds(value)
-
     fun setTrackUpdateIntervalDropdownExpanded(value: Boolean) = trackActions.setUpdateIntervalDropdownExpanded(value)
-
-    fun setTrackUpdateIntervalDropdownAnchorBounds(value: IntRect?) =
-        trackActions.setUpdateIntervalDropdownAnchorBounds(value)
 
     fun setTrackActionsIntervalDropdownExpanded(value: Boolean) = trackActions.setActionsIntervalDropdownExpanded(value)
 
-    fun setTrackActionsIntervalDropdownAnchorBounds(value: IntRect?) =
-        trackActions.setActionsIntervalDropdownAnchorBounds(value)
-
     fun setTrackPreciseModeDropdownExpanded(value: Boolean) = trackActions.setPreciseModeDropdownExpanded(value)
 
-    fun setTrackPreciseModeDropdownAnchorBounds(value: IntRect?) = trackActions.setPreciseModeDropdownAnchorBounds(value)
-
     fun setTrackIgnoreModeDropdownExpanded(value: Boolean) = trackActions.setIgnoreModeDropdownExpanded(value)
-
-    fun setTrackIgnoreModeDropdownAnchorBounds(value: IntRect?) = trackActions.setIgnoreModeDropdownAnchorBounds(value)
 
     fun setTrackFdroidVersionSelectionModeInput(value: FdroidVersionSelectionMode) =
         trackActions.setFdroidVersionSelectionModeInput(value)
@@ -739,9 +719,6 @@ internal class GitHubPageActions(
     fun setTrackFdroidRepoScopeDropdownExpanded(value: Boolean) =
         trackActions.setFdroidRepoScopeDropdownExpanded(value)
 
-    fun setTrackFdroidRepoScopeDropdownAnchorBounds(value: IntRect?) =
-        trackActions.setFdroidRepoScopeDropdownAnchorBounds(value)
-
     fun searchTrackFdroidAppsByName() = trackActions.searchFdroidAppsByName()
 
     fun scanTrackFdroidReposFromPackage() = trackActions.scanFdroidReposFromPackage()
@@ -757,20 +734,11 @@ internal class GitHubPageActions(
     fun setTrackFdroidVersionSelectionDropdownExpanded(value: Boolean) =
         trackActions.setFdroidVersionSelectionDropdownExpanded(value)
 
-    fun setTrackFdroidVersionSelectionDropdownAnchorBounds(value: IntRect?) =
-        trackActions.setFdroidVersionSelectionDropdownAnchorBounds(value)
-
     fun setTrackFdroidTrustPolicyDropdownExpanded(value: Boolean) =
         trackActions.setFdroidTrustPolicyDropdownExpanded(value)
 
-    fun setTrackFdroidTrustPolicyDropdownAnchorBounds(value: IntRect?) =
-        trackActions.setFdroidTrustPolicyDropdownAnchorBounds(value)
-
     fun setTrackFdroidAntiFeaturePolicyDropdownExpanded(value: Boolean) =
         trackActions.setFdroidAntiFeaturePolicyDropdownExpanded(value)
-
-    fun setTrackFdroidAntiFeaturePolicyDropdownAnchorBounds(value: IntRect?) =
-        trackActions.setFdroidAntiFeaturePolicyDropdownAnchorBounds(value)
 
     fun refreshTrackAppList() = trackActions.refreshAppListForTrackSheet()
 

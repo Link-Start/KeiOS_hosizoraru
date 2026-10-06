@@ -88,12 +88,10 @@ internal fun SettingsVisualSection(
                                 .indexOfFirst { it.first == state.appThemeMode }
                                 .coerceAtLeast(0),
                         expanded = state.showThemeModePopup,
-                        anchorBounds = state.themePopupAnchorBounds,
                         onExpandedChange = actions.onShowThemeModePopupChange,
                         onSelectedIndexChange = { selectedIndex ->
                             actions.onAppThemeModeChanged(themeModeOptions[selectedIndex].first)
                         },
-                        onAnchorBoundsChange = actions.onThemePopupAnchorBoundsChange,
                         variant = GlassVariant.SheetAction,
                     )
                 }
@@ -112,12 +110,10 @@ internal fun SettingsVisualSection(
                                     it.first == state.launcherIconDesign
                                 }.coerceAtLeast(0),
                         expanded = state.showLauncherIconDesignPopup,
-                        anchorBounds = state.launcherIconDesignPopupAnchorBounds,
                         onExpandedChange = actions.onShowLauncherIconDesignPopupChange,
                         onSelectedIndexChange = { selectedIndex ->
                             actions.onLauncherIconDesignChanged(launcherIconOptions[selectedIndex].first)
                         },
-                        onAnchorBoundsChange = actions.onLauncherIconDesignPopupAnchorBoundsChange,
                         variant = GlassVariant.SheetAction,
                     )
                 }

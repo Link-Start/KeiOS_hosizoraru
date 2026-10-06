@@ -19,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.emptyFlow
@@ -92,9 +91,7 @@ internal fun OsShellRunnerSheets(
     settings: OsShellRunnerSettings,
     chromePrefs: OsShellRunnerChromePrefs,
     timeoutDropdownExpanded: Boolean,
-    timeoutDropdownAnchorBounds: IntRect?,
     outputLimitDropdownExpanded: Boolean,
-    outputLimitDropdownAnchorBounds: IntRect?,
     dangerousCommandPreview: String,
     actions: OsShellRunnerSheetActions,
 ) {
@@ -145,9 +142,7 @@ internal fun OsShellRunnerSheets(
             onPersistInputEnabledChange = actions.onPersistInputEnabledChange,
             onTimeoutSecondsChange = actions.onTimeoutSecondsChange,
             timeoutDropdownExpanded = timeoutDropdownExpanded,
-            timeoutDropdownAnchorBounds = timeoutDropdownAnchorBounds,
             onTimeoutDropdownExpandedChange = actions.onTimeoutDropdownExpandedChange,
-            onTimeoutDropdownAnchorBoundsChange = actions.onTimeoutDropdownAnchorBoundsChange,
             onDangerousCommandConfirmChange = actions.onDangerousCommandConfirmChange,
             onCompletionToastChange = actions.onCompletionToastChange,
             onStartupBehaviorChange = actions.onStartupBehaviorChange,
@@ -162,9 +157,7 @@ internal fun OsShellRunnerSheets(
             onAutoScrollOutputChange = actions.onAutoScrollOutputChange,
             onOutputLimitCharsChange = actions.onOutputLimitCharsChange,
             outputLimitDropdownExpanded = outputLimitDropdownExpanded,
-            outputLimitDropdownAnchorBounds = outputLimitDropdownAnchorBounds,
             onOutputLimitDropdownExpandedChange = actions.onOutputLimitDropdownExpandedChange,
-            onOutputLimitDropdownAnchorBoundsChange = actions.onOutputLimitDropdownAnchorBoundsChange,
             onOutputSaveModeChange = actions.onOutputSaveModeChange,
             onCopyModeChange = actions.onCopyModeChange,
         )

@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -83,7 +82,6 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     searching: Boolean,
     enabledCommonRepos: List<FdroidRepositoryPreset>,
     repoScopeDropdownExpanded: Boolean,
-    repoScopeDropdownAnchorBounds: IntRect?,
     onRepoUrlInputChange: (String) -> Unit,
     onRepoScopeIdChange: (String) -> Unit,
     onAppSearchQueryChange: (String) -> Unit,
@@ -95,7 +93,6 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     onCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
-    onRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val activeCommonRepos =
         remember(enabledCommonRepos) {
@@ -140,14 +137,12 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
                 options = scopeLabels,
                 selectedIndex = scopeIndex,
                 expanded = repoScopeDropdownExpanded,
-                anchorBounds = repoScopeDropdownAnchorBounds,
                 onExpandedChange = onRepoScopeDropdownExpandedChange,
                 onSelectedIndexChange = { index ->
                     scopeOptions.getOrNull(index)?.let { option ->
                         onRepoScopeIdChange(option.id)
                     }
                 },
-                onAnchorBoundsChange = onRepoScopeDropdownAnchorBoundsChange,
                 backdrop = backdrop,
                 popupMaxWidth = 236.dp,
                 dropdownItemTextMaxLines = 1,

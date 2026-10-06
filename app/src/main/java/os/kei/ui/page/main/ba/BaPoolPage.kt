@@ -17,17 +17,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -62,7 +58,6 @@ internal fun BaPoolListContent(
     serverOptions: List<String>,
     serverIndex: Int,
     showServerPopup: Boolean,
-    serverPopupAnchorBounds: IntRect?,
     showEndedPools: Boolean,
     showCalendarPoolImages: Boolean,
     entries: List<BaPoolEntry>,
@@ -72,7 +67,6 @@ internal fun BaPoolListContent(
     syncText: String,
     syncTextColor: Color,
     onServerPopupChange: (Boolean) -> Unit,
-    onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
@@ -100,9 +94,7 @@ internal fun BaPoolListContent(
         syncText = syncText,
         syncTextColor = syncTextColor,
         showServerPopup = showServerPopup,
-        serverPopupAnchorBounds = serverPopupAnchorBounds,
         onServerPopupChange = onServerPopupChange,
-        onServerPopupAnchorBoundsChange = onServerPopupAnchorBoundsChange,
         onServerSelected = onServerSelected,
     ) {
         baPoolEntryItems(

@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
 import os.kei.ui.page.main.ba.support.BaAccountId
 
@@ -49,7 +48,6 @@ internal fun buildBaPageContentState(
         cafeLevelOptions = cafeLevelOptions,
         serverIndex = routeState.serverIndex,
         showCafeLevelPopup = popupState.showCafeLevelPopup,
-        cafeLevelPopupAnchorBounds = popupState.cafeLevelPopupAnchorBounds,
         baCalendarEntries = routeState.calendarUiState.entries,
         baCalendarLoading = routeState.calendarUiState.loading,
         baCalendarRefreshing = routeState.calendarUiState.refreshing,
@@ -74,7 +72,6 @@ internal fun buildBaPageContentActions(
     serverIndexProvider: () -> Int,
     accountIdProvider: () -> BaAccountId?,
     onSettingsCafeLevelChange: (Int) -> Unit,
-    onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onCafeLevelPopupChange: (Boolean) -> Unit,
     onOpenApLimitTools: () -> Unit,
     onOpenCafeApTools: () -> Unit,
@@ -95,7 +92,6 @@ internal fun buildBaPageContentActions(
         serverIndexProvider = serverIndexProvider,
         accountIdProvider = accountIdProvider,
         onSettingsCafeLevelChange = onSettingsCafeLevelChange,
-        onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
         onCafeLevelPopupChange = onCafeLevelPopupChange,
         onOpenApLimitTools = onOpenApLimitTools,
         onOpenCafeApTools = onOpenCafeApTools,

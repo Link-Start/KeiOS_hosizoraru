@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.ba
 
-import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CancellationException
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
@@ -63,9 +62,7 @@ internal data class BaOfficeChromeUiState(
     val cafeCooldownEditTarget: BaCafeCooldownEditTarget? = null,
     val craftSlotEditTarget: BaCraftSlotEditTarget? = null,
     val showCafeLevelPopup: Boolean = false,
-    val cafeLevelPopupAnchorBounds: IntRect? = null,
     val notificationLeadDropdownExpanded: Boolean = false,
-    val notificationLeadDropdownAnchorBounds: IntRect? = null,
     val consumedScrollToTopSignal: Int = 0,
     val debugUseRealCalendarPoolData: Boolean = true,
 )
@@ -185,7 +182,6 @@ internal fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiStat
     copy(
         showCafeLevelPopup = false,
         notificationLeadDropdownExpanded = false,
-        notificationLeadDropdownAnchorBounds = null,
     )
 
 internal fun Throwable.rethrowIfCancellation() {

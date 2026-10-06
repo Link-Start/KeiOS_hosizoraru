@@ -34,7 +34,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.student.GuideRemoteIcon
@@ -165,19 +164,15 @@ fun GuideWeaponCardItem(
                                 modifier = Modifier.weight(1f)
                             )
                             if (levelOptions.isNotEmpty()) {
-                                var levelPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
                                 AppDropdownSelector(
                                     selectedText = selectedLevel,
                                     options = levelOptions,
                                     selectedIndex = levelOptions.indexOf(selectedLevel).coerceAtLeast(0),
                                     expanded = showLevelPopup,
-                                    anchorBounds = null,
-                                    anchorBoundsProvider = { levelPopupAnchorBounds },
                                     onExpandedChange = { showLevelPopup = it },
                                     onSelectedIndexChange = { selected ->
                                         selectedLevel = levelOptions[selected]
                                     },
-                                    onAnchorBoundsChange = { levelPopupAnchorBounds = it },
                                     backdrop = backdrop,
                                     variant = GlassVariant.Compact
                                 )

@@ -211,9 +211,7 @@ internal fun rememberSettingsSectionContractBundle(
             appThemeMode,
             appLanguageActionAvailable,
             pageUiState.showThemeModePopup,
-            pageUiState.themePopupAnchorBounds,
             pageUiState.showLauncherIconDesignPopup,
-            pageUiState.launcherIconDesignPopupAnchorBounds,
         ) {
             SettingsVisualSectionState(
                 preloadingEnabled = preloadingEnabled,
@@ -223,9 +221,7 @@ internal fun rememberSettingsSectionContractBundle(
                 appThemeMode = appThemeMode,
                 appLanguageActionAvailable = appLanguageActionAvailable,
                 showThemeModePopup = pageUiState.showThemeModePopup,
-                themePopupAnchorBounds = pageUiState.themePopupAnchorBounds,
                 showLauncherIconDesignPopup = pageUiState.showLauncherIconDesignPopup,
-                launcherIconDesignPopupAnchorBounds = pageUiState.launcherIconDesignPopupAnchorBounds,
             )
         }
     val visualActions =
@@ -245,12 +241,8 @@ internal fun rememberSettingsSectionContractBundle(
                 onAppThemeModeChanged = onAppThemeModeChanged,
                 onOpenAppLanguageSettings = onOpenAppLanguageSettings,
                 onShowThemeModePopupChange = { pageUiState.showThemeModePopup = it },
-                onThemePopupAnchorBoundsChange = { pageUiState.themePopupAnchorBounds = it },
                 onShowLauncherIconDesignPopupChange = {
                     pageUiState.showLauncherIconDesignPopup = it
-                },
-                onLauncherIconDesignPopupAnchorBoundsChange = {
-                    pageUiState.launcherIconDesignPopupAnchorBounds = it
                 },
             )
         }

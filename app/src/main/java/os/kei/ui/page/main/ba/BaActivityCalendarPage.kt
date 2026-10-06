@@ -16,16 +16,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -55,7 +51,6 @@ internal fun BaActivityCalendarListContent(
     serverOptions: List<String>,
     serverIndex: Int,
     showServerPopup: Boolean,
-    serverPopupAnchorBounds: IntRect?,
     showEndedActivities: Boolean,
     showCalendarPoolImages: Boolean,
     entries: List<BaCalendarEntry>,
@@ -65,7 +60,6 @@ internal fun BaActivityCalendarListContent(
     syncText: String,
     syncTextColor: Color,
     onServerPopupChange: (Boolean) -> Unit,
-    onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
@@ -92,9 +86,7 @@ internal fun BaActivityCalendarListContent(
         syncText = syncText,
         syncTextColor = syncTextColor,
         showServerPopup = showServerPopup,
-        serverPopupAnchorBounds = serverPopupAnchorBounds,
         onServerPopupChange = onServerPopupChange,
-        onServerPopupAnchorBoundsChange = onServerPopupAnchorBoundsChange,
         onServerSelected = onServerSelected,
     ) {
         baActivityCalendarEntryItems(

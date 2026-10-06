@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.os.shell
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.unit.IntRect
 
 @Immutable
 internal data class OsShellRunnerUiState(
@@ -31,8 +30,6 @@ internal data class OsShellRunnerPageChromeState(
     val saveSubtitleInput: String = "",
     val saveInitialSubtitleInput: String = "",
     val timeoutDropdownExpanded: Boolean = false,
-    val timeoutDropdownAnchorBounds: IntRect? = null,
     val outputLimitDropdownExpanded: Boolean = false,
-    val outputLimitDropdownAnchorBounds: IntRect? = null,
     val closeCleanupApplied: Boolean = false,
 )

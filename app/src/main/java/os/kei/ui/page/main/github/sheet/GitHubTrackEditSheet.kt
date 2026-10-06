@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
@@ -92,23 +91,14 @@ internal fun GitHubTrackEditSheet(
     fdroidAppSearchRunning: Boolean,
     enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
     sourceModeDropdownExpanded: Boolean,
-    sourceModeDropdownAnchorBounds: IntRect?,
     updateIntervalDropdownExpanded: Boolean,
-    updateIntervalDropdownAnchorBounds: IntRect?,
     actionsIntervalDropdownExpanded: Boolean,
-    actionsIntervalDropdownAnchorBounds: IntRect?,
     preciseModeDropdownExpanded: Boolean,
-    preciseModeDropdownAnchorBounds: IntRect?,
     ignoreModeDropdownExpanded: Boolean,
-    ignoreModeDropdownAnchorBounds: IntRect?,
     fdroidVersionSelectionDropdownExpanded: Boolean,
-    fdroidVersionSelectionDropdownAnchorBounds: IntRect?,
     fdroidTrustPolicyDropdownExpanded: Boolean,
-    fdroidTrustPolicyDropdownAnchorBounds: IntRect?,
     fdroidAntiFeaturePolicyDropdownExpanded: Boolean,
-    fdroidAntiFeaturePolicyDropdownAnchorBounds: IntRect?,
     fdroidRepoScopeDropdownExpanded: Boolean,
-    fdroidRepoScopeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onDismissRequest: () -> Unit,
@@ -148,23 +138,14 @@ internal fun GitHubTrackEditSheet(
     onFdroidSearchFailuresExpandedChange: (Boolean) -> Unit,
     onFdroidAppSearchCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
-    onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
-    onUpdateIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onActionsIntervalDropdownExpandedChange: (Boolean) -> Unit,
-    onActionsIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onPreciseModeDropdownExpandedChange: (Boolean) -> Unit,
-    onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onIgnoreModeDropdownExpandedChange: (Boolean) -> Unit,
-    onIgnoreModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidVersionSelectionDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidVersionSelectionDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidTrustPolicyDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidTrustPolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidAntiFeaturePolicyDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
-    onFdroidRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val editingFdroidConfig = editingTrackedItem?.fdroidConfig ?: FdroidTrackedAppConfig()
     val fdroidConfigChanged =
@@ -303,15 +284,10 @@ internal fun GitHubTrackEditSheet(
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
                     ignoreModeInput = ignoreModeInput,
                     sourceModeDropdownExpanded = sourceModeDropdownExpanded,
-                    sourceModeDropdownAnchorBounds = sourceModeDropdownAnchorBounds,
                     updateIntervalDropdownExpanded = updateIntervalDropdownExpanded,
-                    updateIntervalDropdownAnchorBounds = updateIntervalDropdownAnchorBounds,
                     actionsIntervalDropdownExpanded = actionsIntervalDropdownExpanded,
-                    actionsIntervalDropdownAnchorBounds = actionsIntervalDropdownAnchorBounds,
                     preciseModeDropdownExpanded = preciseModeDropdownExpanded,
-                    preciseModeDropdownAnchorBounds = preciseModeDropdownAnchorBounds,
                     ignoreModeDropdownExpanded = ignoreModeDropdownExpanded,
-                    ignoreModeDropdownAnchorBounds = ignoreModeDropdownAnchorBounds,
                     fdroidVersionSelectionModeInput = fdroidVersionSelectionModeInput,
                     fdroidVersionNameRegexInput = fdroidVersionNameRegexInput,
                     fdroidApkNameRegexInput = fdroidApkNameRegexInput,
@@ -328,16 +304,10 @@ internal fun GitHubTrackEditSheet(
                     enabledFdroidCommonRepos = enabledFdroidCommonRepos,
                     fdroidVersionSelectionDropdownExpanded =
                     fdroidVersionSelectionDropdownExpanded,
-                    fdroidVersionSelectionDropdownAnchorBounds =
-                    fdroidVersionSelectionDropdownAnchorBounds,
                     fdroidTrustPolicyDropdownExpanded = fdroidTrustPolicyDropdownExpanded,
-                    fdroidTrustPolicyDropdownAnchorBounds = fdroidTrustPolicyDropdownAnchorBounds,
                     fdroidAntiFeaturePolicyDropdownExpanded =
                     fdroidAntiFeaturePolicyDropdownExpanded,
-                    fdroidAntiFeaturePolicyDropdownAnchorBounds =
-                    fdroidAntiFeaturePolicyDropdownAnchorBounds,
                     fdroidRepoScopeDropdownExpanded = fdroidRepoScopeDropdownExpanded,
-                    fdroidRepoScopeDropdownAnchorBounds = fdroidRepoScopeDropdownAnchorBounds,
                     globalRefreshIntervalHours = globalRefreshIntervalHours,
                     globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
@@ -371,32 +341,18 @@ internal fun GitHubTrackEditSheet(
                     onFdroidSearchFailuresExpandedChange = onFdroidSearchFailuresExpandedChange,
                     onFdroidAppSearchCandidateSelected = onFdroidAppSearchCandidateSelected,
                     onSourceModeDropdownExpandedChange = onSourceModeDropdownExpandedChange,
-                    onSourceModeDropdownAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
                     onUpdateIntervalDropdownExpandedChange = onUpdateIntervalDropdownExpandedChange,
-                    onUpdateIntervalDropdownAnchorBoundsChange = onUpdateIntervalDropdownAnchorBoundsChange,
                     onActionsIntervalDropdownExpandedChange = onActionsIntervalDropdownExpandedChange,
-                    onActionsIntervalDropdownAnchorBoundsChange =
-                    onActionsIntervalDropdownAnchorBoundsChange,
                     onPreciseModeDropdownExpandedChange = onPreciseModeDropdownExpandedChange,
-                    onPreciseModeDropdownAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
                     onIgnoreModeDropdownExpandedChange = onIgnoreModeDropdownExpandedChange,
-                    onIgnoreModeDropdownAnchorBoundsChange = onIgnoreModeDropdownAnchorBoundsChange,
                     onFdroidVersionSelectionDropdownExpandedChange =
                     onFdroidVersionSelectionDropdownExpandedChange,
-                    onFdroidVersionSelectionDropdownAnchorBoundsChange =
-                    onFdroidVersionSelectionDropdownAnchorBoundsChange,
                     onFdroidTrustPolicyDropdownExpandedChange =
                     onFdroidTrustPolicyDropdownExpandedChange,
-                    onFdroidTrustPolicyDropdownAnchorBoundsChange =
-                    onFdroidTrustPolicyDropdownAnchorBoundsChange,
                     onFdroidAntiFeaturePolicyDropdownExpandedChange =
                     onFdroidAntiFeaturePolicyDropdownExpandedChange,
-                    onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange =
-                    onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange,
                     onFdroidRepoScopeDropdownExpandedChange =
                     onFdroidRepoScopeDropdownExpandedChange,
-                    onFdroidRepoScopeDropdownAnchorBoundsChange =
-                    onFdroidRepoScopeDropdownAnchorBoundsChange,
                 )
             }
         }

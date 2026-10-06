@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -55,8 +54,6 @@ internal fun BaCafeCard(
     cafeStoredApInput: String,
     cafeLevelOptions: List<Int>,
     showCafeLevelPopup: Boolean,
-    cafeLevelPopupAnchorBounds: IntRect?,
-    onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onCafeLevelPopupChange: (Boolean) -> Unit,
     onCafeLevelChange: (Int) -> Unit,
     onCafeStoredApInputChange: (String) -> Unit,
@@ -116,12 +113,10 @@ internal fun BaCafeCard(
                     options = cafeLevelOptions.map { level -> "Lv$level" },
                     selectedIndex = cafeLevelOptions.indexOf(cafeLevel).coerceAtLeast(0),
                     expanded = showCafeLevelPopup,
-                    anchorBounds = cafeLevelPopupAnchorBounds,
                     onExpandedChange = onCafeLevelPopupChange,
                     onSelectedIndexChange = { selected ->
                         onCafeLevelChange(cafeLevelOptions[selected])
                     },
-                    onAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
                     backdrop = backdrop,
                     variant = GlassVariant.Content,
                     textColor = accentPink,

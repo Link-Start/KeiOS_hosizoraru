@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -80,19 +78,15 @@ internal fun GuideEffectLevelPicker(
     onLevelSelected: (Int) -> Unit,
 ) {
     if (levelOptions.isEmpty()) return
-    var levelPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     AppDropdownSelector(
         selectedText = selectedLevel,
         options = levelOptions,
         selectedIndex = levelOptions.indexOf(selectedLevel).coerceAtLeast(0),
         expanded = showLevelPopup,
-        anchorBounds = null,
-        anchorBoundsProvider = { levelPopupAnchorBounds },
         onExpandedChange = { expanded ->
             if (expanded) onTogglePopup() else onDismissPopup()
         },
         onSelectedIndexChange = onLevelSelected,
-        onAnchorBoundsChange = { levelPopupAnchorBounds = it },
         backdrop = backdrop,
         variant = GlassVariant.Compact,
     )

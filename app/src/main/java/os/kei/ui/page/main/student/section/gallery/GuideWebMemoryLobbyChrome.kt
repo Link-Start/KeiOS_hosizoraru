@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
@@ -76,7 +75,6 @@ internal fun GuideWebMemoryLobbyControls(
     onActionsRequested: () -> Unit = {},
 ) {
     var expanded by remember(actions, playing) { mutableStateOf(false) }
-    var anchor by remember { mutableStateOf<IntRect?>(null) }
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(AppChromeTokens.liquidToolbarGroupSpacing),
@@ -98,9 +96,7 @@ internal fun GuideWebMemoryLobbyControls(
             options = actions,
             selectedIndex = actions.indexOf(selectedAction),
             expanded = expanded,
-            anchorBounds = anchor,
             onExpandedChange = { expanded = it; if (it) onActionsRequested() },
-            onAnchorBoundsChange = { anchor = it },
             onSelectedIndexChange = { index -> actions.getOrNull(index)?.let(onSelectAction) },
             modifier = Modifier.weight(1f),
             backdrop = backdrop,

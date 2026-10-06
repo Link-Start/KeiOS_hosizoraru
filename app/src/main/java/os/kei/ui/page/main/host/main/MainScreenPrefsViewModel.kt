@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.host.main
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,8 +20,10 @@ import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 import os.kei.core.privilege.PrivilegeMode
 
-internal class MainScreenPrefsViewModel : ViewModel() {
-    private val repository = UiPrefsRepository(initialSnapshot = UiPrefs.defaultSnapshot())
+internal class MainScreenPrefsViewModel(
+    private val initialSnapshot: UiPrefsSnapshot? = null,
+) : ViewModel() {
+    private val repository = UiPrefsRepository(initialSnapshot = initialSnapshot ?: UiPrefs.defaultSnapshot())
     val snapshot: StateFlow<UiPrefsSnapshot> =
         repository
             .observeSnapshots()
@@ -32,10 +35,22 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     private var loadJob: Job? = null
 
     fun loadInitialSnapshot() {
+        if (initialSnapshot != null) return
         if (loadJob != null) return
         loadJob =
             viewModelScope.launch {
                 repository.refreshSnapshot()
+            }
+    }
+
+    companion object {
+        fun factory(initialSnapshot: UiPrefsSnapshot?): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    require(modelClass.isAssignableFrom(MainScreenPrefsViewModel::class.java))
+                    return MainScreenPrefsViewModel(initialSnapshot) as T
+                }
             }
     }
 

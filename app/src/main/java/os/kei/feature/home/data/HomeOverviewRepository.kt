@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,7 +52,6 @@ import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
 import os.kei.ui.page.main.sync.requiresManualReview
 
 private const val TAG = "HomeOverviewRepository"
-private const val INITIAL_OVERVIEW_LOAD_DELAY_MS = 500L
 private const val INITIAL_OVERVIEW_LOAD_REASON = "initial"
 
 internal fun interface HomeOverviewClock {
@@ -69,6 +67,7 @@ internal class HomeOverviewRepository(
     private val mcpUiState: StateFlow<McpServerUiState>,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     private val clock: HomeOverviewClock = HomeSystemOverviewClock,
+    val initialSnapshot: HomeOverviewSnapshot = HomeOverviewSnapshot(),
 ) {
     private val appContext = context.applicationContext
     private val refreshRequests =
@@ -77,8 +76,21 @@ internal class HomeOverviewRepository(
             extraBufferCapacity = 1,
         )
     private val githubTrackService = GitHubTrackService(ioDispatcher)
-    private val visibleOverviewCards = MutableStateFlow(defaultHomeOverviewCards())
-    private val showCacheFreshnessInCards = MutableStateFlow(false)
+    private val visibleOverviewCards = MutableStateFlow(initialSnapshot.visibleOverviewCards)
+    private val showCacheFreshnessInCards = MutableStateFlow(initialSnapshot.showCacheFreshnessInCards)
+
+    suspend fun loadInitialOverview(): HomeOverviewSnapshot {
+        val stored = loadStoredOverview(INITIAL_OVERVIEW_LOAD_REASON)
+        return HomeOverviewSnapshot(
+            appOverview = stored.appOverview,
+            mcpOverview = mcpUiState.value.toHomeOverview(),
+            githubOverview = stored.githubOverview.withRefreshRuntime(GitHubRefreshRuntimeStore.state.value),
+            webDavOverview = stored.webDavOverview,
+            baOverview = stored.baOverview,
+            visibleOverviewCards = visibleOverviewCards.value,
+            showCacheFreshnessInCards = showCacheFreshnessInCards.value,
+        )
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeOverview(): Flow<HomeOverviewSnapshot> {
@@ -90,9 +102,6 @@ internal class HomeOverviewRepository(
                 webDavVersions = WebDavSyncStoreSignals.version,
             ).onStart { emit(INITIAL_OVERVIEW_LOAD_REASON) }
                 .mapLatest { reason ->
-                    if (reason == INITIAL_OVERVIEW_LOAD_REASON) {
-                        delay(INITIAL_OVERVIEW_LOAD_DELAY_MS)
-                    }
                     loadStoredOverview(reason)
                 }
         return combine(

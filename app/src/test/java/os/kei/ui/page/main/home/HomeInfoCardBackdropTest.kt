@@ -8,6 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.click
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
@@ -24,6 +27,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertEquals
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -35,6 +39,37 @@ import kotlin.test.assertNull
 class HomeInfoCardBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun batchedCardRespondsToTouchInEmptyAreaBeyondItsPills() {
+        var clicks = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                Box(modifier = Modifier.size(400.dp)) {
+                    Box(Modifier.matchParentSize().background(Color.White).layerBackdrop(backdrop))
+                    HomeOverviewGlassBatchHost(backdrop = backdrop, blurEnabled = true) {
+                        HomeInfoCard(
+                            backdrop = backdrop,
+                            blurEnabled = true,
+                            onClick = { clicks++ },
+                            testTag = "overview_click_target",
+                        ) {
+                            HomeInfoPillCard(
+                                pills = listOf(HomeCardPillItem(value = "WebDAV", color = Color.Blue)),
+                                naText = "N/A",
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // A real pointer tap on the card's blank right half must reach its clickable, even though
+        // the decorative pill material has no outline at this position.
+        composeRule.onNodeWithTag("overview_click_target").performTouchInput { click(center) }
+        composeRule.runOnIdle { assertEquals(1, clicks) }
+    }
 
     @Test
     fun batchesCardAndPillMaterialWithoutNestedBackdropExport() {

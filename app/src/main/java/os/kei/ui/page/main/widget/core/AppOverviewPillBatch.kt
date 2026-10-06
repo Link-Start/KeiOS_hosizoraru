@@ -254,11 +254,13 @@ internal fun AppOverviewLiquidPillBatchHost(
     val borderAlpha = if (isDark) 0.35f else 0.42f
     val highlightAlpha = if (isDark) 0.42f else 0.62f
 
-    Box(
-        modifier =
-            modifier
-                .onGloballyPositioned(hostState::updateRootCoordinates)
-                .drawBackdrop(
+    Box(modifier = modifier.onGloballyPositioned(hostState::updateRootCoordinates)) {
+        // The material's outline is the union of pill shapes. Keep its clipped layer on a
+        // decorative sibling: wrapping the content in that layer also clips pointer hit testing
+        // and makes a parent overview card unresponsive in the space between or beyond its pills.
+        Box(
+            modifier =
+                Modifier.matchParentSize().drawBackdrop(
                     backdrop = activeBackdrop,
                     shape = {
                         OverviewPillBatchShape(
@@ -312,7 +314,7 @@ internal fun AppOverviewLiquidPillBatchHost(
                         }
                     },
                 ),
-    ) {
+        )
         CompositionLocalProvider(LocalOverviewPillBatchHost provides hostState) {
             content()
         }

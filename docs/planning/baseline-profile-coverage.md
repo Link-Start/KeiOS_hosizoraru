@@ -11,7 +11,7 @@ The default generator contains six user journeys with a maximum of 16 replays.
 | --- | ---: | --- |
 | startupAndFirstScroll | 5/2 | cold startup, Home first frame, first two list flings, startup dex layout |
 | mainPagesAndNavigation | 3/2 | Home, OS, MCP, GitHub and BA destination switches, first scrolls, and one hand swipe both ways |
-| commonRoutesAndChrome | 2/2 | Settings, About, WebDAV, Shell, MCP Skill, shared menu presentation |
+| commonRoutesAndChrome | 2/2 | Settings Interface and theme selector, About, WebDAV, Shell, MCP Skill, shared menu presentation |
 | gitHubTrackingCore | 2/2 | tracked-card expansion, Actions, add-track, and strategy-Sheet drag/content motion |
 | baOfficeAndCatalogCore | 2/2 | office cards, calendar/pool, daily sheet, catalog, selected guide tabs, playback |
 | adaptiveLargeScreenCore | 2/2 | recent two-lane pages, independent lane scrolling, sidebar and fold reflow |
@@ -39,6 +39,34 @@ navigation and adaptive layout.
 
 BaselineProfileTestTagContractTest pins the six-journey and 16-replay limits. Increasing either
 requires an explicit update to the test and this plan.
+
+### Collection maintenance, 2026-10-06
+
+`BaselineProfileGenerator.kt` owns the six journeys and their replay limits;
+`BaselineProfileActions.kt` owns navigation, input, window restoration and shared
+phone/wide catalog actions. `ProfileJourneySupport.kt` and `ProfileTags.kt` remain
+the vocabulary shared with benchmarks. The two catalog tours use one action,
+retaining distinct phone guide-pager and wide guide-sidebar branches.
+
+The Settings path opens Interface and presents/dismisses the theme selector without
+selecting a value. Calendar/Pool, the daily Sheet and catalog route are mandatory
+arrivals; remote student content, playback and empty-history paths remain optional.
+The adaptive journey saves and restores the original window-size override in `finally`.
+Collection selects only the generator class, avoiding unrelated skipped benchmarks.
+The producer checks all six fresh nonempty journey files plus the startup file
+before collection/merge can overwrite accepted source profiles. A connected-task
+success with zero tests or a transport failure is rejected by this guard.
+
+Both installed APKs have disposable identities: `os.kei.profilecapture` for the
+unminified release-derived application and `os.kei.baselineprofile.capture` for the
+self-instrumenting producer. Classes retain their `os.kei` namespace so collected
+rules still describe release. The generator rejects any other target before
+BaselineProfileRule can change compilation state. Do not run `benchmark` or
+`benchmarkRelease` on a user's physical installation: they still use `os.kei`.
+
+The Gradle merge is the authority for combining method flags and duplicate rules
+from the six journeys. Regenerate obsolete signatures from current code; do not
+delete library or animation rules merely to reduce the textual rule count.
 
 ## The switch a tab tap cannot stand in for
 
@@ -377,17 +405,17 @@ A connected smoke run can target one journey through instrumentation. It validat
 and timeouts without producing the complete merged release Profile:
 
     adb shell am instrument -w \
-      -e targetAppId os.kei \
+      -e targetAppId os.kei.profilecapture \
       -e class os.kei.baselineprofile.BaselineProfileGenerator#adaptiveLargeScreenCore \
-      os.kei.baselineprofile/androidx.test.runner.AndroidJUnitRunner
+      os.kei.baselineprofile.capture/androidx.test.runner.AndroidJUnitRunner
 
 Two arguments the Gradle task supplies and a hand-run does not:
 
-- The component is `os.kei.baselineprofile`, **not** `os.kei.baselineprofile.test`. A Macrobenchmark
-  module self-instruments -- `pm list instrumentation` reports `target=os.kei.baselineprofile` -- so the
+- The component is `os.kei.baselineprofile.capture`. A Macrobenchmark
+  module self-instruments -- its instrumentation target is the producer itself -- so the
   `.test` suffix an ordinary androidTest APK carries does not exist here. Without it the command fails in
   a second with `Unable to find instrumentation info`.
-- `-e targetAppId os.kei`, or every journey dies on the first line with `targetAppId not passed as
+- `-e targetAppId os.kei.profilecapture`, or every journey dies on the first line with `targetAppId not passed as
   instrumentation runner arg`.
 
 Check that the run actually started rather than assuming: both failures exit 0 through a pipe, and read
@@ -395,7 +423,7 @@ like a stalled journey rather than a malformed command.
 
 Install both APKs first, or the run instruments a stale build:
 
-    ANDROID_SERIAL=<avd> ./gradlew :app:installNonMinifiedRelease :baselineprofile:installNonMinifiedRelease
+    ANDROID_SERIAL=<selected-target> ./gradlew :app:installNonMinifiedRelease :baselineprofile:installNonMinifiedRelease
 
 This smoke run proves the UI script. Complete Profile collection proof comes from the generation task,
 its per-journey outputs and the merged generated artifacts.
@@ -409,7 +437,7 @@ journey's own `baseline-prof.txt` for the classes the step exists to reach, rath
 
 Run the complete capture only after the source/build gates pass:
 
-    ./gradlew :app:generateReleaseBaselineProfile
+    ANDROID_SERIAL=<selected-target> ./gradlew :app:generateReleaseBaselineProfile
 
 Accept the result after all of these checks:
 
@@ -422,7 +450,8 @@ Accept the result after all of these checks:
 6. The release APK contains assets/dexopt/baseline.prof and assets/dexopt/baseline.profm.
 7. Named critical components retain rules: startup/Home, main navigation, Compose scrolling,
    Liquid presentation, Markdown, Media3 when catalog data is available, and adaptive layout helpers.
-8. Macrobenchmark A/B medians show startup or frame-timing value with BaselineProfileMode.Require.
+8. If a performance comparison is requested, measure A/B medians with BaselineProfileMode.Require
+   under comparable release conditions; successful collection alone does not establish a speedup.
 
 Rule count alone is diagnostic metadata. A larger total can come from background jobs, network timing
 or unrelated library paths. Acceptance follows named-path coverage, shipped assets and measured
@@ -433,6 +462,13 @@ startup/frame behavior.
 Use one SDK platform-tools/adb server for connected capture. Competing Homebrew and SDK ADB servers
 previously caused Unknown API Level, ShellCommandUnresponsiveException and false device discovery
 failures.
+
+Before physical collection, verify that both disposable IDs are absent or owned by
+this capture. Save existing package hashes, first-install times, data-directory
+inodes, permissions and system/window settings; check them after collection. Never
+uninstall, clear or overwrite release/debug/diagnostic data or an older producer ID.
+The connected task can uninstall only the two verified disposable APKs. Bind every
+connected task to the selected serial; leave other devices and forwards alone.
 
 The generated profiles in the working tree represent the accepted six-journey capture. The freshness
 script dates a capture from the latest commit touching the generated Profile directory, so it continues

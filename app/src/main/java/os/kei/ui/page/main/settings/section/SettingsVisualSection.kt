@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.core.prefs.AppThemeMode
@@ -22,6 +23,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.testing.KeiOsTestTags
 
 @Composable
 internal fun SettingsVisualSection(
@@ -81,6 +83,7 @@ internal fun SettingsVisualSection(
                     summary = themeSummary,
                 ) {
                     AppDropdownSelector(
+                        modifier = Modifier.testTag(KeiOsTestTags.SettingsThemeModeSelector),
                         selectedText = currentThemeLabel,
                         options = themeModeOptions.map { it.second },
                         selectedIndex =

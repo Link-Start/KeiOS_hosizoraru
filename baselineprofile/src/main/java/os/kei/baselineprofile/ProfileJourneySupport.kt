@@ -19,6 +19,14 @@ internal fun targetAppId(): String =
     InstrumentationRegistry.getArguments().getString("targetAppId")
         ?: error("targetAppId not passed as instrumentation runner arg")
 
+/** Validate before BaselineProfileRule can reset compilation or stop its target. */
+internal fun profileCaptureAppId(): String =
+    targetAppId().also { appId ->
+        check(appId == "os.kei.profilecapture") {
+            "Profile collection requires the disposable os.kei.profilecapture package; got $appId"
+        }
+    }
+
 internal fun testTagSelector(tag: String): BySelector = By.res(tag)
 
 internal fun MacrobenchmarkScope.waitForTestTag(

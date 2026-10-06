@@ -171,6 +171,36 @@ class BaselineProfileTestTagContractTest {
     }
 
     @Test
+    fun theDefaultCollectionKeepsSixJourneysAndSixteenReplays() {
+        val source = generatorSourceWithoutComments()
+        val limits = generatorConstants().associate { (name, value) -> name to value.toIntOrNull() }
+        val journeys = Regex(
+            """@Test\s+fun (\w+)\(\)\s*\{\s*rule\.collect\((.*?)\)\s*\{""",
+            RegexOption.DOT_MATCHES_ALL,
+        ).findAll(source).toList()
+        assertEquals(
+            setOf("startupAndFirstScroll", "mainPagesAndNavigation", "commonRoutesAndChrome",
+                "gitHubTrackingCore", "baOfficeAndCatalogCore", "adaptiveLargeScreenCore"),
+            journeys.map { it.groupValues[1] }.toSet(),
+        )
+        assertEquals(6, journeys.size)
+        var totalMaxReplays = 0
+        journeys.forEach { journey ->
+            val arguments = journey.groupValues[2]
+            fun limit(argument: String): Int {
+                val constant = requireNotNull(Regex("$argument\\s*=\\s*(\\w+)").find(arguments))
+                    .groupValues[1]
+                return requireNotNull(limits[constant]) { "Missing numeric replay limit: $constant" }
+            }
+            val max = limit("maxIterations")
+            val stable = limit("stableIterations")
+            assertTrue(stable in 2..max, "Invalid replay limits for ${journey.groupValues[1]}")
+            totalMaxReplays += max
+        }
+        assertEquals(16, totalMaxReplays)
+    }
+
+    @Test
     fun startupHasAnExplicitFullyDrawnSignal() {
         val source = repoSource(MAIN_PAGER_PAGE_HOST)
 
@@ -189,6 +219,7 @@ class BaselineProfileTestTagContractTest {
      */
     @Test
     fun theDerivedTabbedPageTagsMatchTheDeclaredOnes() {
+        assertEquals(KeiOsTestTags.SettingsTabInterface, tabbedPageCategoryTabTestTag("settings", 2))
         assertEquals(KeiOsTestTags.GitHubHistoryTabRefresh, tabbedPageCategoryTabTestTag("github_history", 0))
         assertEquals(KeiOsTestTags.GitHubHistoryTabActions, tabbedPageCategoryTabTestTag("github_history", 1))
         assertEquals(KeiOsTestTags.GitHubHistoryTabTracking, tabbedPageCategoryTabTestTag("github_history", 2))
@@ -298,13 +329,13 @@ private fun profileTagConstants(): List<Pair<String, String>> =
 /** Every constant the generator declares for itself: gesture fractions, step counts and timeouts. */
 private fun generatorConstants(): List<Pair<String, String>> =
     Regex("""const val (\w+)\s*=\s*([^\n]+)""")
-        .findAll(repoSource(GENERATOR_SOURCE))
+        .findAll(GENERATOR_SOURCE_FILES.joinToString("\n") { repoSource(it) })
         .map { match -> match.groupValues[1] to match.groupValues[2] }
         .toList()
 
 private val TAG_SHAPED = Regex("""[a-z0-9_]+""")
 
-private val SCOPED_HELPER = Regex("""private fun MacrobenchmarkScope\.(\w+)\s*\(""")
+private val SCOPED_HELPER = Regex("""(?:private|internal) fun MacrobenchmarkScope\.(\w+)\s*\(""")
 
 /**
  * The generator with comments removed.
@@ -312,7 +343,8 @@ private val SCOPED_HELPER = Regex("""private fun MacrobenchmarkScope\.(\w+)\s*\(
  * A KDoc mention reads as a use to any plain text search, which is how an uncalled helper stayed
  * plausible through two captures.
  */
-private fun generatorSourceWithoutComments(): String = sourceWithoutComments(GENERATOR_SOURCE)
+private fun generatorSourceWithoutComments(): String =
+    GENERATOR_SOURCE_FILES.joinToString("\n") { sourceWithoutComments(it) }
 
 private fun sourceWithoutComments(relativePath: String): String =
     repoSource(relativePath)
@@ -323,6 +355,11 @@ private val SHARED_HELPER = Regex("""internal fun (?:MacrobenchmarkScope\.)?(\w+
 
 private const val GENERATOR_SOURCE =
     "baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileGenerator.kt"
+
+private const val GENERATOR_ACTIONS_SOURCE =
+    "baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileActions.kt"
+
+private val GENERATOR_SOURCE_FILES = listOf(GENERATOR_SOURCE, GENERATOR_ACTIONS_SOURCE)
 
 private const val MAIN_NAVIGATION_BENCHMARK_SOURCE =
     "baselineprofile/src/main/java/os/kei/baselineprofile/MainNavigationFrameBenchmarks.kt"
@@ -341,6 +378,7 @@ private const val JOURNEY_SUPPORT_SOURCE =
 private val PROFILE_CALLER_SOURCES =
     listOf(
         GENERATOR_SOURCE,
+        GENERATOR_ACTIONS_SOURCE,
         MAIN_NAVIGATION_BENCHMARK_SOURCE,
         STARTUP_BENCHMARK_SOURCE,
         JOURNEY_SUPPORT_SOURCE,

@@ -3,6 +3,8 @@
 package os.kei.ui.testing
 
 object KeiOsTestTags {
+    const val SettingsTabInterface = "settings_tab_2"
+    const val SettingsThemeModeSelector = "settings_theme_mode_selector"
     const val MainBottomTabHome = "main_bottom_tab_home"
     const val MainBottomTabOs = "main_bottom_tab_os"
     const val MainBottomTabMcp = "main_bottom_tab_mcp"

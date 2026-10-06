@@ -388,6 +388,10 @@ android {
 
         create("nonMinifiedRelease") {
             initWith(getByName("release"))
+            // Connected profile tasks install and uninstall their target. Never share user data
+            // with release, debug or the persistent diagnostic package on a physical device.
+            applicationIdSuffix = ".profilecapture"
+            versionNameSuffix = "-profilecapture"
             optimization.enable = false
             isMinifyEnabled = false
             isShrinkResources = false

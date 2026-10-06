@@ -20,12 +20,17 @@ separate outcomes. Paths in commands are relative to the repository root.
   and [app configuration](../../../app/build.gradle.kts) for connected-device,
   variant, and generated-source wiring. Use [build guide](../../../readme/BUILD.md)
   when build commands or environment setup need resolving.
-- State the intended AVD, journey set, and runtime budget before expensive capture.
+- State the intended device, journey set, and runtime budget before expensive capture.
   Keep journeys deterministic and bounded around useful hot paths. Changes to
   journey/replay limits must update their existing contract test and coverage plan.
-- Bind the intended AVD with `ANDROID_SERIAL` and use one SDK ADB installation/server.
+- Bind the intended device with `ANDROID_SERIAL` and use one SDK ADB installation/server.
   Preserve other tasks' device, ADB, and Gradle sessions; use an isolated available
   target or report the specific conflict.
+- On physical devices, verify both collector APK identities before installation:
+  `os.kei.profilecapture` and `os.kei.baselineprofile.capture`. Preserve existing
+  release/debug/diagnostic/old producer packages and data. Connected tasks may
+  uninstall their APKs; never use the main-package benchmark variant for collection.
+  Snapshot window/system settings and verify restoration after success or failure.
 
 ## Collection and acceptance
 

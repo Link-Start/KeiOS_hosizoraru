@@ -51,6 +51,11 @@ retaining distinct phone guide-pager and wide guide-sidebar branches.
 The Settings path opens Interface and presents/dismisses the theme selector without
 selecting a value. Calendar/Pool, the daily Sheet and catalog route are mandatory
 arrivals; remote student content, playback and empty-history paths remain optional.
+Route and menu taps wait for three matching visible bounds samples before input;
+accessibility idleness alone can precede a Compose transition settling. Menu opens
+use the same bounded arrival checks as routes. A failed required arrival saves its
+hierarchy, screenshot and target activity state before the collector closes the app,
+so an exit-animation screenshot cannot be mistaken for the click-time scene.
 The adaptive journey saves and restores the original window-size override in `finally`.
 Collection selects only the generator class, avoiding unrelated skipped benchmarks.
 The producer checks six fresh passing JUnit results and six nonempty journey files

@@ -1,8 +1,12 @@
 package os.kei.baselineprofile
 
+import android.graphics.Rect
+import android.util.Log
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
+import androidx.test.platform.app.InstrumentationRegistry
+import java.io.File
 
 /** Shared phone/wide catalog path. Remote student and audio data remain optional. */
 internal fun MacrobenchmarkScope.exerciseBaCatalogAndReturn(wide: Boolean) {
@@ -318,8 +322,7 @@ internal fun MacrobenchmarkScope.openMenuAndDismiss(
     triggerTag: String,
     rowTag: String,
 ) {
-    clickVisibleTag(triggerTag)
-    waitForTestTag(rowTag, timeoutMs = 12_000)
+    openWindowFrom(triggerTag = triggerTag, arrivalTag = rowTag)
     device.pressBack()
     check(device.wait(Until.gone(testTagSelector(rowTag)), 12_000)) {
         "Timed out waiting for menu row testTag=$rowTag to dismiss in ${targetAppId()}"
@@ -347,13 +350,33 @@ internal fun MacrobenchmarkScope.openWindowFrom(
             device.waitForIdle()
             return true
         }
+        Log.i("ProfileJourney", "No arrival at $arrivalTag after $triggerTag (attempt ${it + 1})")
         nudgeVisibleScrollable(forward = true)
     }
 
+    if (required) captureFailedOpenScene(triggerTag, arrivalTag)
     check(!required) {
         "testTag=$triggerTag never opened testTag=$arrivalTag in ${targetAppId()}"
     }
     return false
+}
+
+/** Capture before BaselineProfileRule closes its target in failure cleanup. */
+private fun MacrobenchmarkScope.captureFailedOpenScene(triggerTag: String, arrivalTag: String) {
+    runCatching {
+        val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+            ?.let(::File)
+            ?: InstrumentationRegistry.getInstrumentation().context.getExternalFilesDir(null)
+            ?: error("No owned diagnostic output directory")
+        output.mkdirs()
+        val name = "missing-$triggerTag-to-$arrivalTag"
+        device.dumpWindowHierarchy(File(output, "$name.xml"))
+        device.takeScreenshot(File(output, "$name.png"))
+        File(output, "$name-activity.txt").writeText(
+            device.executeShellCommand("dumpsys activity activities ${targetAppId()}"),
+        )
+        Log.i("ProfileJourney", "Captured missing arrival before cleanup: $name, package=${device.currentPackageName}")
+    }.onFailure { Log.w("ProfileJourney", "Unable to capture missing arrival", it) }
 }
 
 private fun MacrobenchmarkScope.clickVisibleTag(
@@ -369,14 +392,37 @@ private fun MacrobenchmarkScope.clickVisibleTag(
         device.waitForIdle()
         if (!waitForOptionalTestTag(tag, timeoutMs = 2_000)) return false
     }
-    val node = device.findObject(testTagSelector(tag)) ?: return false
-    val bounds = node.visibleBounds
-    if (!node.isEnabled || bounds.isEmpty) return false
+    val bounds = waitForStableTagBounds(tag, timeoutMs = timeoutMs) ?: return false
     // Bottom chrome is intentionally near the display edge. Scrolling a visible route action into
     // the list's "safe" area collapses that very action before the tap (notably BA daily Done).
     if (!device.click(bounds.centerX(), bounds.centerY())) return false
+    Log.i("ProfileJourney", "Tapped $tag at $bounds")
     device.waitForIdle()
     return true
+}
+
+/** Accessibility idleness can precede Compose motion settling; wait on the target's geometry. */
+private fun MacrobenchmarkScope.waitForStableTagBounds(tag: String, timeoutMs: Long): Rect? {
+    val deadline = System.nanoTime() + timeoutMs * 1_000_000L
+    var previous: Rect? = null
+    var matchingSamples = 0
+    while (System.nanoTime() < deadline) {
+        val node = device.findObject(testTagSelector(tag))
+        val bounds = node?.visibleBounds
+        if (node?.isEnabled == true && bounds != null &&
+            bounds.width() >= MIN_TAPPABLE_HEIGHT_PX && bounds.height() >= MIN_TAPPABLE_HEIGHT_PX
+        ) {
+            matchingSamples = if (bounds == previous) matchingSamples + 1 else 1
+            if (matchingSamples >= STABLE_TARGET_SAMPLES) return bounds
+            previous = bounds
+        } else {
+            previous = null
+            matchingSamples = 0
+        }
+        Thread.sleep(TARGET_GEOMETRY_SAMPLE_INTERVAL_MS)
+    }
+    Log.i("ProfileJourney", "No stable visible bounds for $tag")
+    return null
 }
 
 private fun MacrobenchmarkScope.findCompactNavigationDock(): UiObject2? {
@@ -598,6 +644,8 @@ private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
 
 
 private const val OPEN_WINDOW_ATTEMPTS = 3
+private const val STABLE_TARGET_SAMPLES = 3
+private const val TARGET_GEOMETRY_SAMPLE_INTERVAL_MS = 100L
 private const val LARGE_SCREEN_SMALLEST_WIDTH_DP = 600
 private const val TWO_COLUMN_MIN_WIDTH_DP = 760
 private const val GUIDE_PAGER_SWIPE_ATTEMPTS = 3

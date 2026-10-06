@@ -69,13 +69,16 @@ abstract class VerifyProfileCaptureTask : DefaultTask() {
         // The consumer plugin includes startup rules in the merged baseline as well.
         val expected = expectedJourneys.map { journey ->
             val kind = if (journey == "startupAndFirstScroll") "startup" else "baseline"
-            "BaselineProfileGenerator_$journey-$kind-prof.txt"
+            "BaselineProfileGenerator_$journey-$kind-prof"
         }
         reports.forEach { (report, serial, _) ->
             val deviceOutputName = report.name.removePrefix("TEST-").removeSuffix(".xml")
             expected.forEach { name ->
+                // Benchmark 1.5 attaches its dated export to the test result; the undated sibling
+                // remains on the device and is not pulled by every AGP/device combination.
+                val fileName = Regex(Regex.escape(name) + "(?:-\\d{4}(?:-\\d{2}){5})?\\.txt")
                 check(files.any { file ->
-                    file.parentFile.name == deviceOutputName && file.name == name &&
+                    file.parentFile.name == deviceOutputName && fileName.matches(file.name) &&
                         file.lastModified() >= startedAt &&
                         file.useLines { lines -> lines.any { it.isNotBlank() && !it.startsWith("#") } }
                 }) {

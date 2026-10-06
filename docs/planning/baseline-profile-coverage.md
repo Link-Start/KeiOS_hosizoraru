@@ -61,6 +61,9 @@ Reports must identify exactly those serials, and each report must have its own
 complete output directory. Gradle combines the accepted device exports using its
 normal profile merge. A connected-task success with zero tests, a missing device
 or a partial matrix is rejected by this guard.
+Benchmark 1.5 attaches dated profile files to its results; an undated sibling may
+remain only on the device. The guard accepts either exact journey name with a
+valid export timestamp, while still requiring a fresh, nonempty file for each path.
 
 Common Settings and BA journeys select the full-screen phone or two-column path
 from the current display size and density. This matches the app's 600dp smallest

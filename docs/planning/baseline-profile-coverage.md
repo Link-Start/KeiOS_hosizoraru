@@ -445,6 +445,10 @@ Accept the result after all of these checks:
 2. All six generator journeys complete.
 3. Per-journey files exist under
    baselineprofile/build/outputs/connected_android_test_additional_output/nonMinifiedRelease/.
+   Benchmark 1.5 exports startupAndFirstScroll as a startup-prof file and the other five journeys
+   as baseline-prof files. The consumer includes both kinds in the merged baseline; only the startup
+   journey contributes to merged startup-prof.txt. The capture guard requires six fresh passing
+   JUnit results and six fresh nonempty journey files before source profiles can be replaced.
 4. The generated baseline-prof.txt and startup-prof.txt changed from this commit.
 5. scripts/qa/baseline_profile_freshness.sh reports the expected generated artifacts.
 6. The release APK contains assets/dexopt/baseline.prof and assets/dexopt/baseline.profm.

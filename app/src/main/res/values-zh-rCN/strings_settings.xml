@@ -28,7 +28,7 @@
     <string name="settings_transition_animations_title">过渡动画</string>
     <string name="settings_transition_animations_summary_enabled">保持当前页面切换、搜索栏、浮层与折叠过渡动画节奏。</string>
     <string name="settings_transition_animations_summary_disabled">关闭后统一改为直接显隐，减少弱 SoC 设备的额外动画开销。</string>
-    <string name="settings_transition_animations_scope">影响主页面切页、搜索栏、底栏显隐、折叠区域与常用胶囊按压等过渡动画。</string>
+    <string name="settings_transition_animations_scope">影响启动页淡出、主页面切页、搜索栏、底栏显隐、折叠区域与常用胶囊按压等过渡动画。</string>
     <string name="settings_predictive_back_animations_title">预测返回动画</string>
     <string name="settings_predictive_back_animations_summary_enabled">系统返回手势会跟随拖动预览上一页，页面层级更清晰。</string>
     <string name="settings_predictive_back_animations_summary_disabled">关闭后返回手势直接执行返回，减少上一页预览带来的视觉干扰。</string>

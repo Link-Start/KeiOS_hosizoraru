@@ -28,7 +28,7 @@
     <string name="settings_transition_animations_title">Transition animations</string>
     <string name="settings_transition_animations_summary_enabled">Keep the current rhythm for page switches, search bars, sheets, and expand transitions.</string>
     <string name="settings_transition_animations_summary_disabled">Use direct show/hide transitions to reduce extra animation cost on weaker devices.</string>
-    <string name="settings_transition_animations_scope">Affects main page switching, search bars, bottom bar visibility, expandable areas, and common capsule press transitions.</string>
+    <string name="settings_transition_animations_scope">Affects the launch screen fade, main page switching, search bars, bottom bar visibility, expandable areas, and common capsule press transitions.</string>
     <string name="settings_predictive_back_animations_title">Predictive back animations</string>
     <string name="settings_predictive_back_animations_summary_enabled">System back gestures preview the previous page while dragging, making hierarchy clearer.</string>
     <string name="settings_predictive_back_animations_summary_disabled">Back gestures return directly, reducing visual distraction from page previews.</string>

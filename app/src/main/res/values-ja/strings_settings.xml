@@ -28,7 +28,7 @@
     <string name="settings_transition_animations_title">遷移アニメーション</string>
     <string name="settings_transition_animations_summary_enabled">ページ切替、検索バー、シート、展開遷移の現在のリズムを維持します。</string>
     <string name="settings_transition_animations_summary_disabled">弱い端末での負荷を抑えるため、直接表示/非表示の遷移を使用します。</string>
-    <string name="settings_transition_animations_scope">メインページ切替、検索バー、下部バー表示、展開領域、共通カプセルの押下遷移に影響します。</string>
+    <string name="settings_transition_animations_scope">起動画面のフェード、メインページ切替、検索バー、下部バー表示、展開領域、共通カプセルの押下遷移に影響します。</string>
     <string name="settings_predictive_back_animations_title">予測型戻るアニメーション</string>
     <string name="settings_predictive_back_animations_summary_enabled">戻るジェスチャー中に前のページをプレビューし、階層を分かりやすくします。</string>
     <string name="settings_predictive_back_animations_summary_disabled">戻るジェスチャーを直接実行し、ページプレビューの視覚的な刺激を抑えます。</string>

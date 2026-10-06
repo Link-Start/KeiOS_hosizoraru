@@ -1,6 +1,7 @@
 package os.kei.baselineprofile
 
 import androidx.benchmark.macro.MacrobenchmarkScope
+import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 
 /** Shared phone/wide catalog path. Remote student and audio data remain optional. */
@@ -362,19 +363,33 @@ private fun MacrobenchmarkScope.clickVisibleTag(
     if (!waitForOptionalTestTag(tag, timeoutMs)) {
         // A page fling turns its action bar into a compact dock. Reveal it once before treating a
         // route action as absent; this is the common path into BA calendar/catalog after scrolling.
-        val compactDock = device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK)) ?: return false
-        runCatching { compactDock.click() }
+        val compactDock = findCompactNavigationDock() ?: return false
+        val bounds = compactDock.visibleBounds
+        if (bounds.isEmpty || !device.click(bounds.centerX(), bounds.centerY())) return false
         device.waitForIdle()
         if (!waitForOptionalTestTag(tag, timeoutMs = 2_000)) return false
     }
-    val bounds = device.findObject(testTagSelector(tag))?.visibleBounds ?: return false
-    if (bounds.centerY() > (device.displayHeight * 0.88f).toInt()) {
-        nudgeVisibleScrollable(forward = true)
-    }
-    val settled = device.findObject(testTagSelector(tag))?.visibleBounds ?: return false
-    device.click(settled.centerX(), settled.centerY())
+    val node = device.findObject(testTagSelector(tag)) ?: return false
+    val bounds = node.visibleBounds
+    if (!node.isEnabled || bounds.isEmpty) return false
+    // Bottom chrome is intentionally near the display edge. Scrolling a visible route action into
+    // the list's "safe" area collapses that very action before the tap (notably BA daily Done).
+    if (!device.click(bounds.centerX(), bounds.centerY())) return false
     device.waitForIdle()
     return true
+}
+
+private fun MacrobenchmarkScope.findCompactNavigationDock(): UiObject2? {
+    device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK).enabled(true))?.let { return it }
+    // Main navigation retains the selected page tag on its collapsed dock. Compose exports that
+    // caller tag instead of the shared compact tag when both occupy the same semantics node.
+    // Unlike an expanded tab, this tagged surface has a clickable descendant, not its own action.
+    return listOf(MAIN_BOTTOM_TAB_HOME, MAIN_BOTTOM_TAB_OS, MAIN_BOTTOM_TAB_MCP,
+        MAIN_BOTTOM_TAB_GITHUB, MAIN_BOTTOM_TAB_BA)
+        .firstNotNullOfOrNull { tag ->
+            device.findObject(testTagSelector(tag).enabled(true).clickable(false))
+                ?.takeUnless { it.visibleBounds.isEmpty }
+        }
 }
 
 internal fun MacrobenchmarkScope.clickTestTag(tag: String) {
@@ -392,7 +407,10 @@ internal fun MacrobenchmarkScope.clickTaggedCardHeader(tag: String) {
     device.waitForIdle()
 }
 
-internal fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
+internal fun MacrobenchmarkScope.scrollTestTagIntoReach(
+    tag: String,
+    forwardWhenAbsent: Boolean = true,
+) {
     val safeTop = (device.displayHeight * SCROLL_SAFE_TOP_FRACTION).toInt()
     val safeBottom = (device.displayHeight * SCROLL_SAFE_BOTTOM_FRACTION).toInt()
     repeat(SCROLL_INTO_REACH_ATTEMPTS) {
@@ -404,7 +422,7 @@ internal fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
             device.waitForIdle()
             return
         }
-        nudgeVisibleScrollable(forward = bounds == null || bounds.centerY() > safeBottom)
+        nudgeVisibleScrollable(forward = if (bounds == null) forwardWhenAbsent else bounds.centerY() > safeBottom)
     }
     error("Unable to bring testTag=$tag into reach in ${targetAppId()}")
 }
@@ -417,7 +435,7 @@ internal fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
             return
         }
 
-        val compactDock = device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK))
+        val compactDock = findCompactNavigationDock()
         if (compactDock != null) {
             // The shared tag sits on the visual Liquid surface while its clickable semantics can
             // belong to a descendant. UiObject2.click() therefore warns that the tagged node is

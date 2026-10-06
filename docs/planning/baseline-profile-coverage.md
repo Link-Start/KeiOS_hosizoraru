@@ -53,9 +53,10 @@ selecting a value. Calendar/Pool, the daily Sheet and catalog route are mandator
 arrivals; remote student content, playback and empty-history paths remain optional.
 The adaptive journey saves and restores the original window-size override in `finally`.
 Collection selects only the generator class, avoiding unrelated skipped benchmarks.
-The producer checks all six fresh nonempty journey files plus the startup file
-before collection/merge can overwrite accepted source profiles. A connected-task
-success with zero tests or a transport failure is rejected by this guard.
+The producer checks six fresh passing JUnit results and six nonempty journey files
+(five baseline exports and one startup export) before collection/merge can overwrite
+accepted source profiles. A connected-task success with zero tests or a transport
+failure is rejected by this guard.
 
 Both installed APKs have disposable identities: `os.kei.profilecapture` for the
 unminified release-derived application and `os.kei.baselineprofile.capture` for the
@@ -473,6 +474,13 @@ inodes, permissions and system/window settings; check them after collection. Nev
 uninstall, clear or overwrite release/debug/diagnostic data or an older producer ID.
 The connected task can uninstall only the two verified disposable APKs. Bind every
 connected task to the selected serial; leave other devices and forwards alone.
+
+On an OEM device, launch the disposable collector during preflight and resolve its
+first-run permission prompts before collection. HyperOS can show an installed-app
+query permission dialog outside Android's runtime-permission API. Verify the dialog
+belongs to os.kei.profilecapture before granting it; retain that owned installation
+for the connected task's replacement install. Do not add translated permission-button
+clicks to generic navigation helpers or change existing user-package permissions.
 
 The generated profiles in the working tree represent the accepted six-journey capture. The freshness
 script dates a capture from the latest commit touching the generated Profile directory, so it continues

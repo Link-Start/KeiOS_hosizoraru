@@ -189,7 +189,9 @@ class BaselineProfileGenerator {
                 clickTaggedCardHeader(GITHUB_TRACKED_ITEM_CARD_FIRST)
                 flingVisibleScrollable(times = 1)
 
-                scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+                // The preceding fling can unload this header above the viewport; seek back toward
+                // it instead of continuing down the list when LazyColumn no longer exposes it.
+                scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON, forwardWhenAbsent = false)
                 clickTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON)
                 if (waitForOptionalTestTag(GITHUB_ACTIONS_MENU_ITEM, timeoutMs = 5_000)) {
                     clickTestTag(GITHUB_ACTIONS_MENU_ITEM)

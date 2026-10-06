@@ -24,6 +24,8 @@ separate outcomes. Paths in commands are relative to the repository root.
   Keep journeys deterministic and bounded around useful hot paths. Changes to
   journey/replay limits must update their existing contract test and coverage plan.
 - Bind the intended device with `ANDROID_SERIAL` and use one SDK ADB installation/server.
+  A Phone/Tablet matrix can use comma-separated serials in the same variable; require
+  all six journeys and fresh exports for each selected device before accepting its merge.
   Preserve other tasks' device, ADB, and Gradle sessions; use an isolated available
   target or report the specific conflict.
 - On physical devices, verify both collector APK identities before installation:

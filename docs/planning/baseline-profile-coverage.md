@@ -5,7 +5,7 @@ evidence required before a generated profile is accepted.
 
 ## Current design
 
-The default generator contains six user journeys with a maximum of 16 replays.
+The default generator contains six user journeys with a maximum of 16 replays per device.
 
 | Journey | Max/stable replays | What it warms |
 | --- | ---: | --- |
@@ -54,9 +54,19 @@ arrivals; remote student content, playback and empty-history paths remain option
 The adaptive journey saves and restores the original window-size override in `finally`.
 Collection selects only the generator class, avoiding unrelated skipped benchmarks.
 The producer checks six fresh passing JUnit results and six nonempty journey files
-(five baseline exports and one startup export) before collection/merge can overwrite
-accepted source profiles. A connected-task success with zero tests or a transport
-failure is rejected by this guard.
+(five baseline exports and one startup export) for every selected device before
+collection/merge can overwrite accepted source profiles. Bind a matrix with a
+comma-separated `ANDROID_SERIAL`, for example `emulator-5560,emulator-5562`.
+Reports must identify exactly those serials, and each report must have its own
+complete output directory. Gradle combines the accepted device exports using its
+normal profile merge. A connected-task success with zero tests, a missing device
+or a partial matrix is rejected by this guard.
+
+Common Settings and BA journeys select the full-screen phone or two-column path
+from the current display size and density. This matches the app's 600dp smallest
+dimension and 760dp two-pane gates; a native Tablet run must not search for the
+phone-only Calendar/Pool category bar. The adaptive journey continues to cover
+explicit resizing and restores the original override on either device.
 
 Both installed APKs have disposable identities: `os.kei.profilecapture` for the
 unminified release-derived application and `os.kei.baselineprofile.capture` for the
@@ -443,13 +453,14 @@ Run the complete capture only after the source/build gates pass:
 Accept the result after all of these checks:
 
 1. Gradle exits successfully; preserve the Gradle exit code when output is piped.
-2. All six generator journeys complete.
+2. All six generator journeys complete on every selected device.
 3. Per-journey files exist under
    baselineprofile/build/outputs/connected_android_test_additional_output/nonMinifiedRelease/.
    Benchmark 1.5 exports startupAndFirstScroll as a startup-prof file and the other five journeys
    as baseline-prof files. The consumer includes both kinds in the merged baseline; only the startup
    journey contributes to merged startup-prof.txt. The capture guard requires six fresh passing
-   JUnit results and six fresh nonempty journey files before source profiles can be replaced.
+   JUnit results and six fresh nonempty journey files per selected device before source profiles
+   can be replaced.
 4. The generated baseline-prof.txt and startup-prof.txt changed from this commit.
 5. scripts/qa/baseline_profile_freshness.sh reports the expected generated artifacts.
 6. The release APK contains assets/dexopt/baseline.prof and assets/dexopt/baseline.profm.

@@ -540,6 +540,15 @@ internal fun MacrobenchmarkScope.forceWindowSizeDp(
     )
 }
 
+/** Mirrors the large-device (600dp) and two-pane (2 * 380dp) gates for full-screen capture. */
+internal fun MacrobenchmarkScope.profileWindowUsesTwoColumns(): Boolean {
+    val densityDpi = deviceDensityDpi()
+    val widthDp = device.displayWidth * 160 / densityDpi
+    val heightDp = device.displayHeight * 160 / densityDpi
+    return minOf(widthDp, heightDp) >= LARGE_SCREEN_SMALLEST_WIDTH_DP &&
+        widthDp >= TWO_COLUMN_MIN_WIDTH_DP
+}
+
 private fun MacrobenchmarkScope.forceWindowSize(
     widthPx: Int,
     heightPx: Int,
@@ -589,6 +598,8 @@ private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
 
 
 private const val OPEN_WINDOW_ATTEMPTS = 3
+private const val LARGE_SCREEN_SMALLEST_WIDTH_DP = 600
+private const val TWO_COLUMN_MIN_WIDTH_DP = 760
 private const val GUIDE_PAGER_SWIPE_ATTEMPTS = 3
 private const val BGM_PLAYBACK_TIMEOUT_MS = 25_000L
 private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8

@@ -115,7 +115,7 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            exerciseSettingsAndReturn(wide = false)
+            exerciseSettingsAndReturn(wide = profileWindowUsesTwoColumns())
             pushRouteAndReturn(
                 entryTag = HOME_ABOUT_BUTTON,
                 pageTag = ABOUT_PAGE_ROOT,
@@ -247,13 +247,14 @@ class BaselineProfileGenerator {
                 }
             }
 
-            openBaCalendarPoolAndReturn()
+            val wide = profileWindowUsesTwoColumns()
+            openBaCalendarPoolAndReturn(wide = wide)
             openAndDismissOverlay(
                 triggerTag = BA_DOCK_DAILY_DONE,
                 panelTag = LIQUID_SHEET_PANEL,
             )
 
-            exerciseBaCatalogAndReturn(wide = false)
+            exerciseBaCatalogAndReturn(wide = wide)
         }
     }
 

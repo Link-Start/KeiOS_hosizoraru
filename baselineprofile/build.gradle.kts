@@ -22,6 +22,9 @@ abstract class VerifyProfileCaptureTask : DefaultTask() {
     @get:Input
     abstract val journeys: ListProperty<String>
 
+    @get:Input
+    abstract val deviceSerials: ListProperty<String>
+
     @TaskAction
     fun verify() {
         val startedAt = captureStartedAt.get().asFile.readText().trim().toLong()
@@ -30,20 +33,36 @@ abstract class VerifyProfileCaptureTask : DefaultTask() {
         val parser = DocumentBuilderFactory.newInstance().apply {
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
         }.newDocumentBuilder()
-        val completed = testResults.files
+        val selectedDevices = deviceSerials.get().toSet()
+        check(selectedDevices.isNotEmpty()) {
+            "Bind profile collection to the intended devices with ANDROID_SERIAL (comma-separated for multiple devices)."
+        }
+        val reports = testResults.files
             .filter { it.lastModified() >= startedAt }
-            .flatMap { file ->
-                val cases = parser.parse(file).getElementsByTagName("testcase")
-                (0 until cases.length).map { cases.item(it) as org.w3c.dom.Element }
+            .map { file ->
+                val document = parser.parse(file)
+                val properties = document.getElementsByTagName("property")
+                val serial = (0 until properties.length)
+                    .map { properties.item(it) as org.w3c.dom.Element }
+                    .singleOrNull { it.getAttribute("name") == "device" }
+                    ?.getAttribute("value")
+                val cases = document.getElementsByTagName("testcase")
+                val completed = (0 until cases.length)
+                    .map { cases.item(it) as org.w3c.dom.Element }
+                    .filter { it.getAttribute("classname") == "os.kei.baselineprofile.BaselineProfileGenerator" }
+                Triple(file, serial, completed)
             }
-            .filter { it.getAttribute("classname") == "os.kei.baselineprofile.BaselineProfileGenerator" }
-        check(completed.size == expectedJourneys.size &&
-            completed.map { it.getAttribute("name") }.toSet() == expectedJourneys &&
-            completed.none { testcase ->
-                listOf("failure", "error", "skipped").any { testcase.getElementsByTagName(it).length > 0 }
+        check(reports.size == selectedDevices.size &&
+            reports.map { it.second }.toSet() == selectedDevices &&
+            reports.all { (_, _, completed) ->
+                completed.size == expectedJourneys.size &&
+                    completed.map { it.getAttribute("name") }.toSet() == expectedJourneys &&
+                    completed.none { testcase ->
+                        listOf("failure", "error", "skipped").any { testcase.getElementsByTagName(it).length > 0 }
+                    }
             }
         ) {
-            "Incomplete Baseline Profile capture: all six journeys must pass in fresh test results. " +
+            "Incomplete Baseline Profile capture: all six journeys must pass in fresh test results on every selected device. " +
                 "Keep the accepted source profiles; inspect connected-device/test results."
         }
         // Benchmark 1.5 emits a startup file instead of a second baseline file for this journey.
@@ -52,13 +71,17 @@ abstract class VerifyProfileCaptureTask : DefaultTask() {
             val kind = if (journey == "startupAndFirstScroll") "startup" else "baseline"
             "BaselineProfileGenerator_$journey-$kind-prof.txt"
         }
-        expected.forEach { name ->
-            check(files.any { file ->
-                file.name == name && file.lastModified() >= startedAt &&
-                    file.useLines { lines -> lines.any { it.isNotBlank() && !it.startsWith("#") } }
-            }) {
-                "Incomplete Baseline Profile capture: missing fresh nonempty $name. " +
-                    "Keep the accepted source profiles; inspect connected-device/test results."
+        reports.forEach { (report, serial, _) ->
+            val deviceOutputName = report.name.removePrefix("TEST-").removeSuffix(".xml")
+            expected.forEach { name ->
+                check(files.any { file ->
+                    file.parentFile.name == deviceOutputName && file.name == name &&
+                        file.lastModified() >= startedAt &&
+                        file.useLines { lines -> lines.any { it.isNotBlank() && !it.startsWith("#") } }
+                }) {
+                    "Incomplete Baseline Profile capture: missing fresh nonempty $name for $serial. " +
+                        "Keep the accepted source profiles; inspect connected-device/test results."
+                }
             }
         }
     }
@@ -140,6 +163,9 @@ val verifyProfileCapture = tasks.register<VerifyProfileCaptureTask>("verifyNonMi
         "startupAndFirstScroll", "mainPagesAndNavigation", "commonRoutesAndChrome",
         "gitHubTrackingCore", "baOfficeAndCatalogCore", "adaptiveLargeScreenCore",
     ))
+    deviceSerials.set(providers.environmentVariable("ANDROID_SERIAL").orElse("").map { serials ->
+        serials.split(',').map(String::trim).filter(String::isNotEmpty)
+    })
 }
 tasks.matching { it.name == "collectNonMinifiedReleaseBaselineProfile" }.configureEach {
     dependsOn(verifyProfileCapture)

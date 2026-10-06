@@ -172,8 +172,10 @@ release, debug, diagnostic and the older `os.kei.baselineprofile` installation
 remain separate. Verify those identities and existing device/package state before
 a physical run. Never substitute `benchmarkRelease` for this collector.
 
-The six journeys have a maximum of 16 replays. The producer requires fresh nonempty
-outputs for every journey and startup before copying profiles into release sources,
+The six journeys have a maximum of 16 replays per device. To collect a Phone/Tablet
+matrix in one task, bind both with `ANDROID_SERIAL=<phone-serial>,<tablet-serial>`;
+other connected devices are excluded. The producer requires six passing tests and
+fresh nonempty outputs for every selected device before copying profiles into release sources,
 so a connected-runner transport error reporting zero tests cannot erase accepted
 profiles. Check actual test results and generated outputs, then build release and
 verify both `assets/dexopt/baseline.prof` and `baseline.profm`. See

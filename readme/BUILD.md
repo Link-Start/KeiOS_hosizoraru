@@ -158,6 +158,28 @@ release declares no `applicationIdSuffix`, so it is `os.kei` — unlike `debug` 
 `releaseDiagnostic` (`.diag`). On a validation AVD that is the intent; on a phone you carry it is
 not, so a non-emulator target is refused unless `--allow-physical` is passed.
 
+### Data-preserving Baseline Profile collection
+
+Bind one device and run the explicit collection task:
+
+```bash
+ANDROID_SERIAL=<selected-target> ./gradlew :app:generateReleaseBaselineProfile
+```
+
+Collection uses `nonMinifiedRelease` as `os.kei.profilecapture` and a separate
+self-instrumenting producer `os.kei.baselineprofile.capture`. Both are disposable;
+release, debug, diagnostic and the older `os.kei.baselineprofile` installation
+remain separate. Verify those identities and existing device/package state before
+a physical run. Never substitute `benchmarkRelease` for this collector.
+
+The six journeys have a maximum of 16 replays. The producer requires fresh nonempty
+outputs for every journey and startup before copying profiles into release sources,
+so a connected-runner transport error reporting zero tests cannot erase accepted
+profiles. Check actual test results and generated outputs, then build release and
+verify both `assets/dexopt/baseline.prof` and `baseline.profm`. See
+[the collection plan](../docs/planning/baseline-profile-coverage.md) for coverage and
+device restoration. Collection success is separate from a measured speedup.
+
 ### v1.16.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
@@ -184,7 +206,8 @@ Recommended focused checks for this release:
 - The Student Guide pages with Cross-Axis: a swipe during a coasting list pages, the audio slider seeks
   without paging, and tab taps land.
 - `scripts/qa/baseline_profile_freshness.sh` reports fresh for both sources and dependency versions.
-  The merged profile contains 62,312 baseline rules and 24,262 startup rules and is packaged under `assets/dexopt/`.
+  The merged baseline and startup profiles are nonempty, retain the named paths in the collection plan,
+  and are packaged under `assets/dexopt/`. Dated textual rule counts are capture metadata, not fixed gates.
 - Release APK signing, `1.16.0` / `11600999` metadata, R8/minify output, Baseline Profile packaging,
   and the signer certificate are verified.
 - GitHub Release upload notes are copied from [Release Notes v1.16.0](RELEASE_V1.16.0.md).

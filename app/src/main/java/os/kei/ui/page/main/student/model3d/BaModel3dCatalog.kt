@@ -31,10 +31,11 @@ internal fun encodeModelPath(value: String): String = URLEncoder.encode(value, C
 /** Prefixes remain distinct. CharacterId, GameKee contentId and resource development IDs are different namespaces. */
 internal fun normalizeModelDevelopmentId(raw: String): String? {
     val value = Normalizer.normalize(raw.trim(), Normalizer.Form.NFKC)
-    Regex("(?i)^(CH|NP)[ _-]?(\\d{1,4})$").matchEntire(value)?.let {
-        return it.groupValues[1].lowercase(Locale.ROOT) + it.groupValues[2].padStart(4, '0')
+    Regex("(?i)^(CH|NP)[ _-]?(\\d{1,4})(?:[ _-](\\d{1,2}))?$").matchEntire(value)?.let {
+        val form = it.groupValues[3].takeIf(String::isNotEmpty)?.let { n -> "_" + n.padStart(2, '0') }.orEmpty()
+        return it.groupValues[1].lowercase(Locale.ROOT) + it.groupValues[2].padStart(4, '0') + form
     }
-    return value.takeIf { it.matches(Regex("[A-Za-z][A-Za-z0-9]*(?:_(?:default|Original))?", RegexOption.IGNORE_CASE)) }
+    return value.takeIf { it.matches(Regex("[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)*")) }
         ?.lowercase(Locale.ROOT)
 }
 
@@ -101,8 +102,15 @@ internal class BaModel3dIndex private constructor(private val resources: List<Ba
                     require(aliases[alias] == null || aliases[alias] == normalized)
                     aliases[alias] = normalized
                 }
-                val models = assets.getValue(b.getString("group"))
-                val default = b.getString("defaultFile").also { require(models.any { m -> m.file == it }) }
+                val primaryGroup = b.getString("group")
+                val primary = assets.getValue(primaryGroup)
+                val default = b.getString("defaultFile").also { require(primary.any { m -> m.file == it }) }
+                val additional = b.optJSONArray("additionalGroups")
+                val groupNames = if (additional == null) emptyList() else List(additional.length()) { additional.getString(it) }
+                require(groupNames.distinct().size == groupNames.size && primaryGroup !in groupNames)
+                val models = primary + groupNames.flatMap { group ->
+                    assets.getValue(group).map { asset -> asset.copy(label = "$group / ${asset.label}") }
+                }
                 val contentId = b.getLong("gameKeeContentId").also { require(it > 0) }
                 val characterId = b.getInt("characterId").also { require(it > 0) }
                 BaModel3dResource(contentId, characterId, dev, b.getString("wikiPage"), default, models)

@@ -1,0 +1,3933 @@
+{
+  "schema": 1,
+  "revision": "525ae0faeb0a89f54ef4023f3be3692dcb529e51",
+  "sources": {
+    "wiki": "https://bluearchive.wiki/wiki/Models",
+    "gameKee": "https://www.gamekee.com/v1/entry/treesByPid?pid=49443"
+  },
+  "bindings": [
+    {
+      "gameKeeContentId": 46677,
+      "characterId": 10010,
+      "developmentId": "Shiroko_default",
+      "wikiPage": "Shiroko",
+      "group": "Shiroko",
+      "defaultFile": "Shiroko.glb",
+      "developmentAliases": [
+        "Shiroko_Original"
+      ],
+      "evidence": {
+        "gameKeeName": "白子",
+        "gameKeeAliases": "シロコ,xcw,小仓唯,Shiroko,白字",
+        "wikiRevision": 126481,
+        "review": "Ordinary Shiroko article is distinct from Shiroko＊Terror despite the shared Japanese given name.",
+        "resourceBodyAlias": "Shiroko_Original"
+      }
+    },
+    {
+      "gameKeeContentId": 46678,
+      "characterId": 13008,
+      "developmentId": "Serika_default",
+      "wikiPage": "Serika",
+      "group": "Serika",
+      "defaultFile": "Serika.glb",
+      "evidence": {
+        "gameKeeName": "芹香",
+        "gameKeeAliases": "セリカ,黑猫,Serika,茜香",
+        "wikiRevision": 102751,
+        "resourceBodyAlias": "Serika_Original"
+      },
+      "developmentAliases": [
+        "Serika_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 46680,
+      "characterId": 10005,
+      "developmentId": "Hoshino_default",
+      "wikiPage": "Hoshino",
+      "group": "Hoshino",
+      "defaultFile": "Hoshino.glb",
+      "evidence": {
+        "gameKeeName": "星野",
+        "gameKeeAliases": "ホシノ,大叔,Hoshino",
+        "wikiRevision": 129459,
+        "resourceBodyAlias": "Hoshino_Original"
+      },
+      "developmentAliases": [
+        "Hoshino_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 46923,
+      "characterId": 23005,
+      "developmentId": "Ayane_default",
+      "wikiPage": "Ayane",
+      "group": "Ayane",
+      "defaultFile": "Ayane.glb",
+      "evidence": {
+        "gameKeeName": "绫音",
+        "gameKeeAliases": "アヤネ,Ayane,凌音",
+        "wikiRevision": 123078,
+        "resourceBodyAlias": "Ayane_Original"
+      },
+      "developmentAliases": [
+        "Ayane_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 53921,
+      "characterId": 16000,
+      "developmentId": "Haruka_default",
+      "wikiPage": "Haruka",
+      "group": "Haruka",
+      "defaultFile": "Haruka.glb",
+      "evidence": {
+        "gameKeeName": "遥香",
+        "gameKeeAliases": "春香,ハルカ,Haruka",
+        "wikiRevision": 105780,
+        "resourceBodyAlias": "Haruka_Original"
+      },
+      "developmentAliases": [
+        "Haruka_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 54505,
+      "characterId": 13006,
+      "developmentId": "Mutsuki_default",
+      "wikiPage": "Mutsuki",
+      "group": "Mutsuki",
+      "defaultFile": "Mutsuki.glb",
+      "evidence": {
+        "gameKeeName": "睦月",
+        "gameKeeAliases": "无月,ムツキ,Mutsuki,小恶魔,地雷妹",
+        "wikiRevision": 143954,
+        "resourceBodyAlias": "Mutsuki_Original"
+      },
+      "developmentAliases": [
+        "Mutsuki_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 56393,
+      "characterId": 13005,
+      "developmentId": "Kayoko_default",
+      "wikiPage": "Kayoko",
+      "group": "Kayoko",
+      "defaultFile": "Kayoko.glb",
+      "evidence": {
+        "gameKeeName": "佳代子",
+        "gameKeeAliases": "佳世子,カヨコ,Kayoko",
+        "wikiRevision": 143953,
+        "resourceBodyAlias": "Kayoko_Original"
+      },
+      "developmentAliases": [
+        "Kayoko_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 57763,
+      "characterId": 10000,
+      "developmentId": "Aru_default",
+      "wikiPage": "Aru",
+      "group": "Aru",
+      "defaultFile": "Aru.glb",
+      "evidence": {
+        "gameKeeName": "阿露",
+        "gameKeeAliases": "爱露,亚瑠,アル,Aru,社长,憨憨,阿鲁",
+        "wikiRevision": 143955,
+        "resourceBodyAlias": "Aru_Original"
+      },
+      "developmentAliases": [
+        "Aru_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 58280,
+      "characterId": 26000,
+      "developmentId": "Chinatsu_default",
+      "wikiPage": "Chinatsu",
+      "group": "Chinatsu",
+      "defaultFile": "Chinatsu.glb",
+      "evidence": {
+        "gameKeeName": "千夏",
+        "gameKeeAliases": "チナツ,Chinatsu,红秋裤",
+        "wikiRevision": 143957,
+        "resourceBodyAlias": "Chinatsu_Original"
+      },
+      "developmentAliases": [
+        "Chinatsu_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 59300,
+      "characterId": 10006,
+      "developmentId": "Iori_default",
+      "wikiPage": "Iori",
+      "group": "Iori",
+      "defaultFile": "Iori.glb",
+      "evidence": {
+        "gameKeeName": "伊织",
+        "gameKeeAliases": "イオリ,Iori,佐仓,佐三枪",
+        "wikiRevision": 106293,
+        "resourceBodyAlias": "Iori_Original"
+      },
+      "developmentAliases": [
+        "Iori_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 59934,
+      "characterId": 10004,
+      "developmentId": "Hina_default",
+      "wikiPage": "Hina",
+      "group": "Hina",
+      "defaultFile": "Hina.glb",
+      "developmentAliases": [
+        "Hina_Original"
+      ],
+      "evidence": {
+        "gameKeeName": "日奈",
+        "gameKeeAliases": "阳奈,ヒナ,Hina,魔王",
+        "wikiRevision": 126278,
+        "resourceBodyAlias": "Hina_Original"
+      }
+    },
+    {
+      "gameKeeContentId": 60879,
+      "characterId": 13007,
+      "developmentId": "Zunko_default",
+      "wikiPage": "Junko",
+      "group": "Junko",
+      "defaultFile": "Junko.glb",
+      "evidence": {
+        "gameKeeName": "淳子",
+        "gameKeeAliases": "纯子,ジュンコ,Junko,丸子,小火龙",
+        "wikiRevision": 102750,
+        "resourceBodyAlias": "Zunko_Original"
+      },
+      "developmentAliases": [
+        "Zunko_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 61498,
+      "characterId": 10009,
+      "developmentId": "Izumi_default",
+      "wikiPage": "Izumi",
+      "group": "Izumi",
+      "defaultFile": "Izumi.glb",
+      "evidence": {
+        "gameKeeName": "泉",
+        "gameKeeAliases": "イズミ,Izumi,老八",
+        "wikiRevision": 111227,
+        "resourceBodyAlias": "Izumi_Original"
+      },
+      "developmentAliases": [
+        "Izumi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 62126,
+      "characterId": 13002,
+      "developmentId": "Akari_default",
+      "wikiPage": "Akari",
+      "group": "Akari",
+      "defaultFile": "Akari.glb",
+      "evidence": {
+        "gameKeeName": "明里",
+        "gameKeeAliases": "亚伽里,アカリ,Akari",
+        "wikiRevision": 102745,
+        "resourceBodyAlias": "Akari_Original"
+      },
+      "developmentAliases": [
+        "Akari_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 62592,
+      "characterId": 10002,
+      "developmentId": "Haruna_default",
+      "wikiPage": "Haruna",
+      "group": "Haruna",
+      "defaultFile": "Haruna.glb",
+      "evidence": {
+        "gameKeeName": "晴奈",
+        "gameKeeAliases": "羽留奈,ハルナ,Haruna,神秘狙",
+        "wikiRevision": 144006,
+        "resourceBodyAlias": "Haruna_Original"
+      },
+      "developmentAliases": [
+        "Haruna_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 63927,
+      "characterId": 26002,
+      "developmentId": "Juri_default",
+      "wikiPage": "Juri",
+      "group": "Juri",
+      "defaultFile": "Juri.glb",
+      "evidence": {
+        "gameKeeName": "朱莉",
+        "gameKeeAliases": "ジュリ,Juri,毒锅,朱丽,茱莉",
+        "wikiRevision": 102929,
+        "resourceBodyAlias": "Juri_Original (Juri_Original_body node)"
+      },
+      "developmentAliases": [
+        "Juri_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 64384,
+      "characterId": 23001,
+      "developmentId": "Fuuka_default",
+      "wikiPage": "Fuuka",
+      "group": "Fuuka",
+      "defaultFile": "Fuuka.glb",
+      "evidence": {
+        "gameKeeName": "枫香",
+        "gameKeeAliases": "风香,风华,フウカ,Fuuka,煮饭婆",
+        "wikiRevision": 127858,
+        "resourceBodyAlias": "Fuuka_Original"
+      },
+      "developmentAliases": [
+        "Fuuka_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66256,
+      "characterId": 10003,
+      "developmentId": "Hihumi_default",
+      "wikiPage": "Hifumi",
+      "group": "Hifumi",
+      "defaultFile": "Hifumi.glb",
+      "evidence": {
+        "gameKeeName": "日富美",
+        "gameKeeAliases": "日步美,ヒフミ,Hifumi,浮士德,123,黄鸡",
+        "wikiRevision": 106290,
+        "resourceBodyAlias": "Hihumi_Original"
+      },
+      "developmentAliases": [
+        "Hihumi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66259,
+      "characterId": 16003,
+      "developmentId": "Suzumi_default",
+      "wikiPage": "Suzumi",
+      "group": "Suzumi",
+      "defaultFile": "Suzumi.glb",
+      "evidence": {
+        "gameKeeName": "铃美",
+        "gameKeeAliases": "スズミ,闪光弹,Suzumi",
+        "wikiRevision": 126478,
+        "resourceBodyAlias": "Suzumi_Original"
+      },
+      "developmentAliases": [
+        "Suzumi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66269,
+      "characterId": 26004,
+      "developmentId": "Shimiko_default",
+      "wikiPage": "Shimiko",
+      "group": "Shimiko",
+      "defaultFile": "Shimiko.glb",
+      "evidence": {
+        "gameKeeName": "志美子",
+        "gameKeeAliases": "シミコ,图书妹,Shimiko",
+        "wikiRevision": 144157,
+        "resourceBodyAlias": "Shimiko_Original"
+      },
+      "developmentAliases": [
+        "Shimiko_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66272,
+      "characterId": 26005,
+      "developmentId": "Yoshimi_default",
+      "wikiPage": "Yoshimi",
+      "group": "Yoshimi",
+      "defaultFile": "Yoshimi.glb",
+      "evidence": {
+        "gameKeeName": "好美",
+        "gameKeeAliases": "喜美,ヨシミ,Yoshimi ",
+        "wikiRevision": 102932,
+        "resourceBodyAlias": "Yoshimi_Original"
+      },
+      "developmentAliases": [
+        "Yoshimi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66274,
+      "characterId": 23000,
+      "developmentId": "Airi_default",
+      "wikiPage": "Airi",
+      "group": "Airi",
+      "defaultFile": "Airi.glb",
+      "evidence": {
+        "gameKeeName": "爱莉",
+        "gameKeeAliases": "爱理,アイリ,Airi",
+        "wikiRevision": 102918,
+        "resourceBodyAlias": "Airi_Original"
+      },
+      "developmentAliases": [
+        "Airi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66275,
+      "characterId": 26003,
+      "developmentId": "Serina_default",
+      "wikiPage": "Serina",
+      "group": "Serina",
+      "defaultFile": "Serina.glb",
+      "evidence": {
+        "gameKeeName": "芹娜",
+        "gameKeeAliases": "芹奈,セリナ,小护士,Serina",
+        "wikiRevision": 144231,
+        "resourceBodyAlias": "Serina_Original"
+      },
+      "developmentAliases": [
+        "Serina_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66394,
+      "characterId": 13003,
+      "developmentId": "Hasumi_default",
+      "wikiPage": "Hasumi",
+      "group": "Hasumi",
+      "defaultFile": "Hasumi.glb",
+      "evidence": {
+        "gameKeeName": "莲见",
+        "gameKeeAliases": "莲实,ハスミ,Hasumi",
+        "wikiRevision": 126479,
+        "resourceBodyAlias": "Hasumi_Original"
+      },
+      "developmentAliases": [
+        "Hasumi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66645,
+      "characterId": 10013,
+      "developmentId": "Tsurugi_default",
+      "wikiPage": "Tsurugi",
+      "group": "Tsurugi",
+      "defaultFile": "Tsurugi.glb",
+      "evidence": {
+        "gameKeeName": "鹤城",
+        "gameKeeAliases": "弦生,ツルギ,颜艺,Tsurugi",
+        "wikiRevision": 106300,
+        "resourceBodyAlias": "Tsurugi_Original"
+      },
+      "developmentAliases": [
+        "Tsurugi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66646,
+      "characterId": 16001,
+      "developmentId": "Asuna_default",
+      "wikiPage": "Asuna",
+      "group": "Asuna",
+      "defaultFile": "Asuna.glb",
+      "evidence": {
+        "gameKeeName": "明日奈",
+        "gameKeeAliases": "滑铲,アスナ,asuna,亚丝娜,金毛",
+        "wikiRevision": 117606,
+        "resourceBodyAlias": "Asuna_Original"
+      },
+      "developmentAliases": [
+        "Asuna_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 66752,
+      "characterId": 13000,
+      "developmentId": "Akane_default",
+      "wikiPage": "Akane",
+      "group": "Akane",
+      "defaultFile": "Akane.glb",
+      "evidence": {
+        "gameKeeName": "朱音",
+        "gameKeeAliases": "茜,アカネ,akane",
+        "wikiRevision": 102743,
+        "resourceBodyAlias": "Akane_Original"
+      },
+      "developmentAliases": [
+        "Akane_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67011,
+      "characterId": 20001,
+      "developmentId": "karin_default",
+      "wikiPage": "Karin",
+      "group": "Karin",
+      "defaultFile": "Karin.glb",
+      "evidence": {
+        "gameKeeName": "花凛",
+        "gameKeeAliases": "カリン,Karin,黑皮女仆",
+        "wikiRevision": 141743,
+        "resourceBodyAlias": "Karin_Original"
+      },
+      "developmentAliases": [
+        "Karin_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67012,
+      "characterId": 10008,
+      "developmentId": "Neru_default",
+      "wikiPage": "Neru",
+      "group": "Neru",
+      "defaultFile": "Neru.glb",
+      "evidence": {
+        "gameKeeName": "妮露",
+        "gameKeeAliases": "尼禄,宁瑠,ネル,Neru",
+        "wikiRevision": 106295,
+        "resourceBodyAlias": "Neru_Original"
+      },
+      "developmentAliases": [
+        "Neru_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67035,
+      "characterId": 26001,
+      "developmentId": "Kotama_default",
+      "wikiPage": "Kotama",
+      "group": "Kotama",
+      "defaultFile": "Kotama.glb",
+      "evidence": {
+        "gameKeeName": "小玉",
+        "gameKeeAliases": "コタマ,Kotama",
+        "wikiRevision": 144158,
+        "resourceBodyAlias": "Kotama_Original"
+      },
+      "developmentAliases": [
+        "Kotama_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67140,
+      "characterId": 23003,
+      "developmentId": "Hare_default",
+      "wikiPage": "Hare",
+      "group": "Hare",
+      "defaultFile": "Hare.glb",
+      "evidence": {
+        "gameKeeName": "晴",
+        "gameKeeAliases": "ハレ,小勾八,Hare",
+        "wikiRevision": 144174,
+        "resourceBodyAlias": "Hare_Original"
+      },
+      "developmentAliases": [
+        "Hare_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67654,
+      "characterId": 10007,
+      "developmentId": "Maki_default",
+      "wikiPage": "Maki",
+      "group": "Maki",
+      "defaultFile": "Maki.glb",
+      "evidence": {
+        "gameKeeName": "真纪",
+        "gameKeeAliases": "真希,マキ,maki,真记",
+        "wikiRevision": 106345,
+        "resourceBodyAlias": "Maki_Original"
+      },
+      "developmentAliases": [
+        "Maki_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67655,
+      "characterId": 16002,
+      "developmentId": "Kotori_default",
+      "wikiPage": "Kotori",
+      "group": "Kotori",
+      "defaultFile": "Kotori.glb",
+      "evidence": {
+        "gameKeeName": "琴里",
+        "gameKeeAliases": "琴里,亚都梨,コトリ,Kotori,小鸟,柯托莉,珂托莉",
+        "wikiRevision": 143428,
+        "resourceBodyAlias": "Kotori_Original"
+      },
+      "developmentAliases": [
+        "Kotori_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67656,
+      "characterId": 23004,
+      "developmentId": "Utaha_default",
+      "wikiPage": "Utaha",
+      "group": "Utaha",
+      "defaultFile": "Utaha.glb",
+      "evidence": {
+        "gameKeeName": "歌原",
+        "gameKeeAliases": "咏叶,ウタハ,Utaha ,炮台",
+        "wikiRevision": 143429,
+        "resourceBodyAlias": "Utaha_Original"
+      },
+      "developmentAliases": [
+        "Utaha_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67657,
+      "characterId": 20000,
+      "developmentId": "Hibiki_default",
+      "wikiPage": "Hibiki",
+      "group": "Hibiki",
+      "defaultFile": "Hibiki.glb",
+      "evidence": {
+        "gameKeeName": "响",
+        "gameKeeAliases": "ヒビキ,響,hibiki",
+        "wikiRevision": 106322,
+        "resourceBodyAlias": "Hibiki_Original"
+      },
+      "developmentAliases": [
+        "Hibiki_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 67658,
+      "characterId": 13010,
+      "developmentId": "Yuuka_default",
+      "wikiPage": "Yuuka",
+      "group": "Yuuka",
+      "defaultFile": "Yuuka.glb",
+      "developmentAliases": [
+        "Yuuka_Original"
+      ],
+      "evidence": {
+        "gameKeeName": "优香",
+        "gameKeeAliases": "ユウカ,阻冲之,没包人,邮箱,Yuuka",
+        "wikiRevision": 126477,
+        "resourceBodyAlias": "Yuuka_Original"
+      }
+    },
+    {
+      "gameKeeContentId": 67664,
+      "characterId": 10012,
+      "developmentId": "Sumire_default",
+      "wikiPage": "Sumire",
+      "group": "Sumire",
+      "defaultFile": "Sumire.glb",
+      "evidence": {
+        "gameKeeName": "堇",
+        "gameKeeAliases": "スミレ,运动妹,堇,Sumire",
+        "wikiRevision": 106299,
+        "resourceBodyAlias": "Sumire_Original"
+      },
+      "developmentAliases": [
+        "Sumire_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68176,
+      "characterId": 16004,
+      "developmentId": "Pina_default",
+      "wikiPage": "Pina",
+      "group": "Pina",
+      "defaultFile": "Pina.glb",
+      "evidence": {
+        "gameKeeName": "菲娜",
+        "gameKeeAliases": "フィーナ,歌舞伎,Pina",
+        "wikiRevision": 121004,
+        "resourceBodyAlias": "Pina_Original"
+      },
+      "developmentAliases": [
+        "Pina_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68177,
+      "characterId": 13009,
+      "developmentId": "Tsubaki_default",
+      "wikiPage": "Tsubaki",
+      "group": "Tsubaki",
+      "defaultFile": "Tsubaki.glb",
+      "evidence": {
+        "gameKeeName": "椿",
+        "gameKeeAliases": "ツバキ,狗盾,Tsubaki",
+        "wikiRevision": 102752,
+        "resourceBodyAlias": "Tsubaki_Original"
+      },
+      "developmentAliases": [
+        "Tsubaki_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68284,
+      "characterId": 13001,
+      "developmentId": "Chise_default",
+      "wikiPage": "Chise",
+      "group": "Chise",
+      "defaultFile": "Chise.glb",
+      "evidence": {
+        "gameKeeName": "千世",
+        "gameKeeAliases": "知世,チセ,Chise,芝士",
+        "wikiRevision": 102744,
+        "resourceBodyAlias": "Chise_Original"
+      },
+      "developmentAliases": [
+        "Chise_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68521,
+      "characterId": 20002,
+      "developmentId": "Saya_default",
+      "wikiPage": "Saya",
+      "group": "Saya",
+      "defaultFile": "Saya.glb",
+      "evidence": {
+        "gameKeeName": "纱绫",
+        "gameKeeAliases": "沙耶,サヤ,Saya,鼠鼠,沙绫",
+        "wikiRevision": 143958,
+        "resourceBodyAlias": "Saya_Original"
+      },
+      "developmentAliases": [
+        "Saya_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68522,
+      "characterId": 10011,
+      "developmentId": "Shun_default",
+      "wikiPage": "Shun",
+      "group": "Shun",
+      "defaultFile": "Shun.glb",
+      "evidence": {
+        "gameKeeName": "瞬",
+        "gameKeeAliases": "旬,シュン,Shun,大瞬",
+        "wikiRevision": 106298,
+        "resourceBodyAlias": "Shun_Original"
+      },
+      "developmentAliases": [
+        "Shun_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68785,
+      "characterId": 16016,
+      "developmentId": "CH0275",
+      "wikiPage": "Mine (Idol)",
+      "group": "Mine",
+      "defaultFile": "Mine (Idol).glb",
+      "evidence": {
+        "gameKeeName": "美祢(偶像)",
+        "gameKeeAliases": "ミネ（アイドル）,Mine(idol),偶像美祢,偶团,爱团,美弥",
+        "wikiRevision": 144233
+      }
+    },
+    {
+      "gameKeeContentId": 68786,
+      "characterId": 10106,
+      "developmentId": "CH0274",
+      "wikiPage": "Sakurako (Idol)",
+      "group": "Sakurako",
+      "defaultFile": "Sakurako (Idol).glb",
+      "evidence": {
+        "gameKeeName": "樱子(偶像)",
+        "gameKeeAliases": "サクラコ（アイドル）,Sakurako(idol),抖樱,爱樱,偶樱",
+        "wikiRevision": 104759
+      }
+    },
+    {
+      "gameKeeContentId": 68790,
+      "characterId": 10105,
+      "developmentId": "CH0273",
+      "wikiPage": "Mari (Idol)",
+      "group": "Mari",
+      "defaultFile": "Mari (Idol).glb",
+      "evidence": {
+        "gameKeeName": "玛丽(偶像)",
+        "gameKeeAliases": "マリー（アイドル）,Mari(idol),爱玛,偶玛",
+        "wikiRevision": 121010
+      }
+    },
+    {
+      "gameKeeContentId": 68801,
+      "characterId": 13011,
+      "developmentId": "Momoi_default",
+      "wikiPage": "Momoi",
+      "group": "Momoi",
+      "defaultFile": "Momoi.glb",
+      "evidence": {
+        "gameKeeName": "桃井",
+        "gameKeeAliases": "モモイ,Momoi,小桃",
+        "wikiRevision": 107046,
+        "resourceBodyAlias": "Momoi_Original",
+        "additionalResource": "st0004 contains only Momoi_Original_Halo; separate static halo resource, never the default student body."
+      },
+      "developmentAliases": [
+        "Momoi_Original"
+      ],
+      "additionalGroups": [
+        "st0004"
+      ]
+    },
+    {
+      "gameKeeContentId": 68802,
+      "characterId": 10016,
+      "developmentId": "Midori_default",
+      "wikiPage": "Midori",
+      "group": "Midori",
+      "defaultFile": "Midori.glb",
+      "evidence": {
+        "gameKeeName": "绿",
+        "gameKeeAliases": "ミドリ,小绿,Midori",
+        "wikiRevision": 130162,
+        "resourceBodyAlias": "Midori_Original",
+        "additionalResource": "st0005 contains only Midori_Original_Halo; separate static halo resource, never the default student body."
+      },
+      "developmentAliases": [
+        "Midori_Original"
+      ],
+      "additionalGroups": [
+        "st0005"
+      ]
+    },
+    {
+      "gameKeeContentId": 68803,
+      "characterId": 13004,
+      "developmentId": "Nonomi_default",
+      "wikiPage": "Nonomi",
+      "group": "Nonomi",
+      "defaultFile": "Nonomi.glb",
+      "evidence": {
+        "gameKeeName": "野宫",
+        "gameKeeAliases": "野乃美,ノノミ,富婆,nnm,糯糯米,Nonomi",
+        "wikiRevision": 102747,
+        "resourceBodyAlias": "Nonomi_Original"
+      },
+      "developmentAliases": [
+        "Nonomi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68820,
+      "characterId": 10001,
+      "developmentId": "Eimi_default",
+      "wikiPage": "Eimi",
+      "group": "Eimi",
+      "defaultFile": "Eimi.glb",
+      "evidence": {
+        "gameKeeName": "艾米",
+        "gameKeeAliases": "子龙,英美,エイミ,Eimi",
+        "wikiRevision": 106288,
+        "resourceBodyAlias": "Eimi_Original"
+      },
+      "developmentAliases": [
+        "Eimi_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68915,
+      "characterId": 23002,
+      "developmentId": "Hanae_default",
+      "wikiPage": "Hanae",
+      "group": "Hanae",
+      "defaultFile": "Hanae.glb",
+      "evidence": {
+        "gameKeeName": "花绘",
+        "gameKeeAliases": "花江,ハナエ,Hanae,大护士",
+        "wikiRevision": 144211,
+        "resourceBodyAlias": "Hanae_Original"
+      },
+      "developmentAliases": [
+        "Hanae_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 68993,
+      "characterId": 20039,
+      "developmentId": "CH0139",
+      "wikiPage": "Kisaki",
+      "group": "Kisaki",
+      "defaultFile": "Kisaki.glb",
+      "evidence": {
+        "gameKeeName": "妃咲",
+        "gameKeeAliases": "キサキ,Kisaki,妃姬,ksk,妃妃",
+        "wikiRevision": 120990
+      }
+    },
+    {
+      "gameKeeContentId": 69000,
+      "characterId": 20038,
+      "developmentId": "CH0271",
+      "wikiPage": "Tomoe (Qipao)",
+      "group": "Tomoe",
+      "defaultFile": "Tomoe (Qipao).glb",
+      "evidence": {
+        "gameKeeName": "巴(旗袍)",
+        "gameKeeAliases": "智惠（旗袍）,Tomoe(Qipao),トモエ(チーパオ)",
+        "wikiRevision": 102907
+      }
+    },
+    {
+      "gameKeeContentId": 69549,
+      "characterId": 20003,
+      "developmentId": "Mashiro_default",
+      "wikiPage": "Mashiro",
+      "group": "Mashiro",
+      "defaultFile": "Mashiro.glb",
+      "evidence": {
+        "gameKeeName": "真白",
+        "gameKeeAliases": "麻白,マシロ,Mashiro",
+        "wikiRevision": 106325,
+        "resourceBodyAlias": "Mashiro_Original"
+      },
+      "developmentAliases": [
+        "Mashiro_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 70510,
+      "characterId": 10014,
+      "developmentId": "Izuna_default",
+      "wikiPage": "Izuna",
+      "group": "Izuna",
+      "defaultFile": "Izuna.glb",
+      "evidence": {
+        "gameKeeName": "泉奈",
+        "gameKeeAliases": "伊树菜,イズナ,小狐狸,忍忍,Izuna",
+        "wikiRevision": 143956,
+        "resourceBodyAlias": "Izuna_Original"
+      },
+      "developmentAliases": [
+        "Izuna_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 70511,
+      "characterId": 23006,
+      "developmentId": "Shizuko_default",
+      "wikiPage": "Shizuko",
+      "group": "Shizuko",
+      "defaultFile": "Shizuko.glb",
+      "evidence": {
+        "gameKeeName": "静子",
+        "gameKeeAliases": "シズコ,Shizuko",
+        "wikiRevision": 106365,
+        "resourceBodyAlias": "Shizuko_Original"
+      },
+      "developmentAliases": [
+        "Shizuko_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 71724,
+      "characterId": 10103,
+      "developmentId": "CH0270",
+      "wikiPage": "Marina (Qipao)",
+      "group": "Marina",
+      "defaultFile": "Marina (Qipao).glb",
+      "evidence": {
+        "gameKeeName": "玛丽娜(旗袍)",
+        "gameKeeAliases": "真里奈（旗袍）,マリナ (チーパオ),Marina(Qipao),真理奈",
+        "wikiRevision": 105354
+      }
+    },
+    {
+      "gameKeeContentId": 71734,
+      "characterId": 10104,
+      "developmentId": "reizyo",
+      "wikiPage": "Reijo",
+      "group": "Reijo",
+      "defaultFile": "Reijo.glb",
+      "evidence": {
+        "gameKeeName": "丽情",
+        "gameKeeAliases": "レイジョ,Reizyo,令女,俪舒",
+        "wikiRevision": 120747
+      }
+    },
+    {
+      "gameKeeContentId": 71740,
+      "characterId": 20040,
+      "developmentId": "CH0080",
+      "wikiPage": "Satsuki",
+      "group": "Satsuki",
+      "defaultFile": "Satsuki.glb",
+      "evidence": {
+        "gameKeeName": "皋月",
+        "gameKeeAliases": "サツキ,Satsuki",
+        "wikiRevision": 120989
+      }
+    },
+    {
+      "gameKeeContentId": 71742,
+      "characterId": 10107,
+      "developmentId": "CH0238",
+      "wikiPage": "Chiaki",
+      "group": "Chiaki",
+      "defaultFile": "Chiaki.glb",
+      "evidence": {
+        "gameKeeName": "千秋",
+        "gameKeeAliases": "チアキ,Chiaki,千明",
+        "wikiRevision": 100935
+      }
+    },
+    {
+      "gameKeeContentId": 72904,
+      "characterId": 10015,
+      "developmentId": "Aris_default",
+      "wikiPage": "Arisu",
+      "group": "Arisu",
+      "defaultFile": "Arisu.glb",
+      "developmentAliases": [
+        "Aris_Original"
+      ],
+      "evidence": {
+        "gameKeeName": "爱丽丝",
+        "gameKeeAliases": "アリス,arisu,机器人,扫地,AL-1S",
+        "wikiRevision": 143093,
+        "resourceBodyAlias": "Aris_Original"
+      }
+    },
+    {
+      "gameKeeContentId": 75150,
+      "characterId": 10017,
+      "developmentId": "Cherino_default",
+      "wikiPage": "Cherino",
+      "group": "Cherino",
+      "defaultFile": "Cherino.glb",
+      "evidence": {
+        "gameKeeName": "切里诺",
+        "gameKeeAliases": "洁莉诺,チェリノ,Cherino,斯大萝,雪里诺",
+        "wikiRevision": 118179,
+        "resourceBodyAlias": "Cherino_Original"
+      },
+      "developmentAliases": [
+        "Cherino_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 75151,
+      "characterId": 26006,
+      "developmentId": "Nodoka_default",
+      "wikiPage": "Nodoka",
+      "group": "Nodoka",
+      "defaultFile": "Nodoka.glb",
+      "evidence": {
+        "gameKeeName": "和香",
+        "gameKeeAliases": "ノドカ,Nodoka",
+        "wikiRevision": 108243,
+        "resourceBodyAlias": "Nodoka_Original"
+      },
+      "developmentAliases": [
+        "Nodoka_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 77109,
+      "characterId": 10018,
+      "developmentId": "Yuzu_default",
+      "wikiPage": "Yuzu",
+      "group": "Yuzu",
+      "defaultFile": "Yuzu.glb",
+      "evidence": {
+        "gameKeeName": "柚子",
+        "gameKeeAliases": "ユズ,Yuzu,柚子厨,uzqueen",
+        "wikiRevision": 130146,
+        "resourceBodyAlias": "Yuzu_Original"
+      },
+      "developmentAliases": [
+        "Yuzu_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 77111,
+      "characterId": 10019,
+      "developmentId": "Azusa_default",
+      "wikiPage": "Azusa",
+      "group": "Azusa",
+      "defaultFile": "Azusa.glb",
+      "evidence": {
+        "gameKeeName": "梓",
+        "gameKeeAliases": "アズサ,Azusa",
+        "wikiRevision": 143090,
+        "resourceBodyAlias": "Azusa_Original"
+      },
+      "developmentAliases": [
+        "Azusa_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 77113,
+      "characterId": 23007,
+      "developmentId": "Hanako_default",
+      "wikiPage": "Hanako",
+      "group": "Hanako",
+      "defaultFile": "Hanako.glb",
+      "evidence": {
+        "gameKeeName": "花子",
+        "gameKeeAliases": "ハナコ,车王,Hanako",
+        "wikiRevision": 129059,
+        "resourceBodyAlias": "Hanako_Original"
+      },
+      "developmentAliases": [
+        "Hanako_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 78300,
+      "characterId": 10020,
+      "developmentId": "Koharu_default",
+      "wikiPage": "Koharu",
+      "group": "Koharu",
+      "defaultFile": "Koharu.glb",
+      "evidence": {
+        "gameKeeName": "小春",
+        "gameKeeAliases": "コハル,Koharu",
+        "wikiRevision": 127289,
+        "resourceBodyAlias": "Koharu_Original"
+      },
+      "developmentAliases": [
+        "Koharu_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 81811,
+      "characterId": 10021,
+      "developmentId": "Azusa_Swimsuit",
+      "wikiPage": "Azusa (Swimsuit)",
+      "group": "Azusa",
+      "defaultFile": "Azusa (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "梓(泳装)",
+        "gameKeeAliases": "アズサ（水着）,Azusa (Swimsuit),水梓",
+        "wikiRevision": 104742
+      }
+    },
+    {
+      "gameKeeContentId": 81812,
+      "characterId": 20004,
+      "developmentId": "Mashiro_Swimsuit",
+      "wikiPage": "Mashiro (Swimsuit)",
+      "group": "Mashiro",
+      "defaultFile": "Mashiro (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "真白(泳装)",
+        "gameKeeAliases": "麻白（泳装）,マシロ（水着）,Mashiro (Swimsuit),水真白",
+        "wikiRevision": 102873
+      }
+    },
+    {
+      "gameKeeContentId": 81813,
+      "characterId": 16005,
+      "developmentId": "Tsurugi_Swimsuit",
+      "wikiPage": "Tsurugi (Swimsuit)",
+      "group": "Tsurugi",
+      "defaultFile": "Tsurugi (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "鹤城(泳装)",
+        "gameKeeAliases": "弦生（泳装）,ツルギ（水着）,Tsurugi (Swimsuit),水鹤城,,水颜艺",
+        "wikiRevision": 105424
+      }
+    },
+    {
+      "gameKeeContentId": 83596,
+      "characterId": 20005,
+      "developmentId": "Hihumi_Swimsuit",
+      "wikiPage": "Hifumi (Swimsuit)",
+      "group": "Hifumi",
+      "defaultFile": "Hifumi (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "日富美(泳装)",
+        "gameKeeAliases": "日步美（泳装）,ヒフミ（水着）,Hifumi (Swimsuit),水日富美,水黄鸡",
+        "wikiRevision": 117052
+      }
+    },
+    {
+      "gameKeeContentId": 83729,
+      "characterId": 10022,
+      "developmentId": "CH0063",
+      "wikiPage": "Hina (Swimsuit)",
+      "group": "Hina",
+      "defaultFile": "Hina (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "日奈(泳装)",
+        "gameKeeAliases": "阳奈（泳装）,ヒナ（水着）,Hina (Swimsuit),水日奈,水hina,魔王",
+        "wikiRevision": 104905
+      }
+    },
+    {
+      "gameKeeContentId": 83867,
+      "characterId": 10023,
+      "developmentId": "CH0064",
+      "wikiPage": "Iori (Swimsuit)",
+      "group": "Iori",
+      "defaultFile": "Iori (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "伊织(泳装)",
+        "gameKeeAliases": "イオリ（水着）,Iori (Swimsuit),水伊织,佐仓,佐三枪,水佐仓",
+        "wikiRevision": 104910
+      }
+    },
+    {
+      "gameKeeContentId": 83936,
+      "characterId": 16006,
+      "developmentId": "Izumi_swimsuit",
+      "wikiPage": "Izumi (Swimsuit)",
+      "group": "Izumi",
+      "defaultFile": "Izumi (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "泉(泳装)",
+        "gameKeeAliases": "イズミ（水着）,Izumi (Swimsuit),水老八,水泉",
+        "wikiRevision": 111293
+      }
+    },
+    {
+      "gameKeeContentId": 85351,
+      "characterId": 10024,
+      "developmentId": "Shiroko_RidingSuit",
+      "wikiPage": "Shiroko (Riding)",
+      "group": "Shiroko",
+      "defaultFile": "Shiroko (Riding).glb",
+      "evidence": {
+        "gameKeeName": "白子(骑行)",
+        "gameKeeAliases": "シロコ（ライディング）,Shiroko (Riding),单车唯,小车唯,单车白,白字",
+        "wikiRevision": 117117
+      }
+    },
+    {
+      "gameKeeContentId": 86655,
+      "characterId": 13012,
+      "developmentId": "Kirino_default",
+      "wikiPage": "Kirino",
+      "group": "Kirino",
+      "defaultFile": "Kirino.glb",
+      "evidence": {
+        "gameKeeName": "桐乃",
+        "gameKeeAliases": "キリノ,Kirino ,桐乃",
+        "wikiRevision": 102755,
+        "resourceBodyAlias": "Kirino_Original"
+      },
+      "developmentAliases": [
+        "Kirino_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 86656,
+      "characterId": 10025,
+      "developmentId": "CH0066",
+      "wikiPage": "Shun (Kid)",
+      "group": "Shun",
+      "defaultFile": "Shun (Kid).glb",
+      "evidence": {
+        "gameKeeName": "瞬(小)",
+        "gameKeeAliases": "旬（幼女）,瞬（小）,シュン,Shun (Kid),幼瞬,小瞬,雪玲,雪莉",
+        "wikiRevision": 122350
+      }
+    },
+    {
+      "gameKeeContentId": 87912,
+      "characterId": 20006,
+      "developmentId": "Saya_Casual",
+      "wikiPage": "Saya (Casual)",
+      "group": "Saya",
+      "defaultFile": "Saya (Casual).glb",
+      "evidence": {
+        "gameKeeName": "纱绫(私服)",
+        "gameKeeAliases": "沙耶（私服）,サヤ（私服）,Saya (Casual),私服鼠鼠,沙绫",
+        "wikiRevision": 106327
+      }
+    },
+    {
+      "gameKeeContentId": 89274,
+      "characterId": 10026,
+      "developmentId": "CH0101",
+      "wikiPage": "Neru (Bunny Girl)",
+      "group": "Neru",
+      "defaultFile": "Neru (Bunny Girl).glb",
+      "evidence": {
+        "gameKeeName": "妮露(兔女郎)",
+        "gameKeeAliases": "妮露（邦妮）,宁瑠（兔女郎）,ネル（バニーガール）,Neru (Bunny Girl),红兔,兔妮露,兔尼禄,兔宁瑠",
+        "wikiRevision": 108086
+      }
+    },
+    {
+      "gameKeeContentId": 89275,
+      "characterId": 10027,
+      "developmentId": "CH0100",
+      "wikiPage": "Karin (Bunny Girl)",
+      "group": "Karin",
+      "defaultFile": "Karin (Bunny Girl).glb",
+      "evidence": {
+        "gameKeeName": "花凛(兔女郎)",
+        "gameKeeAliases": "花凛（邦妮）,カリン（バニーガール）,Karin (Bunny Girl),黑兔",
+        "wikiRevision": 122273
+      }
+    },
+    {
+      "gameKeeContentId": 89742,
+      "characterId": 10028,
+      "developmentId": "CH0098",
+      "wikiPage": "Asuna (Bunny Girl)",
+      "group": "Asuna",
+      "defaultFile": "Asuna (Bunny Girl).glb",
+      "evidence": {
+        "gameKeeName": "明日奈(兔女郎)",
+        "gameKeeAliases": "金毛,明日奈（邦妮）,アスナ（バニーガール）,Asuna (Bunny Girl),兔丝娜",
+        "wikiRevision": 106348
+      }
+    },
+    {
+      "gameKeeContentId": 90626,
+      "characterId": 10029,
+      "developmentId": "CH0155",
+      "wikiPage": "Natsu",
+      "group": "Natsu",
+      "defaultFile": "Natsu.glb",
+      "evidence": {
+        "gameKeeName": "夏",
+        "gameKeeAliases": "ナツ,小夏,Natsu",
+        "wikiRevision": 113877
+      }
+    },
+    {
+      "gameKeeContentId": 90627,
+      "characterId": 23008,
+      "developmentId": "Mari_default",
+      "wikiPage": "Mari",
+      "group": "Mari",
+      "defaultFile": "Mari.glb",
+      "evidence": {
+        "gameKeeName": "玛丽",
+        "gameKeeAliases": "マリー,Mari",
+        "wikiRevision": 121008,
+        "resourceBodyAlias": "Mari_Original"
+      },
+      "developmentAliases": [
+        "Mari_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 90749,
+      "characterId": 20007,
+      "developmentId": "CH9999",
+      "wikiPage": "Hatsune Miku",
+      "group": "Hatsune Miku",
+      "defaultFile": "Hatsune Miku.glb",
+      "evidence": {
+        "gameKeeName": "初音未来",
+        "gameKeeAliases": "初音ミク,miku",
+        "wikiRevision": 105371,
+        "review": "GameKee 初音未来/初音ミク and Wiki Hatsune Miku refer to the same collaboration student; CH9999 is intentional."
+      }
+    },
+    {
+      "gameKeeContentId": 150113,
+      "characterId": 20008,
+      "developmentId": "Ako_default",
+      "wikiPage": "Ako",
+      "group": "Ako",
+      "defaultFile": "Ako.glb",
+      "evidence": {
+        "gameKeeName": "亚子",
+        "gameKeeAliases": "アコ,Ako",
+        "wikiRevision": 106328,
+        "resourceBodyAlias": "Ako_Original"
+      },
+      "developmentAliases": [
+        "Ako_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 150144,
+      "characterId": 20009,
+      "developmentId": "CH0164",
+      "wikiPage": "Cherino (Hot Spring)",
+      "group": "Cherino",
+      "defaultFile": "Cherino (Hot Spring).glb",
+      "evidence": {
+        "gameKeeName": "切里诺(温泉)",
+        "gameKeeAliases": "洁莉诺（温泉）,チェリノ（温泉）,Cherino (Hot Spring),温泉斯大萝,温泉雪里诺,温泉切里诺",
+        "wikiRevision": 106359
+      }
+    },
+    {
+      "gameKeeContentId": 150145,
+      "characterId": 10030,
+      "developmentId": "CH0163",
+      "wikiPage": "Chinatsu (Hot Spring)",
+      "group": "Chinatsu",
+      "defaultFile": "Chinatsu (Hot Spring).glb",
+      "evidence": {
+        "gameKeeName": "千夏(温泉)",
+        "gameKeeAliases": "チナツ（温泉）,Chinatsu (Hot Spring)",
+        "wikiRevision": 106313
+      }
+    },
+    {
+      "gameKeeContentId": 150174,
+      "characterId": 20010,
+      "developmentId": "CH0165",
+      "wikiPage": "Nodoka (Hot Spring)",
+      "group": "Nodoka",
+      "defaultFile": "Nodoka (Hot Spring).glb",
+      "evidence": {
+        "gameKeeName": "和香(温泉)",
+        "gameKeeAliases": "ノドカ（温泉）,Nodoka (Hot Spring),老板娘",
+        "wikiRevision": 144155
+      }
+    },
+    {
+      "gameKeeContentId": 150220,
+      "characterId": 10031,
+      "developmentId": "Aru_Newyear",
+      "wikiPage": "Aru (New Year)",
+      "group": "Aru",
+      "defaultFile": "Aru (New Year).glb",
+      "evidence": {
+        "gameKeeName": "阿露(正月)",
+        "gameKeeAliases": "爱露（新年）,亚瑠（正月）,アル（正月）,Aru (New Year),春阿露,社长,憨憨",
+        "wikiRevision": 100860
+      }
+    },
+    {
+      "gameKeeContentId": 150223,
+      "characterId": 10032,
+      "developmentId": "Mutsuki_Newyear",
+      "wikiPage": "Mutsuki (New Year)",
+      "group": "Mutsuki",
+      "defaultFile": "Mutsuki (New Year).glb",
+      "evidence": {
+        "gameKeeName": "睦月(正月)",
+        "gameKeeAliases": "无月（正月）,ムツキ（正月）,Mutsuki (New Year),小恶魔,春睦月,春月,睦月（新年）",
+        "wikiRevision": 100861
+      }
+    },
+    {
+      "gameKeeContentId": 150380,
+      "characterId": 20011,
+      "developmentId": "Serika_Newyear",
+      "wikiPage": "Serika (New Year)",
+      "group": "Serika",
+      "defaultFile": "Serika (New Year).glb",
+      "evidence": {
+        "gameKeeName": "芹香(正月)",
+        "gameKeeAliases": "セリカ（正月）,春芹香,春黑猫,Serika (New Year),茜香",
+        "wikiRevision": 117119
+      }
+    },
+    {
+      "gameKeeContentId": 150694,
+      "characterId": 16008,
+      "developmentId": "CH0141",
+      "wikiPage": "Fubuki",
+      "group": "Fubuki",
+      "defaultFile": "Fubuki.glb",
+      "evidence": {
+        "gameKeeName": "吹雪",
+        "gameKeeAliases": "フブキ,Fubuki,摆烂人,fbk",
+        "wikiRevision": 144084
+      }
+    },
+    {
+      "gameKeeContentId": 150695,
+      "characterId": 10033,
+      "developmentId": "Wakamo_default",
+      "wikiPage": "Wakamo",
+      "group": "Wakamo",
+      "defaultFile": "Wakamo.glb",
+      "evidence": {
+        "gameKeeName": "若藻",
+        "gameKeeAliases": "ワカモ,大狐狸,Wakamo",
+        "wikiRevision": 123600,
+        "resourceBodyAlias": "Wakamo_Original"
+      },
+      "developmentAliases": [
+        "Wakamo_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 150696,
+      "characterId": 20012,
+      "developmentId": "CH0081",
+      "wikiPage": "Sena",
+      "group": "Sena",
+      "defaultFile": "Sena.glb",
+      "evidence": {
+        "gameKeeName": "濑名",
+        "gameKeeAliases": "濑奈,セナ,Sena,救护车",
+        "wikiRevision": 106361
+      }
+    },
+    {
+      "gameKeeContentId": 150698,
+      "characterId": 20013,
+      "developmentId": "CH0160",
+      "wikiPage": "Chihiro",
+      "group": "Chihiro",
+      "defaultFile": "Chihiro.glb",
+      "evidence": {
+        "gameKeeName": "千寻",
+        "gameKeeAliases": "チヒロ,Chihiro",
+        "wikiRevision": 122332
+      }
+    },
+    {
+      "gameKeeContentId": 151016,
+      "characterId": 10034,
+      "developmentId": "Mimori_default",
+      "wikiPage": "Mimori",
+      "group": "Mimori",
+      "defaultFile": "Mimori.glb",
+      "evidence": {
+        "gameKeeName": "三森",
+        "gameKeeAliases": "ミモリ,Mimori,弥守",
+        "wikiRevision": 106350
+      }
+    },
+    {
+      "gameKeeContentId": 151345,
+      "characterId": 10035,
+      "developmentId": "CH0169",
+      "wikiPage": "Ui",
+      "group": "Ui",
+      "defaultFile": "Ui.glb",
+      "evidence": {
+        "gameKeeName": "忧",
+        "gameKeeAliases": "ウイ,Ui,ui,优",
+        "wikiRevision": 100864
+      }
+    },
+    {
+      "gameKeeContentId": 151348,
+      "characterId": 10036,
+      "developmentId": "Hinata_default",
+      "wikiPage": "Hinata",
+      "group": "Hinata",
+      "defaultFile": "Hinata.glb",
+      "evidence": {
+        "gameKeeName": "日向",
+        "gameKeeAliases": "ヒナタ,Hinata",
+        "wikiRevision": 105325,
+        "resourceBodyAlias": "Hinata_Original"
+      },
+      "developmentAliases": [
+        "Hinata_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 151713,
+      "characterId": 10037,
+      "developmentId": "Marina_default",
+      "wikiPage": "Marina",
+      "group": "Marina",
+      "defaultFile": "Marina.glb",
+      "evidence": {
+        "gameKeeName": "玛丽娜",
+        "gameKeeAliases": "真里奈,マリナ,Marina,保洁阿姨,真理奈",
+        "wikiRevision": 100866,
+        "resourceBodyAlias": "Marina_Original"
+      },
+      "developmentAliases": [
+        "Marina_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 153367,
+      "characterId": 20014,
+      "developmentId": "CH0144",
+      "wikiPage": "Saki",
+      "group": "Saki",
+      "defaultFile": "Saki.glb",
+      "evidence": {
+        "gameKeeName": "咲",
+        "gameKeeAliases": "导管,咲希,サキ,saki",
+        "wikiRevision": 143118
+      }
+    },
+    {
+      "gameKeeContentId": 153368,
+      "characterId": 10038,
+      "developmentId": "miyako_default",
+      "wikiPage": "Miyako",
+      "group": "Miyako",
+      "defaultFile": "Miyako.glb",
+      "evidence": {
+        "gameKeeName": "宫子",
+        "gameKeeAliases": "都子,ミヤコ,Miyako",
+        "wikiRevision": 106351,
+        "resourceBodyAlias": "Miyako_Original"
+      },
+      "developmentAliases": [
+        "Miyako_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 153606,
+      "characterId": 10039,
+      "developmentId": "CH0145",
+      "wikiPage": "Miyu",
+      "group": "Miyu",
+      "defaultFile": "Miyu.glb",
+      "evidence": {
+        "gameKeeName": "美游",
+        "gameKeeAliases": "美优,ミユ,垃圾兔,垃姬兔,Miyu,垃圾桶",
+        "wikiRevision": 129962
+      }
+    },
+    {
+      "gameKeeContentId": 155250,
+      "characterId": 20015,
+      "developmentId": "Kaede_default",
+      "wikiPage": "Kaede",
+      "group": "Kaede",
+      "defaultFile": "Kaede.glb",
+      "evidence": {
+        "gameKeeName": "枫",
+        "gameKeeAliases": "カエデ,Kaede",
+        "wikiRevision": 106363,
+        "resourceBodyAlias": "Kaede_Original"
+      },
+      "developmentAliases": [
+        "Kaede_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 155254,
+      "characterId": 20016,
+      "developmentId": "CH0156",
+      "wikiPage": "Iroha",
+      "group": "Iroha",
+      "defaultFile": "Iroha.glb",
+      "evidence": {
+        "gameKeeName": "伊吕波",
+        "gameKeeAliases": "イロハ,Iroha,168,彩叶",
+        "wikiRevision": 122274
+      }
+    },
+    {
+      "gameKeeContentId": 155255,
+      "characterId": 16009,
+      "developmentId": "CH0113",
+      "wikiPage": "Michiru",
+      "group": "Michiru",
+      "defaultFile": "Michiru.glb",
+      "evidence": {
+        "gameKeeName": "满",
+        "gameKeeAliases": "三千留,ミチル,Michiru",
+        "wikiRevision": 113865
+      }
+    },
+    {
+      "gameKeeContentId": 155968,
+      "characterId": 10040,
+      "developmentId": "CH0114",
+      "wikiPage": "Tsukuyo",
+      "group": "Tsukuyo",
+      "defaultFile": "Tsukuyo.glb",
+      "evidence": {
+        "gameKeeName": "月咏",
+        "gameKeeAliases": "月夜,ツクヨ,Tsukuyo",
+        "wikiRevision": 143087
+      }
+    },
+    {
+      "gameKeeContentId": 156959,
+      "characterId": 10041,
+      "developmentId": "Misaki_default",
+      "wikiPage": "Misaki",
+      "group": "Misaki",
+      "defaultFile": "Misaki.glb",
+      "evidence": {
+        "gameKeeName": "美咲",
+        "gameKeeAliases": "ミサキ,misaki,円,美口关",
+        "wikiRevision": 105341,
+        "resourceBodyAlias": "Misaki_Original"
+      },
+      "developmentAliases": [
+        "Misaki_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 156962,
+      "characterId": 20017,
+      "developmentId": "Hiyori_default",
+      "wikiPage": "Hiyori",
+      "group": "Hiyori",
+      "defaultFile": "Hiyori.glb",
+      "evidence": {
+        "gameKeeName": "日和",
+        "gameKeeAliases": "ヒヨリ,Hiyori,初音未来",
+        "wikiRevision": 142682,
+        "resourceBodyAlias": "Hiyori_Original"
+      },
+      "developmentAliases": [
+        "Hiyori_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 158662,
+      "characterId": 10042,
+      "developmentId": "Atsuko_default",
+      "wikiPage": "Atsuko",
+      "group": "Atsuko",
+      "defaultFile": "Atsuko.glb",
+      "evidence": {
+        "gameKeeName": "亚津子",
+        "gameKeeAliases": "敦子,アツコ,公主,Atsuko,秤砣子,墩子",
+        "wikiRevision": 129001,
+        "resourceBodyAlias": "Atsuko_Original"
+      },
+      "developmentAliases": [
+        "Atsuko_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 159935,
+      "characterId": 10044,
+      "developmentId": "CH0092",
+      "wikiPage": "Nonomi (Swimsuit)",
+      "group": "Nonomi",
+      "defaultFile": "Nonomi (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "野宫(泳装)",
+        "gameKeeAliases": "野乃美（泳装）,ノノミ（水着）,水乃美,水nnm,水糯糯米,Nonomi (Swimsuit)",
+        "wikiRevision": 100873
+      }
+    },
+    {
+      "gameKeeContentId": 159948,
+      "characterId": 10043,
+      "developmentId": "CH0175",
+      "wikiPage": "Wakamo (Swimsuit)",
+      "group": "Wakamo",
+      "defaultFile": "Wakamo (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "若藻(泳装)",
+        "gameKeeAliases": "ワカモ（水着）,水若藻,水藻,水大狐狸,Wakamo (Swimsuit)",
+        "wikiRevision": 142683
+      }
+    },
+    {
+      "gameKeeContentId": 160191,
+      "characterId": 26007,
+      "developmentId": "CH0176",
+      "wikiPage": "Ayane (Swimsuit)",
+      "group": "Ayane",
+      "defaultFile": "Ayane (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "绫音(泳装)",
+        "gameKeeAliases": "アヤネ（水着）,水绫音,直升机,Ayane (Swimsuit),凌音",
+        "wikiRevision": 144007
+      }
+    },
+    {
+      "gameKeeContentId": 161196,
+      "characterId": 20027,
+      "developmentId": "CH0188",
+      "wikiPage": "Shiroko (Swimsuit)",
+      "group": "Shiroko",
+      "defaultFile": "Shiroko (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "白子(泳装)",
+        "gameKeeAliases": "シロコ（水着）,水白子,xcw,水仓唯,水白,Shiroko (Swimsuit),白字",
+        "wikiRevision": 111305
+      }
+    },
+    {
+      "gameKeeContentId": 161197,
+      "characterId": 20036,
+      "developmentId": "CH0189",
+      "wikiPage": "Serika (Swimsuit)",
+      "group": "Serika",
+      "defaultFile": "Serika (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "芹香(泳装)",
+        "gameKeeAliases": "セリカ（水着）,水黑猫,水芹香,Serika (Swimsuit),茜香",
+        "wikiRevision": 102905
+      }
+    },
+    {
+      "gameKeeContentId": 161204,
+      "characterId": 20031,
+      "developmentId": "CH0123",
+      "wikiPage": "Shigure (Hot Spring)",
+      "group": "Shigure",
+      "defaultFile": "Shigure (Hot Spring).glb",
+      "evidence": {
+        "gameKeeName": "时雨(温泉)",
+        "gameKeeAliases": "シグレ（温泉）,Shigure (Hot Spring),温时雨",
+        "wikiRevision": 102900
+      }
+    },
+    {
+      "gameKeeContentId": 161225,
+      "characterId": 20058,
+      "developmentId": "CH0076",
+      "wikiPage": "Erika",
+      "group": "Erika",
+      "defaultFile": "Erika.glb",
+      "evidence": {
+        "gameKeeName": "绘梨香",
+        "gameKeeAliases": "绘里香,艾莉卡,艾丽卡,erika",
+        "wikiRevision": 127842
+      }
+    },
+    {
+      "gameKeeContentId": 161228,
+      "characterId": 13013,
+      "developmentId": "Momiji_default",
+      "wikiPage": "Momiji",
+      "group": "Momiji",
+      "defaultFile": "Momiji.glb",
+      "evidence": {
+        "gameKeeName": "红叶",
+        "gameKeeAliases": "モミジ,Momiji,椛",
+        "wikiRevision": 105367,
+        "resourceBodyAlias": "Momiji_Original"
+      },
+      "developmentAliases": [
+        "Momiji_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 161230,
+      "characterId": 10075,
+      "developmentId": "CH0124",
+      "wikiPage": "Meru",
+      "group": "Meru",
+      "defaultFile": "Meru.glb",
+      "evidence": {
+        "gameKeeName": "梅露",
+        "gameKeeAliases": "メル,Meru,爱瑠,亚瑠,梅露莉,Meruri",
+        "wikiRevision": 105334
+      }
+    },
+    {
+      "gameKeeContentId": 161248,
+      "characterId": 10139,
+      "developmentId": "CH0172",
+      "wikiPage": "Niko",
+      "group": "Niko",
+      "defaultFile": "Niko.glb",
+      "evidence": {
+        "gameKeeName": "妮可",
+        "gameKeeAliases": "妈,仁子,nico,niko",
+        "wikiRevision": 127840
+      }
+    },
+    {
+      "gameKeeContentId": 161252,
+      "characterId": 16018,
+      "developmentId": "CH0166",
+      "wikiPage": "Rabu",
+      "group": "Rabu",
+      "defaultFile": "Rabu.glb",
+      "evidence": {
+        "gameKeeName": "兰舞",
+        "gameKeeAliases": "ラブ,三级头,大姐头,Rabu,良舞",
+        "wikiRevision": 127835
+      }
+    },
+    {
+      "gameKeeContentId": 161281,
+      "characterId": 16007,
+      "developmentId": "Tomoe_default",
+      "wikiPage": "Tomoe",
+      "group": "Tomoe",
+      "defaultFile": "Tomoe.glb",
+      "evidence": {
+        "gameKeeName": "巴",
+        "gameKeeAliases": "智惠,トモエ,Tomoe",
+        "wikiRevision": 123531,
+        "resourceBodyAlias": "Tomoe_Original"
+      },
+      "developmentAliases": [
+        "Tomoe_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 162557,
+      "characterId": 10100,
+      "developmentId": "CH0263",
+      "wikiPage": "Shiroko＊Terror",
+      "group": "Shiroko＊Terror",
+      "defaultFile": "Shiroko＊Terror.glb",
+      "evidence": {
+        "gameKeeName": "白子*恐怖",
+        "gameKeeAliases": "シロコ*テラー,Shiroko＊Terror,黑子,黑白子,白字",
+        "wikiRevision": 126483
+      }
+    },
+    {
+      "gameKeeContentId": 162560,
+      "characterId": 10045,
+      "developmentId": "Hoshino_Swimsuit",
+      "wikiPage": "Hoshino (Swimsuit)",
+      "group": "Hoshino",
+      "defaultFile": "Hoshino (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "星野(泳装)",
+        "gameKeeAliases": "ホシノ（水着）,水大叔.水星野,Hoshino (Swimsuit)",
+        "wikiRevision": 138470
+      }
+    },
+    {
+      "gameKeeContentId": 162572,
+      "characterId": 26008,
+      "developmentId": "CH0180",
+      "wikiPage": "Shizuko (Swimsuit)",
+      "group": "Shizuko",
+      "defaultFile": "Shizuko (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "静子(泳装)",
+        "gameKeeAliases": "シズコ（水着）,水静子,Shizuko (Swimsuit)",
+        "wikiRevision": 105438
+      }
+    },
+    {
+      "gameKeeContentId": 162817,
+      "characterId": 10047,
+      "developmentId": "CH0178",
+      "wikiPage": "Chise (Swimsuit)",
+      "group": "Chise",
+      "defaultFile": "Chise (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "千世(泳装)",
+        "gameKeeAliases": "知世（泳装）,チセ（水着）,Chise (Swimsuit),水千世,水知世,芝士",
+        "wikiRevision": 100876
+      }
+    },
+    {
+      "gameKeeContentId": 162985,
+      "characterId": 10046,
+      "developmentId": "CH0179",
+      "wikiPage": "Izuna (Swimsuit)",
+      "group": "Izuna",
+      "defaultFile": "Izuna (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "泉奈(泳装)",
+        "gameKeeAliases": "伊树菜（泳装）,イズナ（水着）,Izuna (Swimsuit),水小狐狸,水忍忍,水泉奈,水伊树菜",
+        "wikiRevision": 100875
+      }
+    },
+    {
+      "gameKeeContentId": 164191,
+      "characterId": 20029,
+      "developmentId": "CH0183",
+      "wikiPage": "Mimori (Swimsuit)",
+      "group": "Mimori",
+      "defaultFile": "Mimori (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "三森(泳装)",
+        "gameKeeAliases": "ミモリ（水着）,水三森,Mimori (Swimsuit),弥守",
+        "wikiRevision": 102898
+      }
+    },
+    {
+      "gameKeeContentId": 164332,
+      "characterId": 10097,
+      "developmentId": "CH0216",
+      "wikiPage": "Moe (Swimsuit)",
+      "group": "Moe",
+      "defaultFile": "Moe (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "萌绘(泳装)",
+        "gameKeeAliases": "萌（泳装）,モエ（水着）,moe (Swimsuit),水萌",
+        "wikiRevision": 115608
+      }
+    },
+    {
+      "gameKeeContentId": 164453,
+      "characterId": 10048,
+      "developmentId": "Saori",
+      "wikiPage": "Saori",
+      "group": "Saori",
+      "defaultFile": "Saori.glb",
+      "evidence": {
+        "gameKeeName": "纱织",
+        "gameKeeAliases": "沙织,サオリ,saori,家人",
+        "wikiRevision": 127290
+      }
+    },
+    {
+      "gameKeeContentId": 164610,
+      "characterId": 10077,
+      "developmentId": "CH0071",
+      "wikiPage": "Ichika",
+      "group": "Ichika",
+      "defaultFile": "Ichika.glb",
+      "evidence": {
+        "gameKeeName": "一花",
+        "gameKeeAliases": "イチカ,大号杂鱼,Ichika",
+        "wikiRevision": 100906
+      }
+    },
+    {
+      "gameKeeContentId": 165669,
+      "characterId": 20018,
+      "developmentId": "Moe_default",
+      "wikiPage": "Moe",
+      "group": "Moe",
+      "defaultFile": "Moe.glb",
+      "evidence": {
+        "gameKeeName": "萌绘",
+        "gameKeeAliases": "萌,モエ,moe",
+        "wikiRevision": 117607,
+        "resourceBodyAlias": "Moe_Original"
+      },
+      "developmentAliases": [
+        "Moe_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 165671,
+      "characterId": 10049,
+      "developmentId": "Kazusa_default",
+      "wikiPage": "Kazusa",
+      "group": "Kazusa",
+      "defaultFile": "Kazusa.glb",
+      "evidence": {
+        "gameKeeName": "和纱",
+        "gameKeeAliases": "千纱,肥猫,カズサ,猫猫,Kazusa,凯茜帕鲁格",
+        "wikiRevision": 123008,
+        "resourceBodyAlias": "Kazusa_Original"
+      },
+      "developmentAliases": [
+        "Kazusa_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 165751,
+      "characterId": 10068,
+      "developmentId": "CH0167",
+      "wikiPage": "Reisa",
+      "group": "Reisa",
+      "defaultFile": "Reisa.glb",
+      "evidence": {
+        "gameKeeName": "玲纱",
+        "gameKeeAliases": "澪纱,レイサ,Reisa,芋泥",
+        "wikiRevision": 144016,
+        "additionalResource": "sm032601 contains CH0326_Body/Weapon/Halo and matches Reisa Magical CH0326; separate animated summon/resource."
+      },
+      "additionalGroups": [
+        "sm032601"
+      ]
+    },
+    {
+      "gameKeeContentId": 167809,
+      "characterId": 10050,
+      "developmentId": "CH0137",
+      "wikiPage": "Kokona",
+      "group": "Kokona",
+      "defaultFile": "Kokona.glb",
+      "evidence": {
+        "gameKeeName": "心奈",
+        "gameKeeAliases": "心菜,ココナ,Kokona,100分,一百昏,一百分,可可奈",
+        "wikiRevision": 100879
+      }
+    },
+    {
+      "gameKeeContentId": 168189,
+      "characterId": 10051,
+      "developmentId": "CH0182",
+      "wikiPage": "Utaha (Cheerleader)",
+      "group": "Utaha",
+      "defaultFile": "Utaha (Cheerleader).glb",
+      "evidence": {
+        "gameKeeName": "歌原(应援团)",
+        "gameKeeAliases": "咏叶（应援团）,ウタハ（応援団）,Utaha (Cheerleader),炮台",
+        "wikiRevision": 105327
+      }
+    },
+    {
+      "gameKeeContentId": 168193,
+      "characterId": 10052,
+      "developmentId": "CH0095",
+      "wikiPage": "Noa",
+      "group": "Noa",
+      "defaultFile": "Noa.glb",
+      "evidence": {
+        "gameKeeName": "诺亚",
+        "gameKeeAliases": "诺亚,乃爱,ノア,noa",
+        "wikiRevision": 100881
+      }
+    },
+    {
+      "gameKeeContentId": 168196,
+      "characterId": 16010,
+      "developmentId": "CH0181",
+      "wikiPage": "Hibiki (Cheerleader)",
+      "group": "Hibiki",
+      "defaultFile": "Hibiki (Cheerleader).glb",
+      "evidence": {
+        "gameKeeName": "响(应援团)",
+        "gameKeeAliases": "ヒビキ（応援団）,響（应援团）,Hibiki (Cheerleader),拉拉响,拉炮",
+        "wikiRevision": 105429
+      }
+    },
+    {
+      "gameKeeContentId": 168823,
+      "characterId": 10076,
+      "developmentId": "CH0185",
+      "wikiPage": "Kotori (Cheerleader)",
+      "group": "Kotori",
+      "defaultFile": "Kotori (Cheerleader).glb",
+      "evidence": {
+        "gameKeeName": "琴里(应援团)",
+        "gameKeeAliases": "琴里,亚都梨,コトリ（応援団）,Kotori (Cheerleader),拉拉鸟,柯托莉,珂托莉",
+        "wikiRevision": 104810
+      }
+    },
+    {
+      "gameKeeContentId": 168947,
+      "characterId": 20019,
+      "developmentId": "CH0099",
+      "wikiPage": "Akane (Bunny Girl)",
+      "group": "Akane",
+      "defaultFile": "Akane (Bunny Girl).glb",
+      "evidence": {
+        "gameKeeName": "朱音(兔女郎)",
+        "gameKeeAliases": "茜（兔女郎）,アカネ（バニーガール）,Akane (Bunny Girl),白兔,邦妮",
+        "wikiRevision": 105385
+      }
+    },
+    {
+      "gameKeeContentId": 169361,
+      "characterId": 10078,
+      "developmentId": "CH0089",
+      "wikiPage": "Kasumi",
+      "group": "Kasumi",
+      "defaultFile": "Kasumi.glb",
+      "evidence": {
+        "gameKeeName": "霞",
+        "gameKeeAliases": "佳澄,カスミ,Kasumi",
+        "wikiRevision": 129653
+      }
+    },
+    {
+      "gameKeeContentId": 170295,
+      "characterId": 10053,
+      "developmentId": "CH0184",
+      "wikiPage": "Yuuka (Sportswear)",
+      "group": "Yuuka",
+      "defaultFile": "Yuuka (Sportswear).glb",
+      "evidence": {
+        "gameKeeName": "优香(体操服)",
+        "gameKeeAliases": "ユウカ（体操服）,优香（体育服）,Yuuka (Sportswear),体香,阻冲之,没包人,体操邮箱,体邮箱",
+        "wikiRevision": 121012
+      }
+    },
+    {
+      "gameKeeContentId": 170297,
+      "characterId": 10054,
+      "developmentId": "CH0186",
+      "wikiPage": "Mari (Sportswear)",
+      "group": "Mari",
+      "defaultFile": "Mari (Sportswear).glb",
+      "evidence": {
+        "gameKeeName": "玛丽(体操服)",
+        "gameKeeAliases": "マリー（体操服）,Mari (Sportswear),玛丽（体育服）,体玛,体玛丽,体操玛丽",
+        "wikiRevision": 121009
+      }
+    },
+    {
+      "gameKeeContentId": 170322,
+      "characterId": 16011,
+      "developmentId": "CH0190",
+      "wikiPage": "Hasumi (Sportswear)",
+      "group": "Hasumi",
+      "defaultFile": "Hasumi (Sportswear).glb",
+      "evidence": {
+        "gameKeeName": "莲见(体操服)",
+        "gameKeeAliases": "莲实（体育服）,ハスミ（体操服）,Hasumi (Sportswear),体莲,体操莲见,体操莲实",
+        "wikiRevision": 105932
+      }
+    },
+    {
+      "gameKeeContentId": 575949,
+      "characterId": 20020,
+      "developmentId": "CH0159",
+      "wikiPage": "Himari",
+      "group": "Himari",
+      "defaultFile": "Himari.glb",
+      "evidence": {
+        "gameKeeName": "日鞠",
+        "gameKeeAliases": "阳葵,ヒマリ,otto,轮椅,Himari",
+        "wikiRevision": 104789
+      }
+    },
+    {
+      "gameKeeContentId": 577249,
+      "characterId": 10055,
+      "developmentId": "Shigure_default",
+      "wikiPage": "Shigure",
+      "group": "Shigure",
+      "defaultFile": "Shigure.glb",
+      "evidence": {
+        "gameKeeName": "时雨",
+        "gameKeeAliases": "シグレ,Shigure",
+        "wikiRevision": 100884,
+        "resourceBodyAlias": "Shigure_Original"
+      },
+      "developmentAliases": [
+        "Shigure_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 578163,
+      "characterId": 10093,
+      "developmentId": "kirara",
+      "wikiPage": "Kirara",
+      "group": "Kirara",
+      "defaultFile": "Kirara.glb",
+      "evidence": {
+        "gameKeeName": "绮良良",
+        "gameKeeAliases": "キララ,绮罗罗,Kirara",
+        "wikiRevision": 141215
+      }
+    },
+    {
+      "gameKeeContentId": 578165,
+      "characterId": 20030,
+      "developmentId": "CH0193",
+      "wikiPage": "Haruna (Sportswear)",
+      "group": "Haruna",
+      "defaultFile": "Haruna (Sportswear).glb",
+      "evidence": {
+        "gameKeeName": "晴奈(体操服)",
+        "gameKeeAliases": "羽留奈（体育服）,ハルナ（体操服）,Haruna (Sportswear),体晴奈,体羽留奈",
+        "wikiRevision": 107043
+      }
+    },
+    {
+      "gameKeeContentId": 578734,
+      "characterId": 10056,
+      "developmentId": "CH0194",
+      "wikiPage": "Serina (Christmas)",
+      "group": "Serina",
+      "defaultFile": "Serina (Christmas).glb",
+      "evidence": {
+        "gameKeeName": "芹娜(圣诞)",
+        "gameKeeAliases": "芹奈（圣诞）,セリナ（クリスマス）,Serina (Christmas),圣小护士",
+        "wikiRevision": 144230
+      }
+    },
+    {
+      "gameKeeContentId": 578738,
+      "characterId": 20021,
+      "developmentId": "CH0195",
+      "wikiPage": "Hanae (Christmas)",
+      "group": "Hanae",
+      "defaultFile": "Hanae (Christmas).glb",
+      "evidence": {
+        "gameKeeName": "花绘(圣诞)",
+        "gameKeeAliases": "花江（圣诞）,ハナエ（クリスマス）,Hanae (Christmas),大护士",
+        "wikiRevision": 144232
+      }
+    },
+    {
+      "gameKeeContentId": 579682,
+      "characterId": 10057,
+      "developmentId": "CH0191",
+      "wikiPage": "Haruna (New Year)",
+      "group": "Haruna",
+      "defaultFile": "Haruna (New Year).glb",
+      "evidence": {
+        "gameKeeName": "晴奈(正月)",
+        "gameKeeAliases": "羽留奈（正月）,ハルナ（正月）,Haruna (New Year),春晴奈,春奈,晴奈（新年）",
+        "wikiRevision": 105330
+      }
+    },
+    {
+      "gameKeeContentId": 579686,
+      "characterId": 20022,
+      "developmentId": "CH0177",
+      "wikiPage": "Fuuka (New Year)",
+      "group": "Fuuka",
+      "defaultFile": "Fuuka (New Year).glb",
+      "evidence": {
+        "gameKeeName": "枫香(正月)",
+        "gameKeeAliases": "风香（正月）,风华（正月）,フウカ（正月）,Fuuka (New Year),煮饭婆,春锅,春枫香,春风香,风香（新年）",
+        "wikiRevision": 141113
+      }
+    },
+    {
+      "gameKeeContentId": 579691,
+      "characterId": 16012,
+      "developmentId": "CH0192",
+      "wikiPage": "Junko (New Year)",
+      "group": "Junko",
+      "defaultFile": "Junko (New Year).glb",
+      "evidence": {
+        "gameKeeName": "淳子(正月)",
+        "gameKeeAliases": "纯子（正月）,ジュンコ（正月）,Junko (New Year),春淳子,丸子,春纯子,纯子（新年）,小火龙",
+        "wikiRevision": 143999
+      }
+    },
+    {
+      "gameKeeContentId": 580732,
+      "characterId": 10058,
+      "developmentId": "CH0152",
+      "wikiPage": "Mine",
+      "group": "Mine",
+      "defaultFile": "Mine.glb",
+      "evidence": {
+        "gameKeeName": "美祢",
+        "gameKeeAliases": "ミネ,团长,Mine,美弥",
+        "wikiRevision": 144200
+      }
+    },
+    {
+      "gameKeeContentId": 581679,
+      "characterId": 10059,
+      "developmentId": "CH0069",
+      "wikiPage": "Mika",
+      "group": "Mika",
+      "defaultFile": "Mika.glb",
+      "evidence": {
+        "gameKeeName": "未花",
+        "gameKeeAliases": "弥香,猩猩,ミカ,mika,三力",
+        "wikiRevision": 126258
+      }
+    },
+    {
+      "gameKeeContentId": 582116,
+      "characterId": 10060,
+      "developmentId": "CH0088",
+      "wikiPage": "Megu",
+      "group": "Megu",
+      "defaultFile": "Megu.glb",
+      "evidence": {
+        "gameKeeName": "惠",
+        "gameKeeAliases": "メグ,Megu,喷火枪,慧",
+        "wikiRevision": 105336
+      }
+    },
+    {
+      "gameKeeContentId": 582123,
+      "characterId": 20023,
+      "developmentId": "CH0170",
+      "wikiPage": "Kanna",
+      "group": "Kanna",
+      "defaultFile": "Kanna.glb",
+      "evidence": {
+        "gameKeeName": "康娜",
+        "gameKeeAliases": "环奈,カンナ,叶渚,Kanna,局长",
+        "wikiRevision": 121175
+      }
+    },
+    {
+      "gameKeeContentId": 583291,
+      "characterId": 10061,
+      "developmentId": "Sakurako_default",
+      "wikiPage": "Sakurako",
+      "group": "Sakurako",
+      "defaultFile": "Sakurako.glb",
+      "evidence": {
+        "gameKeeName": "樱子",
+        "gameKeeAliases": "サクラコ,觉悟姐,Sakurako",
+        "wikiRevision": 105925,
+        "resourceBodyAlias": "Sakurako_Original"
+      },
+      "developmentAliases": [
+        "Sakurako_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 584417,
+      "characterId": 10062,
+      "developmentId": "CH0187",
+      "wikiPage": "Toki",
+      "group": "Toki",
+      "defaultFile": "Toki.glb",
+      "evidence": {
+        "gameKeeName": "时",
+        "gameKeeAliases": "トキ,toki,季",
+        "wikiRevision": 101465
+      }
+    },
+    {
+      "gameKeeContentId": 584418,
+      "characterId": 20024,
+      "developmentId": "Nagisa",
+      "wikiPage": "Nagisa",
+      "group": "Nagisa",
+      "defaultFile": "Nagisa.glb",
+      "evidence": {
+        "gameKeeName": "渚",
+        "gameKeeAliases": "ナギサ,Nagisa,红茶,茶桌,椅",
+        "wikiRevision": 144107,
+        "resourceBodyAlias": "Nagisa_Original"
+      },
+      "developmentAliases": [
+        "Nagisa_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 585462,
+      "characterId": 10063,
+      "developmentId": "CH0198",
+      "wikiPage": "Koyuki",
+      "group": "Koyuki",
+      "defaultFile": "Koyuki.glb",
+      "evidence": {
+        "gameKeeName": "小雪",
+        "gameKeeAliases": "コユキ,Koyuki,傻子,捏哈哈",
+        "wikiRevision": 111146
+      }
+    },
+    {
+      "gameKeeContentId": 586470,
+      "characterId": 10064,
+      "developmentId": "CH0086",
+      "wikiPage": "Kayoko (New Year)",
+      "group": "Kayoko",
+      "defaultFile": "Kayoko (New Year).glb",
+      "evidence": {
+        "gameKeeName": "佳代子(正月)",
+        "gameKeeAliases": "佳世子（正月）,カヨコ（正月）,Kayoko (New Year),春佳代子,春佳,佳代子（新年）",
+        "wikiRevision": 105920
+      }
+    },
+    {
+      "gameKeeContentId": 586545,
+      "characterId": 20025,
+      "developmentId": "CH0087",
+      "wikiPage": "Haruka (New Year)",
+      "group": "Haruka",
+      "defaultFile": "Haruka (New Year).glb",
+      "evidence": {
+        "gameKeeName": "遥香(正月)",
+        "gameKeeAliases": "春香（正月）,ハルカ（正月）,Haruka(New Year),春遥香,春香（新年）",
+        "wikiRevision": 102894
+      }
+    },
+    {
+      "gameKeeContentId": 588062,
+      "characterId": 10065,
+      "developmentId": "CH0107",
+      "wikiPage": "Kaho",
+      "group": "Kaho",
+      "defaultFile": "Kaho.glb",
+      "evidence": {
+        "gameKeeName": "果穗",
+        "gameKeeAliases": "佳穗,カホ,力木,Kaho",
+        "wikiRevision": 105337
+      }
+    },
+    {
+      "gameKeeContentId": 589642,
+      "characterId": 10066,
+      "developmentId": "CH0200",
+      "wikiPage": "Arisu (Maid)",
+      "group": "Arisu",
+      "defaultFile": "Arisu (Maid).glb",
+      "evidence": {
+        "gameKeeName": "爱丽丝(女仆)",
+        "gameKeeAliases": "机器人,扫地,アリス（メイド）,Arisu (Maid),AL-1S",
+        "wikiRevision": 121001
+      }
+    },
+    {
+      "gameKeeContentId": 589647,
+      "characterId": 10067,
+      "developmentId": "CH0211",
+      "wikiPage": "Toki (Bunny Girl)",
+      "group": "Toki",
+      "defaultFile": "Toki (Bunny Girl).glb",
+      "evidence": {
+        "gameKeeName": "时(兔女郎)",
+        "gameKeeAliases": "トキ（バニーガール）,Toki (Bunny Girl),兔时,兔季,季（兔女郎）,邦妮",
+        "wikiRevision": 100896
+      }
+    },
+    {
+      "gameKeeContentId": 589650,
+      "characterId": 26009,
+      "developmentId": "CH0203",
+      "wikiPage": "Yuzu (Maid)",
+      "group": "Yuzu",
+      "defaultFile": "Yuzu (Maid).glb",
+      "evidence": {
+        "gameKeeName": "柚子(女仆)",
+        "gameKeeAliases": "ユズ（メイド）,Yuzu (Maid),箱柚,uzqueen",
+        "wikiRevision": 106368
+      }
+    },
+    {
+      "gameKeeContentId": 590230,
+      "characterId": 10094,
+      "developmentId": "CH0201",
+      "wikiPage": "Momoi (Maid)",
+      "group": "Momoi",
+      "defaultFile": "Momoi (Maid).glb",
+      "evidence": {
+        "gameKeeName": "桃井(女仆)",
+        "gameKeeAliases": "モモイ（メイド）,Momoi (Maid),女仆桃",
+        "wikiRevision": 100923,
+        "additionalResource": "st0004 contains only Momoi_Original_Halo; separate static halo resource, never the default student body."
+      },
+      "additionalGroups": [
+        "st0004"
+      ]
+    },
+    {
+      "gameKeeContentId": 590231,
+      "characterId": 10095,
+      "developmentId": "CH0202",
+      "wikiPage": "Midori (Maid)",
+      "group": "Midori",
+      "defaultFile": "Midori (Maid).glb",
+      "evidence": {
+        "gameKeeName": "绿(女仆)",
+        "gameKeeAliases": "ミドリ（メイド）,Midori (Maid),女仆绿",
+        "wikiRevision": 100924,
+        "additionalResource": "st0005 contains only Midori_Original_Halo; separate static halo resource, never the default student body."
+      },
+      "additionalGroups": [
+        "st0005"
+      ]
+    },
+    {
+      "gameKeeContentId": 591005,
+      "characterId": 16020,
+      "developmentId": "CH0174",
+      "wikiPage": "Otogi",
+      "group": "Otogi",
+      "defaultFile": "Otogi.glb",
+      "evidence": {
+        "gameKeeName": "音葵",
+        "gameKeeAliases": "御伽",
+        "wikiRevision": 144001,
+        "review": "Article summary and Wiki both identify the SRT FOX Squad one-star explosive SR attacker with special armor and B affinities."
+      }
+    },
+    {
+      "gameKeeContentId": 591006,
+      "characterId": 10140,
+      "developmentId": "CH0173",
+      "wikiPage": "Kurumi",
+      "group": "Kurumi",
+      "defaultFile": "Kurumi.glb",
+      "evidence": {
+        "gameKeeName": "胡桃",
+        "gameKeeAliases": "闪盾,kurumi",
+        "wikiRevision": 127846
+      }
+    },
+    {
+      "gameKeeContentId": 591327,
+      "characterId": 10069,
+      "developmentId": "CH0135",
+      "wikiPage": "Rumi",
+      "group": "Rumi",
+      "defaultFile": "Rumi.glb",
+      "evidence": {
+        "gameKeeName": "瑠美",
+        "gameKeeAliases": "ルミ,Rumi,炒饭,鲁米,瑠海",
+        "wikiRevision": 100898
+      }
+    },
+    {
+      "gameKeeContentId": 591329,
+      "characterId": 10070,
+      "developmentId": "CH0138",
+      "wikiPage": "Mina",
+      "group": "Mina",
+      "defaultFile": "Mina.glb",
+      "evidence": {
+        "gameKeeName": "南",
+        "gameKeeAliases": "ミナ,Mina,美奈,发哥",
+        "wikiRevision": 100899
+      }
+    },
+    {
+      "gameKeeContentId": 592325,
+      "characterId": 20026,
+      "developmentId": "CH0214",
+      "wikiPage": "Minori",
+      "group": "Minori",
+      "defaultFile": "Minori.glb",
+      "evidence": {
+        "gameKeeName": "实梨",
+        "gameKeeAliases": "实里,ミノリ,Minori,工头",
+        "wikiRevision": 102895
+      }
+    },
+    {
+      "gameKeeContentId": 593095,
+      "characterId": 10071,
+      "developmentId": "CH0215",
+      "wikiPage": "Miyako (Swimsuit)",
+      "group": "Miyako",
+      "defaultFile": "Miyako (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "宫子(泳装)",
+        "gameKeeAliases": "都子（泳装）,ミヤコ（水着）,Miyako (Swimsuit),水宫子,水都子",
+        "wikiRevision": 100900
+      }
+    },
+    {
+      "gameKeeContentId": 593096,
+      "characterId": 10072,
+      "developmentId": "CH0217",
+      "wikiPage": "Saki (Swimsuit)",
+      "group": "Saki",
+      "defaultFile": "Saki (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "咲(泳装)",
+        "gameKeeAliases": "咲希（泳装）,サキ（水着）,Saki (Swimsuit),水咲,水咲希,水saki",
+        "wikiRevision": 100901
+      }
+    },
+    {
+      "gameKeeContentId": 593097,
+      "characterId": 26010,
+      "developmentId": "CH0218",
+      "wikiPage": "Miyu (Swimsuit)",
+      "group": "Miyu",
+      "defaultFile": "Miyu (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "美游(泳装)",
+        "gameKeeAliases": "美优（泳装）,ミユ（水着）,Miyu (Swimsuit),水美游,水垃圾兔,水垃姬兔,垃圾桶",
+        "wikiRevision": 106369
+      }
+    },
+    {
+      "gameKeeContentId": 595927,
+      "characterId": 16013,
+      "developmentId": "CH0205",
+      "wikiPage": "Koharu (Swimsuit)",
+      "group": "Koharu",
+      "defaultFile": "Koharu (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "小春(泳装)",
+        "gameKeeAliases": "コハル（水着）,Koharu (Swimsuit),水小春",
+        "wikiRevision": 144085
+      }
+    },
+    {
+      "gameKeeContentId": 595933,
+      "characterId": 10073,
+      "developmentId": "CH0204",
+      "wikiPage": "Ui (Swimsuit)",
+      "group": "Ui",
+      "defaultFile": "Ui (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "忧(泳装)",
+        "gameKeeAliases": "ウイ（水着）,水忧,水Ui,水ui,Ui (Swimsuit),优",
+        "wikiRevision": 100902
+      }
+    },
+    {
+      "gameKeeContentId": 595935,
+      "characterId": 20028,
+      "developmentId": "CH0210",
+      "wikiPage": "Hinata (Swimsuit)",
+      "group": "Hinata",
+      "defaultFile": "Hinata (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "日向(泳装)",
+        "gameKeeAliases": "ヒナタ（水着）,Hinata (Swimsuit),水日向",
+        "wikiRevision": 104761
+      }
+    },
+    {
+      "gameKeeContentId": 596034,
+      "characterId": 10074,
+      "developmentId": "CH0209",
+      "wikiPage": "Hanako (Swimsuit)",
+      "group": "Hanako",
+      "defaultFile": "Hanako (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "花子(泳装)",
+        "gameKeeAliases": "ハナコ（水着）,Hanako (Swimsuit),水花子",
+        "wikiRevision": 144145
+      }
+    },
+    {
+      "gameKeeContentId": 597535,
+      "characterId": 10099,
+      "developmentId": "CH0258_01",
+      "wikiPage": "Hoshino (Battle) Attacker",
+      "group": "Hoshino",
+      "defaultFile": "Hoshino (Battle).glb",
+      "evidence": {
+        "gameKeeName": "星野(临战·攻击型)",
+        "gameKeeAliases": "ホシノ（臨戦）,星野（武装）,Hoshino (Combat),肘星野,星战,百叔,战大叔",
+        "wikiRevision": 123586,
+        "review": "GameKee title explicitly identifies Attacker; Wiki Character 10099 is the Attacker form. Keep CH0258_01 distinct from CH0258_02."
+      }
+    },
+    {
+      "gameKeeContentId": 598017,
+      "characterId": 10101,
+      "developmentId": "CH0266",
+      "wikiPage": "Saori (Swimsuit)",
+      "group": "Saori",
+      "defaultFile": "Saori (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "纱织(泳装)",
+        "gameKeeAliases": "水沙织,水纱织,サオリ（水着,saori (Swimsuit)",
+        "wikiRevision": 120997
+      }
+    },
+    {
+      "gameKeeContentId": 598110,
+      "characterId": 20052,
+      "developmentId": "CH0228",
+      "wikiPage": "Yakumo",
+      "group": "Yakumo",
+      "defaultFile": "Yakumo.glb",
+      "evidence": {
+        "gameKeeName": "八云",
+        "gameKeeAliases": "ヤクモ,Yakumo",
+        "wikiRevision": 113018
+      }
+    },
+    {
+      "gameKeeContentId": 598111,
+      "characterId": 10131,
+      "developmentId": "CH0229",
+      "wikiPage": "Takane",
+      "group": "Takane",
+      "defaultFile": "Takane.glb",
+      "evidence": {
+        "gameKeeName": "贵音",
+        "gameKeeAliases": "タカネ,Takane,desuwa,高岭",
+        "wikiRevision": 112808
+      }
+    },
+    {
+      "gameKeeContentId": 603133,
+      "characterId": 10079,
+      "developmentId": "CH9998",
+      "wikiPage": "Misaka Mikoto",
+      "group": "Misaka Mikoto",
+      "defaultFile": "Misaka Mikoto.glb",
+      "evidence": {
+        "gameKeeName": "御坂美琴",
+        "gameKeeAliases": "炮姐,Misaka Mikoto",
+        "wikiRevision": 105344
+      }
+    },
+    {
+      "gameKeeContentId": 603139,
+      "characterId": 10080,
+      "developmentId": "CH9997",
+      "wikiPage": "Shokuhou Misaki",
+      "group": "Shokuhou Misaki",
+      "defaultFile": "Shokuhou Misaki.glb",
+      "evidence": {
+        "gameKeeName": "食蜂操祈",
+        "gameKeeAliases": "Shokuhou Misaki,女王",
+        "wikiRevision": 143648
+      }
+    },
+    {
+      "gameKeeContentId": 603140,
+      "characterId": 26011,
+      "developmentId": "CH9996",
+      "wikiPage": "Saten Ruiko",
+      "group": "Saten Ruiko",
+      "defaultFile": "Saten Ruiko.glb",
+      "evidence": {
+        "gameKeeName": "佐天泪子",
+        "gameKeeAliases": "Saten Ruiko,泪爷",
+        "wikiRevision": 129020
+      }
+    },
+    {
+      "gameKeeContentId": 604513,
+      "characterId": 10081,
+      "developmentId": "CH0161",
+      "wikiPage": "Yukari",
+      "group": "Yukari",
+      "defaultFile": "Yukari.glb",
+      "evidence": {
+        "gameKeeName": "紫",
+        "gameKeeAliases": "ユカリ,缘里,Yukari,紫,油咖喱,紫篱",
+        "wikiRevision": 111236
+      }
+    },
+    {
+      "gameKeeContentId": 605892,
+      "characterId": 10082,
+      "developmentId": "CH0224",
+      "wikiPage": "Renge",
+      "group": "Renge",
+      "defaultFile": "Renge.glb",
+      "evidence": {
+        "gameKeeName": "莲华",
+        "gameKeeAliases": "レンゲ,Renge,莲花",
+        "wikiRevision": 113863
+      }
+    },
+    {
+      "gameKeeContentId": 605895,
+      "characterId": 10083,
+      "developmentId": "CH0225",
+      "wikiPage": "Kikyou",
+      "group": "Kikyou",
+      "defaultFile": "Kikyou.glb",
+      "evidence": {
+        "gameKeeName": "桔梗",
+        "gameKeeAliases": "キキョウ,Kikyou",
+        "wikiRevision": 111237,
+        "additionalResource": "sm030001 contains CH0300_Body/Weapon and matches Kikyou Swimsuit CH0300; separate animated summon/resource."
+      },
+      "additionalGroups": [
+        "sm030001"
+      ]
+    },
+    {
+      "gameKeeContentId": 606282,
+      "characterId": 10102,
+      "developmentId": "CH0269",
+      "wikiPage": "Hiyori (Swimsuit)",
+      "group": "Hiyori",
+      "defaultFile": "Hiyori (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "日和(泳装)",
+        "gameKeeAliases": "ヒヨリ（水着）,Hiyori(Swimsuit),水日和,初音未来",
+        "wikiRevision": 105353
+      }
+    },
+    {
+      "gameKeeContentId": 607106,
+      "characterId": 20032,
+      "developmentId": "CH0219",
+      "wikiPage": "Eimi (Swimsuit)",
+      "group": "Eimi",
+      "defaultFile": "Eimi (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "艾米(泳装)",
+        "gameKeeAliases": "子龙,英美,エイミ（水着）,Eimi (Swimsuit)",
+        "wikiRevision": 115614
+      }
+    },
+    {
+      "gameKeeContentId": 609143,
+      "characterId": 10085,
+      "developmentId": "CH0233",
+      "wikiPage": "Hare (Camping)",
+      "group": "Hare",
+      "defaultFile": "Hare (Camping).glb",
+      "evidence": {
+        "gameKeeName": "晴(野营)",
+        "gameKeeAliases": "ハレ（キャンプ）,Hare (Camping),红薯,晴（露营）",
+        "wikiRevision": 100914
+      }
+    },
+    {
+      "gameKeeContentId": 609145,
+      "characterId": 10084,
+      "developmentId": "CH0232",
+      "wikiPage": "Kotama (Camping)",
+      "group": "Kotama",
+      "defaultFile": "Kotama (Camping).glb",
+      "evidence": {
+        "gameKeeName": "小玉(野营)",
+        "gameKeeAliases": "コタマ（キャンプ）,Kotama (Camping),山芋,小玉（露营）",
+        "wikiRevision": 100913
+      }
+    },
+    {
+      "gameKeeContentId": 611604,
+      "characterId": 20033,
+      "developmentId": "CH0079",
+      "wikiPage": "Makoto",
+      "group": "Makoto",
+      "defaultFile": "Makoto.glb",
+      "evidence": {
+        "gameKeeName": "真琴",
+        "gameKeeAliases": "マコト,Makoto,猴王,议长",
+        "wikiRevision": 102902
+      }
+    },
+    {
+      "gameKeeContentId": 611610,
+      "characterId": 10087,
+      "developmentId": "CH0231",
+      "wikiPage": "Ako (Dress)",
+      "group": "Ako",
+      "defaultFile": "Ako (Dress).glb",
+      "evidence": {
+        "gameKeeName": "亚子(礼服)",
+        "gameKeeAliases": "アコ（ドレス）,Ako (Dress),礼亚",
+        "wikiRevision": 104908
+      }
+    },
+    {
+      "gameKeeContentId": 611643,
+      "characterId": 16014,
+      "developmentId": "CH0077",
+      "wikiPage": "Ibuki",
+      "group": "Ibuki",
+      "defaultFile": "Ibuki.glb",
+      "evidence": {
+        "gameKeeName": "伊吹",
+        "gameKeeAliases": "イブキ,Ibuki,芒果味",
+        "wikiRevision": 143998,
+        "resourceBodyAlias": "Ibuki_Original",
+        "review": "Wiki Character CH0077 uses an Ibuki_Original_Body node; preserve the confirmed alias rather than deriving identity from CH numeric nodes."
+      },
+      "developmentAliases": [
+        "Ibuki_Original"
+      ]
+    },
+    {
+      "gameKeeContentId": 611753,
+      "characterId": 10086,
+      "developmentId": "CH0230",
+      "wikiPage": "Hina (Dress)",
+      "group": "Hina",
+      "defaultFile": "Hina (Dress).glb",
+      "evidence": {
+        "gameKeeName": "日奈(礼服)",
+        "gameKeeAliases": "ヒナ（ドレス）,Hina (Dress),礼奈,礼服hina",
+        "wikiRevision": 104906
+      }
+    },
+    {
+      "gameKeeContentId": 614734,
+      "characterId": 10089,
+      "developmentId": "CH0240",
+      "wikiPage": "Aru (Dress)",
+      "group": "Aru",
+      "defaultFile": "Aru (Dress).glb",
+      "evidence": {
+        "gameKeeName": "阿露(礼服)",
+        "gameKeeAliases": "爱露（礼服）,亚瑠（礼服）,アル(ドレス),Aru (Dress),礼露,礼社长,礼鲁,憨憨",
+        "wikiRevision": 105924
+      }
+    },
+    {
+      "gameKeeContentId": 614735,
+      "characterId": 20059,
+      "developmentId": "CH0246",
+      "wikiPage": "Mutsuki (Dress)",
+      "group": "Mutsuki",
+      "defaultFile": "Mutsuki (Dress).glb",
+      "evidence": {
+        "gameKeeName": "睦月(礼服)",
+        "gameKeeAliases": "无月,ムツキ,Mutsuki,小恶魔",
+        "wikiRevision": 120484
+      }
+    },
+    {
+      "gameKeeContentId": 614736,
+      "characterId": 10088,
+      "developmentId": "CH0239",
+      "wikiPage": "Kayoko (Dress)",
+      "group": "Kayoko",
+      "defaultFile": "Kayoko (Dress).glb",
+      "evidence": {
+        "gameKeeName": "佳代子(礼服)",
+        "gameKeeAliases": "佳世子（礼服）,カヨコ（ドレス）,Kayoko (Dress),礼佳代子,礼佳",
+        "wikiRevision": 121168
+      }
+    },
+    {
+      "gameKeeContentId": 614737,
+      "characterId": 10141,
+      "developmentId": "CH0247",
+      "wikiPage": "Haruka (Dress)",
+      "group": "Haruka",
+      "defaultFile": "Haruka (Dress).glb",
+      "evidence": {
+        "gameKeeName": "遥香(礼服)",
+        "gameKeeAliases": "春香,ハルカ,Haruka,礼香",
+        "wikiRevision": 120485
+      }
+    },
+    {
+      "gameKeeContentId": 615923,
+      "characterId": 20034,
+      "developmentId": "CH0196",
+      "wikiPage": "Akari (New Year)",
+      "group": "Akari",
+      "defaultFile": "Akari (New Year).glb",
+      "evidence": {
+        "gameKeeName": "明里(正月)",
+        "gameKeeAliases": "亚伽里（正月）,アカリ（正月）,Akari(New Year),明里（新年）",
+        "wikiRevision": 102903
+      }
+    },
+    {
+      "gameKeeContentId": 616810,
+      "characterId": 10096,
+      "developmentId": "CH0260",
+      "wikiPage": "Kanna (Swimsuit)",
+      "group": "Kanna",
+      "defaultFile": "Kanna (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "康娜(泳装)",
+        "gameKeeAliases": "局长,カンナ（水着）,Kanna (Swimsuit),水康娜,水局长",
+        "wikiRevision": 100925
+      }
+    },
+    {
+      "gameKeeContentId": 617235,
+      "characterId": 20037,
+      "developmentId": "CH0261",
+      "wikiPage": "Fubuki (Swimsuit)",
+      "group": "Fubuki",
+      "defaultFile": "Fubuki (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "吹雪(泳装)",
+        "gameKeeAliases": "フブキ（水着）,Fubuki (Swimsuit),水摆烂,fbk",
+        "wikiRevision": 102906
+      }
+    },
+    {
+      "gameKeeContentId": 617236,
+      "characterId": 26012,
+      "developmentId": "CH0262",
+      "wikiPage": "Kirino (Swimsuit)",
+      "group": "Kirino",
+      "defaultFile": "Kirino (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "桐乃(泳装)",
+        "gameKeeAliases": "キリノ（水着）,Kirino ,桐乃",
+        "wikiRevision": 105442
+      }
+    },
+    {
+      "gameKeeContentId": 618557,
+      "characterId": 20035,
+      "developmentId": "CH0255",
+      "wikiPage": "Tsubaki (Guide)",
+      "group": "Tsubaki",
+      "defaultFile": "Tsubaki (Guide).glb",
+      "evidence": {
+        "gameKeeName": "椿(导游)",
+        "gameKeeAliases": "ツバキ(ガイド),导游椿,椿导,导椿,导狗,狗导,Tsubaki (Guide)",
+        "wikiRevision": 105389
+      }
+    },
+    {
+      "gameKeeContentId": 618563,
+      "characterId": 10090,
+      "developmentId": "CH0110",
+      "wikiPage": "Umika",
+      "group": "Umika",
+      "defaultFile": "Umika.glb",
+      "evidence": {
+        "gameKeeName": "海香",
+        "gameKeeAliases": "ウミカ,海花,Umika,海夏",
+        "wikiRevision": 107045
+      }
+    },
+    {
+      "gameKeeContentId": 618996,
+      "characterId": 26013,
+      "developmentId": "CH0267",
+      "wikiPage": "Atsuko (Swimsuit)",
+      "group": "Atsuko",
+      "defaultFile": "Atsuko (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "亚津子(泳装)",
+        "gameKeeAliases": "アツコ（水着）,Atsuko (Swimsuit),水敦子,水公主,水亚津子,秤砣子,墩子",
+        "wikiRevision": 143959
+      }
+    },
+    {
+      "gameKeeContentId": 620813,
+      "characterId": 16015,
+      "developmentId": "CH0251",
+      "wikiPage": "Airi (Band)",
+      "group": "Airi",
+      "defaultFile": "Airi (Band).glb",
+      "evidence": {
+        "gameKeeName": "爱莉(乐队)",
+        "gameKeeAliases": "爱理（乐队）,アイリ（バンド）,Airi (Band),林檎,凌琴",
+        "wikiRevision": 106356
+      }
+    },
+    {
+      "gameKeeContentId": 620843,
+      "characterId": 10091,
+      "developmentId": "CH0250",
+      "wikiPage": "Kazusa (Band)",
+      "group": "Kazusa",
+      "defaultFile": "Kazusa (Band).glb",
+      "evidence": {
+        "gameKeeName": "和纱(乐队)",
+        "gameKeeAliases": "千纱（乐队）,肥猫,カズサ（バンド）,Kazusa (Band),纱乐,凯茜帕鲁格",
+        "wikiRevision": 120999
+      }
+    },
+    {
+      "gameKeeContentId": 620883,
+      "characterId": 10092,
+      "developmentId": "CH0220",
+      "wikiPage": "Yoshimi (Band)",
+      "group": "Yoshimi",
+      "defaultFile": "Yoshimi (Band).glb",
+      "evidence": {
+        "gameKeeName": "好美(乐队)",
+        "gameKeeAliases": "喜美（乐队）,ヨシミ（バンド）,Yoshimi (Band),集美,吉美",
+        "wikiRevision": 100921
+      }
+    },
+    {
+      "gameKeeContentId": 621572,
+      "characterId": 10098,
+      "developmentId": "CH0258_02",
+      "wikiPage": "Hoshino (Battle)",
+      "group": "Hoshino",
+      "defaultFile": "Hoshino (Battle).glb",
+      "evidence": {
+        "gameKeeName": "星野(临战·防御型)",
+        "gameKeeAliases": "ホシノ（臨戦）,星野（武装）,Hoshino (Combat),肘星野,星战,百叔,战大叔",
+        "wikiRevision": 123445,
+        "review": "GameKee title explicitly identifies Tank; Wiki Character 10098 is the Tank form. Both battle roles share Hoshino (Battle).glb."
+      }
+    },
+    {
+      "gameKeeContentId": 625765,
+      "characterId": 10137,
+      "developmentId": "CH0264",
+      "wikiPage": "Konoka",
+      "group": "Konoka",
+      "defaultFile": "Konoka.glb",
+      "evidence": {
+        "gameKeeName": "木乃香",
+        "gameKeeAliases": "副局长,心华,konoka",
+        "wikiRevision": 141115
+      }
+    },
+    {
+      "gameKeeContentId": 628806,
+      "characterId": 20049,
+      "developmentId": "CH0268",
+      "wikiPage": "Misaki (Swimsuit)",
+      "group": "Misaki",
+      "defaultFile": "Misaki (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "美咲(泳装)",
+        "gameKeeAliases": "ミサキ,misaki,円,美口关",
+        "wikiRevision": 105726
+      }
+    },
+    {
+      "gameKeeContentId": 643617,
+      "characterId": 10108,
+      "developmentId": "CH0284",
+      "wikiPage": "Yuuka (Pajama)",
+      "group": "Yuuka",
+      "defaultFile": "Yuuka (Pajama).glb",
+      "evidence": {
+        "gameKeeName": "优香(睡衣)",
+        "gameKeeAliases": "睡衣,优香,ユウカ（睡衣）,优香（睡衣）,睡衣邮箱,睡邮箱",
+        "wikiRevision": 144179,
+        "review": "Pajama identity confirmed by the existing binding and Yuuka family article; GameKee alias translates Pajama as 睡衣."
+      }
+    },
+    {
+      "gameKeeContentId": 643621,
+      "characterId": 10109,
+      "developmentId": "CH0285",
+      "wikiPage": "Noa (Pajama)",
+      "group": "Noa",
+      "defaultFile": "Noa (Pajama).glb",
+      "evidence": {
+        "gameKeeName": "诺亚(睡衣)",
+        "gameKeeAliases": "睡衣,诺亚睡衣,乃爱睡衣,noa睡衣,诺亚,乃爱,noa,枕头",
+        "wikiRevision": 100937
+      }
+    },
+    {
+      "gameKeeContentId": 643792,
+      "characterId": 20056,
+      "developmentId": "CH0310",
+      "wikiPage": "Koyuki (Pajama)",
+      "group": "Koyuki",
+      "defaultFile": "Koyuki (Pajama).glb",
+      "evidence": {
+        "gameKeeName": "小雪(睡衣)",
+        "gameKeeAliases": "コユキ,Koyuki,傻子,捏哈哈",
+        "wikiRevision": 127841
+      }
+    },
+    {
+      "gameKeeContentId": 645820,
+      "characterId": 10110,
+      "developmentId": "CH0070",
+      "wikiPage": "Seia",
+      "group": "Seia",
+      "defaultFile": "Seia.glb",
+      "evidence": {
+        "gameKeeName": "圣娅",
+        "gameKeeAliases": "セイア,Seia,圣亚,哑,哑巴,圣哑,山海经",
+        "wikiRevision": 127287
+      }
+    },
+    {
+      "gameKeeContentId": 645821,
+      "characterId": 10112,
+      "developmentId": "CH0281",
+      "wikiPage": "Asuna (School Uniform)",
+      "group": "Asuna",
+      "defaultFile": "Asuna (School Uniform).glb",
+      "evidence": {
+        "gameKeeName": "明日奈(制服)",
+        "gameKeeAliases": "アスナ（制服）,Asuna(School Uniform),jk,金毛,校服",
+        "wikiRevision": 102291
+      }
+    },
+    {
+      "gameKeeContentId": 645822,
+      "characterId": 26014,
+      "developmentId": "CH0282",
+      "wikiPage": "Karin (School Uniform)",
+      "group": "Karin",
+      "defaultFile": "Karin (School Uniform).glb",
+      "evidence": {
+        "gameKeeName": "花凛(制服)",
+        "gameKeeAliases": "jk,カリン（制服）,Karin(School Uniform),校服",
+        "wikiRevision": 143113
+      }
+    },
+    {
+      "gameKeeContentId": 645823,
+      "characterId": 10111,
+      "developmentId": "CH0280",
+      "wikiPage": "Neru (School Uniform)",
+      "group": "Neru",
+      "defaultFile": "Neru (School Uniform).glb",
+      "evidence": {
+        "gameKeeName": "妮露(制服)",
+        "gameKeeAliases": "ネル（制服）,宁瑠（制服）,Neru(School Uniform),尼禄,jk,校服",
+        "wikiRevision": 102294
+      }
+    },
+    {
+      "gameKeeContentId": 645824,
+      "characterId": 20041,
+      "developmentId": "CH0158",
+      "wikiPage": "Rio",
+      "group": "Rio",
+      "defaultFile": "Rio.glb",
+      "evidence": {
+        "gameKeeName": "莉音",
+        "gameKeeAliases": "リオ,Rio,莉央,毁灭菇,李奥",
+        "wikiRevision": 103100
+      }
+    },
+    {
+      "gameKeeContentId": 645973,
+      "characterId": 20057,
+      "developmentId": "CH0307",
+      "wikiPage": "Akane (School Uniform)",
+      "group": "Akane",
+      "defaultFile": "Akane (School Uniform).glb",
+      "evidence": {
+        "gameKeeName": "朱音(制服)",
+        "gameKeeAliases": "jk,茜,アカネ,akane",
+        "wikiRevision": 118095
+      }
+    },
+    {
+      "gameKeeContentId": 647136,
+      "characterId": 20042,
+      "developmentId": "CH0235",
+      "wikiPage": "Maki (Camping)",
+      "group": "Maki",
+      "defaultFile": "Maki (Camping).glb",
+      "evidence": {
+        "gameKeeName": "真纪(野营)",
+        "gameKeeAliases": "真希（野营）,真纪（露营）,マキ（キャンプ）,Maki(Camping),兄弟,真记",
+        "wikiRevision": 102911
+      }
+    },
+    {
+      "gameKeeContentId": 649353,
+      "characterId": 10113,
+      "developmentId": "CH0082",
+      "wikiPage": "Sena (Casual)",
+      "group": "Sena",
+      "defaultFile": "Sena (Casual).glb",
+      "evidence": {
+        "gameKeeName": "濑名(私服)",
+        "gameKeeAliases": "セナ（私服）,Sena(Casual),私家车",
+        "wikiRevision": 102255
+      }
+    },
+    {
+      "gameKeeContentId": 649361,
+      "characterId": 10114,
+      "developmentId": "CH0286",
+      "wikiPage": "Juri (Part-Timer)",
+      "group": "Juri",
+      "defaultFile": "Juri (Part-Timer).glb",
+      "evidence": {
+        "gameKeeName": "朱莉(打工)",
+        "gameKeeAliases": "ジュリ（アルバイト）,Juri(Part-Timer),朱丽,茱莉,工牛,公牛",
+        "wikiRevision": 102256
+      }
+    },
+    {
+      "gameKeeContentId": 650981,
+      "characterId": 20043,
+      "developmentId": "CH0197",
+      "wikiPage": "Izumi (New Year)",
+      "group": "Izumi",
+      "defaultFile": "Izumi (New Year).glb",
+      "evidence": {
+        "gameKeeName": "泉(正月)",
+        "gameKeeAliases": "イズミ,Izumi,老八,泉（新年）",
+        "wikiRevision": 111311
+      }
+    },
+    {
+      "gameKeeContentId": 652654,
+      "characterId": 20044,
+      "developmentId": "CH0287",
+      "wikiPage": "Sumire (Part-Timer)",
+      "group": "Sumire",
+      "defaultFile": "Sumire (Part-Timer).glb",
+      "evidence": {
+        "gameKeeName": "堇(打工)",
+        "gameKeeAliases": "スミレ（アルバイト）,公瑾,工堇,Sumire (Part-Timer)",
+        "wikiRevision": 104987
+      }
+    },
+    {
+      "gameKeeContentId": 652656,
+      "characterId": 10115,
+      "developmentId": "CH0245",
+      "wikiPage": "Rei",
+      "group": "Rei",
+      "defaultFile": "Rei.glb",
+      "evidence": {
+        "gameKeeName": "莱伊",
+        "gameKeeAliases": "レイ,棒球妹,野莱,莉,丽,雅迪",
+        "wikiRevision": 104988
+      }
+    },
+    {
+      "gameKeeContentId": 654558,
+      "characterId": 10116,
+      "developmentId": "CH0259",
+      "wikiPage": "Saori (Dress)",
+      "group": "Saori",
+      "defaultFile": "Saori (Dress).glb",
+      "evidence": {
+        "gameKeeName": "纱织(礼服)",
+        "gameKeeAliases": "沙织,サオリ,saori,礼服,礼纱",
+        "wikiRevision": 120998
+      }
+    },
+    {
+      "gameKeeContentId": 656706,
+      "characterId": 10117,
+      "developmentId": "CH0242",
+      "wikiPage": "Hikari",
+      "group": "Hikari",
+      "defaultFile": "Hikari.glb",
+      "evidence": {
+        "gameKeeName": "光",
+        "gameKeeAliases": "ヒカリ,Hikari,铁道双子,磁小轨,光明",
+        "wikiRevision": 129082
+      }
+    },
+    {
+      "gameKeeContentId": 656708,
+      "characterId": 10118,
+      "developmentId": "CH0243",
+      "wikiPage": "Nozomi",
+      "group": "Nozomi",
+      "defaultFile": "Nozomi.glb",
+      "evidence": {
+        "gameKeeName": "望",
+        "gameKeeAliases": "ノゾミ,Nozomi,铁道双子,磁小轨,希望",
+        "wikiRevision": 144142
+      }
+    },
+    {
+      "gameKeeContentId": 656711,
+      "characterId": 16017,
+      "developmentId": "CH0288",
+      "wikiPage": "Aoba",
+      "group": "Aoba",
+      "defaultFile": "Aoba.glb",
+      "evidence": {
+        "gameKeeName": "青叶",
+        "gameKeeAliases": "アオバ,Aoba",
+        "wikiRevision": 144444
+      }
+    },
+    {
+      "gameKeeContentId": 660801,
+      "characterId": 20045,
+      "developmentId": "CH0257",
+      "wikiPage": "Pina (Guide)",
+      "group": "Pina",
+      "defaultFile": "Pina (Guide).glb",
+      "evidence": {
+        "gameKeeName": "菲娜(导游)",
+        "gameKeeAliases": "フィーナ(ガイド),Pina (Guide)",
+        "wikiRevision": 121089
+      }
+    },
+    {
+      "gameKeeContentId": 661923,
+      "characterId": 20046,
+      "developmentId": "CH0109",
+      "wikiPage": "Niya",
+      "group": "Niya",
+      "defaultFile": "Niya.glb",
+      "evidence": {
+        "gameKeeName": "妮娅",
+        "gameKeeAliases": "ニヤ,Niya,仁耶,尼亚,尼娅",
+        "wikiRevision": 127836
+      }
+    },
+    {
+      "gameKeeContentId": 661924,
+      "characterId": 10119,
+      "developmentId": "CH0222",
+      "wikiPage": "Nagusa",
+      "group": "Nagusa",
+      "defaultFile": "Nagusa.glb",
+      "evidence": {
+        "gameKeeName": "名草",
+        "gameKeeAliases": "雪女,ナグサ,Nagusa",
+        "wikiRevision": 111284
+      }
+    },
+    {
+      "gameKeeContentId": 664782,
+      "characterId": 10120,
+      "developmentId": "CH0221",
+      "wikiPage": "Natsu (Band)",
+      "group": "Natsu",
+      "defaultFile": "Natsu (Band).glb",
+      "evidence": {
+        "gameKeeName": "夏(乐队)",
+        "gameKeeAliases": "ナツ（バンド）,Natsu(Band),小夏乐队",
+        "wikiRevision": 144195
+      }
+    },
+    {
+      "gameKeeContentId": 667848,
+      "characterId": 10121,
+      "developmentId": "CH0301",
+      "wikiPage": "Yukari (Swimsuit)",
+      "group": "Yukari",
+      "defaultFile": "Yukari (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "紫(泳装)",
+        "gameKeeAliases": "ユカリ（水着）,Yukari (Swimsuit)i,紫,油咖喱,紫篱,缘里",
+        "wikiRevision": 112501,
+        "review": "Exact costume title and Japanese alias identify Yukari Swimsuit; English alias contains a trailing typo."
+      }
+    },
+    {
+      "gameKeeContentId": 667849,
+      "characterId": 20047,
+      "developmentId": "CH0300",
+      "wikiPage": "Kikyou (Swimsuit)",
+      "group": "Kikyou",
+      "defaultFile": "Kikyou (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "桔梗(泳装)",
+        "gameKeeAliases": "キキョウ（水着）,Kikyou(Swimsuit)i",
+        "wikiRevision": 112499,
+        "review": "Exact costume title and Japanese alias identify Kikyou Swimsuit; English alias contains a trailing typo.",
+        "additionalResource": "sm030001 contains CH0300_Body/Weapon and matches Kikyou Swimsuit CH0300; separate animated summon/resource."
+      },
+      "additionalGroups": [
+        "sm030001"
+      ]
+    },
+    {
+      "gameKeeContentId": 667850,
+      "characterId": 13014,
+      "developmentId": "CH0302",
+      "wikiPage": "Renge (Swimsuit)",
+      "group": "Renge",
+      "defaultFile": "Renge (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "莲华(泳装)",
+        "gameKeeAliases": "レンゲ（水着）,Renge(Swimsuit),莲花",
+        "wikiRevision": 127873
+      }
+    },
+    {
+      "gameKeeContentId": 667917,
+      "characterId": 10142,
+      "developmentId": "CH0303",
+      "wikiPage": "Nagusa (Swimsuit)",
+      "group": "Nagusa",
+      "defaultFile": "Nagusa (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "名草(泳装)",
+        "gameKeeAliases": "雪女,ナグサ,Nagusa",
+        "wikiRevision": 120996
+      }
+    },
+    {
+      "gameKeeContentId": 671014,
+      "characterId": 26015,
+      "developmentId": "CH0292",
+      "wikiPage": "Ichika (Swimsuit)",
+      "group": "Ichika",
+      "defaultFile": "Ichika (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "一花(泳装)",
+        "gameKeeAliases": "イチカ（水着）,Ichika(Swimsuit)",
+        "wikiRevision": 120123
+      }
+    },
+    {
+      "gameKeeContentId": 671015,
+      "characterId": 10124,
+      "developmentId": "CH0291",
+      "wikiPage": "Hasumi (Swimsuit)",
+      "group": "Hasumi",
+      "defaultFile": "Hasumi (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "莲见(泳装)",
+        "gameKeeAliases": "ハスミ（水着）,Hasumi (Swimsuit)",
+        "wikiRevision": 113501
+      }
+    },
+    {
+      "gameKeeContentId": 671018,
+      "characterId": 10123,
+      "developmentId": "CH0295",
+      "wikiPage": "Seia (Swimsuit)",
+      "group": "Seia",
+      "defaultFile": "Seia (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "圣娅(泳装)",
+        "gameKeeAliases": "セイア（水着）,Seia (Swimsuit)",
+        "wikiRevision": 113499
+      }
+    },
+    {
+      "gameKeeContentId": 671319,
+      "characterId": 10122,
+      "developmentId": "CH0294",
+      "wikiPage": "Mika (Swimsuit)",
+      "group": "Mika",
+      "defaultFile": "Mika (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "未花(泳装)",
+        "gameKeeAliases": "ミカ（水着）,Mika(Swimsuit),水未花,水mika,沫花,水弥香,沬花",
+        "wikiRevision": 113503
+      }
+    },
+    {
+      "gameKeeContentId": 671362,
+      "characterId": 20048,
+      "developmentId": "CH0293",
+      "wikiPage": "Nagisa (Swimsuit)",
+      "group": "Nagisa",
+      "defaultFile": "Nagisa (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "渚(泳装)",
+        "gameKeeAliases": "ナギサ（水着）,Nagisa(Swimsuit),水渚",
+        "wikiRevision": 113502
+      }
+    },
+    {
+      "gameKeeContentId": 674546,
+      "characterId": 10125,
+      "developmentId": "CH0304",
+      "wikiPage": "Eri",
+      "group": "Eri",
+      "defaultFile": "Eri.glb",
+      "evidence": {
+        "gameKeeName": "绘里",
+        "gameKeeAliases": "绘理,エリ,Eri,绘梨,艾莉,爱莉",
+        "wikiRevision": 141717
+      }
+    },
+    {
+      "gameKeeContentId": 674557,
+      "characterId": 10126,
+      "developmentId": "CH0306",
+      "wikiPage": "Kanoe",
+      "group": "Kanoe",
+      "defaultFile": "Kanoe.glb",
+      "evidence": {
+        "gameKeeName": "鹿江",
+        "gameKeeAliases": "庚,カノエ,Kanoe,加乃绘,卡诺艾",
+        "wikiRevision": 141116
+      }
+    },
+    {
+      "gameKeeContentId": 674784,
+      "characterId": 10138,
+      "developmentId": "CH0305",
+      "wikiPage": "Rena",
+      "group": "Rena",
+      "defaultFile": "Rena.glb",
+      "evidence": {
+        "gameKeeName": "蕾娜",
+        "gameKeeAliases": "雷娜,巧克力,香蕉,杏仁,玲奈",
+        "wikiRevision": 127837,
+        "review": "Article summary and Wiki identify Wildhunt Occult Investigation Society three-star explosive HG support with light armor and S indoor affinity."
+      }
+    },
+    {
+      "gameKeeContentId": 674785,
+      "characterId": 10127,
+      "developmentId": "CH0317",
+      "wikiPage": "Miyo",
+      "group": "Miyo",
+      "defaultFile": "Miyo.glb",
+      "evidence": {
+        "gameKeeName": "美代",
+        "gameKeeAliases": "ミヨ,Miyo,美世",
+        "wikiRevision": 120125
+      }
+    },
+    {
+      "gameKeeContentId": 677499,
+      "characterId": 10130,
+      "developmentId": "CH0309",
+      "wikiPage": "Subaru",
+      "group": "Subaru",
+      "defaultFile": "Subaru.glb",
+      "evidence": {
+        "gameKeeName": "昴",
+        "gameKeeAliases": "スバル,Subaru,486,卯",
+        "wikiRevision": 111117
+      }
+    },
+    {
+      "gameKeeContentId": 677898,
+      "characterId": 10128,
+      "developmentId": "CH0318",
+      "wikiPage": "Fuyu",
+      "group": "Fuyu",
+      "defaultFile": "Fuyu.glb",
+      "evidence": {
+        "gameKeeName": "冬",
+        "gameKeeAliases": "フユ,冬优,Fuyu",
+        "wikiRevision": 120124
+      }
+    },
+    {
+      "gameKeeContentId": 677904,
+      "characterId": 20050,
+      "developmentId": "CH0319",
+      "wikiPage": "Ritsu",
+      "group": "Ritsu",
+      "defaultFile": "Ritsu.glb",
+      "evidence": {
+        "gameKeeName": "律",
+        "gameKeeAliases": "リツ,Ritsu,芋泥,俊达萌",
+        "wikiRevision": 108207
+      }
+    },
+    {
+      "gameKeeContentId": 680454,
+      "characterId": 20051,
+      "developmentId": "CH0326",
+      "wikiPage": "Reisa (Magical)",
+      "group": "Reisa",
+      "defaultFile": "Reisa (Magical).glb",
+      "evidence": {
+        "gameKeeName": "玲纱(魔法)",
+        "gameKeeAliases": "魔法少女,澪纱,レイサ（マジカル）,Reisa(Magical),芋泥,魔芋",
+        "wikiRevision": 118210,
+        "additionalResource": "sm032601 contains CH0326_Body/Weapon/Halo and matches Reisa Magical CH0326; separate animated summon/resource."
+      },
+      "additionalGroups": [
+        "sm032601"
+      ]
+    },
+    {
+      "gameKeeContentId": 680458,
+      "characterId": 10129,
+      "developmentId": "CH0325",
+      "wikiPage": "Suzumi (Magical)",
+      "group": "Suzumi",
+      "defaultFile": "Suzumi (Magical).glb",
+      "evidence": {
+        "gameKeeName": "铃美(魔法)",
+        "gameKeeAliases": "魔法少女,スズミ（マジカル）,闪光弹,Suzumi(Magical)",
+        "wikiRevision": 127845
+      }
+    },
+    {
+      "gameKeeContentId": 686688,
+      "characterId": 10132,
+      "developmentId": "CH0297",
+      "wikiPage": "Tsukuyo (Dress)",
+      "group": "Tsukuyo",
+      "defaultFile": "Tsukuyo (Dress).glb",
+      "evidence": {
+        "gameKeeName": "月咏(礼服)",
+        "gameKeeAliases": "月夜,ツクヨ,Tsukuyo",
+        "wikiRevision": 120992
+      }
+    },
+    {
+      "gameKeeContentId": 686689,
+      "characterId": 20053,
+      "developmentId": "CH0296",
+      "wikiPage": "Michiru (Dress)",
+      "group": "Michiru",
+      "defaultFile": "Michiru (Dress).glb",
+      "evidence": {
+        "gameKeeName": "满(礼服)",
+        "gameKeeAliases": "三千留,ミチル,Michiru,礼满",
+        "wikiRevision": 127843
+      }
+    },
+    {
+      "gameKeeContentId": 690582,
+      "characterId": 10135,
+      "developmentId": "CH0335",
+      "wikiPage": "Kei",
+      "group": "Kei",
+      "defaultFile": "Kei.glb",
+      "evidence": {
+        "gameKeeName": "柯伊",
+        "gameKeeAliases": "ケイ,凯伊,kei,有明女王,有明の女王,key,amas,机器,爱丽丝,AL-1S,钥匙,同归于尽,C108本子王",
+        "wikiRevision": 144186
+      }
+    },
+    {
+      "gameKeeContentId": 690584,
+      "characterId": 10133,
+      "developmentId": "CH0331",
+      "wikiPage": "Rio (Battle)",
+      "group": "Rio",
+      "defaultFile": "Rio (Battle).glb",
+      "evidence": {
+        "gameKeeName": "莉音(临战)",
+        "gameKeeAliases": "リオ,Rio,莉央,毁灭菇,李奥,武装",
+        "wikiRevision": 114919
+      }
+    },
+    {
+      "gameKeeContentId": 690585,
+      "characterId": 20054,
+      "developmentId": "CH0332",
+      "wikiPage": "Himari (Battle)",
+      "group": "Himari",
+      "defaultFile": "Himari (Battle).glb",
+      "evidence": {
+        "gameKeeName": "日鞠(临战)",
+        "gameKeeAliases": "阳葵,ヒマリ,otto,轮椅,Himari,摩鞠,武装",
+        "wikiRevision": 127834
+      }
+    },
+    {
+      "gameKeeContentId": 690586,
+      "characterId": 10134,
+      "developmentId": "CH0334",
+      "wikiPage": "Arisu (Battle)",
+      "group": "Arisu",
+      "defaultFile": "Arisu (Battle).glb",
+      "evidence": {
+        "gameKeeName": "爱丽丝(临战)",
+        "gameKeeAliases": "アリス,高达,arisu,机器人,扫地,机娘,自由,强袭,强袭自由,飞升自由,AL-1S,武装",
+        "wikiRevision": 121002
+      }
+    },
+    {
+      "gameKeeContentId": 690587,
+      "characterId": 16019,
+      "developmentId": "CH0333",
+      "wikiPage": "Toki (Battle)",
+      "group": "Toki",
+      "defaultFile": "Toki (Battle).glb",
+      "evidence": {
+        "gameKeeName": "时(临战)",
+        "gameKeeAliases": "トキ,toki,季,武装",
+        "wikiRevision": 127838
+      }
+    },
+    {
+      "gameKeeContentId": 690661,
+      "characterId": 20055,
+      "developmentId": "CH0336",
+      "wikiPage": "Yuzu (Battle)",
+      "group": "Yuzu",
+      "defaultFile": "Yuzu (Battle).glb",
+      "evidence": {
+        "gameKeeName": "柚子(临战)",
+        "gameKeeAliases": "ユズ,Yuzu,柚子厨,uzqueen,武装",
+        "wikiRevision": 124463
+      }
+    },
+    {
+      "gameKeeContentId": 690663,
+      "characterId": 10136,
+      "developmentId": "CH0337",
+      "wikiPage": "Eimi (Battle)",
+      "group": "Eimi",
+      "defaultFile": "Eimi (Battle).glb",
+      "evidence": {
+        "gameKeeName": "艾米(临战)",
+        "gameKeeAliases": "子龙,英美,エイミ,Eimi,武装",
+        "wikiRevision": 116632
+      }
+    },
+    {
+      "gameKeeContentId": 709615,
+      "characterId": 10145,
+      "developmentId": "CH0356",
+      "wikiPage": "Kisaki (Swimsuit)",
+      "group": "Kisaki",
+      "defaultFile": "Kisaki (Swimsuit).glb",
+      "evidence": {
+        "gameKeeName": "妃咲(泳装)",
+        "gameKeeAliases": "キサキ,Kisaki,妃姬,ksk,妃妃,水",
+        "wikiRevision": 127844
+      }
+    },
+    {
+      "gameKeeContentId": 709616,
+      "characterId": 10143,
+      "developmentId": "CH0355_01",
+      "wikiPage": "Shun (Swimsuit)",
+      "group": "Shun",
+      "defaultFile": "Shun (Swimsuit) (1).glb",
+      "evidence": {
+        "gameKeeName": "瞬(泳装)",
+        "gameKeeAliases": "水,旬,シュン,Shun,大瞬",
+        "wikiRevision": 122298,
+        "review": "Adult swimsuit article maps to Character 10143 / CH0355_01 and model (1)."
+      }
+    },
+    {
+      "gameKeeContentId": 709617,
+      "characterId": 10144,
+      "developmentId": "CH0355_02",
+      "wikiPage": "Shun (Swimsuit) Kid",
+      "group": "Shun",
+      "defaultFile": "Shun (Swimsuit) (2).glb",
+      "evidence": {
+        "gameKeeName": "雪玲(泳装)",
+        "gameKeeAliases": "水,旬（幼女）,瞬（小）,シュン,Shun (Kid),幼瞬,小瞬,雪玲,雪莉",
+        "wikiRevision": 122299,
+        "review": "Kid swimsuit article maps to Character 10144 / CH0355_02 and model (2); base Japanese alias alone is ambiguous."
+      }
+    }
+  ],
+  "unboundGroups": [
+    {
+      "group": "Material Development Club Member",
+      "files": [
+        "Material Development Club Member.glb"
+      ],
+      "reason": "No playable Character template or student article; NPC or stage/object resource"
+    },
+    {
+      "group": "ladies_biker_ar",
+      "files": [
+        "ladies_biker_ar.glb"
+      ],
+      "reason": "No playable Character template or student article; NPC or stage/object resource"
+    },
+    {
+      "group": "ladies_biker_mg",
+      "files": [
+        "ladies_biker_mg.glb"
+      ],
+      "reason": "No playable Character template or student article; NPC or stage/object resource"
+    },
+    {
+      "group": "ladies_biker_sg",
+      "files": [
+        "ladies_biker_sg.glb"
+      ],
+      "reason": "No playable Character template or student article; NPC or stage/object resource"
+    },
+    {
+      "group": "ladiesboss_biker_ar",
+      "files": [
+        "ladiesboss_biker_ar.glb"
+      ],
+      "reason": "No playable Character template or student article; NPC or stage/object resource"
+    }
+  ],
+  "articlesWithoutModel": [
+    {
+      "gameKeeContentId": 620940,
+      "gameKeeName": "䌷",
+      "reason": "No playable Wiki Character template or upstream GLB available"
+    },
+    {
+      "gameKeeContentId": 671482,
+      "gameKeeName": "霞(泳装)",
+      "wikiPage": "Kasumi (Swimsuit)",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 714029,
+      "gameKeeName": "千秋(泳装)",
+      "wikiPage": "Chiaki (Swimsuit)",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 714033,
+      "gameKeeName": "真琴(泳装)",
+      "wikiPage": "Makoto (Swimsuit)",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 714037,
+      "gameKeeName": "皋月(泳装)",
+      "wikiPage": "Satsuki (Swimsuit)",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 714055,
+      "gameKeeName": "伊吹(泳装)",
+      "wikiPage": "Ibuki (Swimsuit)",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 714062,
+      "gameKeeName": "伊吕波(泳装)",
+      "wikiPage": "Iroha (Swimsuit)",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 718265,
+      "gameKeeName": "琴音",
+      "wikiPage": "Kotone",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 718266,
+      "gameKeeName": "心",
+      "wikiPage": "Kokoro",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 721663,
+      "gameKeeName": "艾莉娜",
+      "wikiPage": "Erina",
+      "reason": "No GLB in the pinned upstream repository"
+    },
+    {
+      "gameKeeContentId": 721664,
+      "gameKeeName": "安娜",
+      "wikiPage": "Anna",
+      "reason": "No GLB in the pinned upstream repository"
+    }
+  ]
+}

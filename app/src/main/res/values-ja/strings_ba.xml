@@ -953,4 +953,16 @@
     <string name="guide_gallery_dynamic_lobby_reset_view">表示をリセット</string>
     <string name="guide_gallery_dynamic_lobby_gestures">ピンチで拡大縮小、ドラッグで移動、ダブルタップで表示をリセット</string>
     <string name="guide_gallery_dynamic_lobby_bgm_failed">BGM を読み込めませんでした。再試行してください。</string>
+    <string name="guide_model_3d_title">3Dモデル</string>
+    <string name="guide_model_3d_hint">1本指で回転、2本指で拡大・移動できます。モデルや動作も切り替えられます。</string>
+    <string name="guide_model_3d_open">3Dモデルを見る</string>
+    <string name="guide_model_3d_failed">モデルを読み込めませんでした。再試行するか、入口カードからWikiを確認してください。</string>
+    <string name="guide_model_3d_tools">モデルツール</string>
+    <string name="guide_model_3d_position">アニメーションの再生位置</string>
+    <string name="guide_model_3d_position_value">%1$.2f / %2$.2f 秒</string>
+    <string name="guide_model_3d_speed">再生速度</string>
+    <string name="guide_model_3d_loop">ループ再生</string>
+    <string name="guide_model_3d_outline">モデルの輪郭線</string>
+    <string name="guide_model_3d_outline_width">輪郭線の幅</string>
+    <string name="guide_model_3d_percent">%1$d%%</string>
 </resources>

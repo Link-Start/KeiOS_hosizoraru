@@ -39,6 +39,9 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
     }
 
     val resolvedGalleryState = galleryState ?: resolveGuideGalleryTabState(guide)
+    item(key = "guide-gallery-model-3d", contentType = "guide_gallery_model_3d") {
+        os.kei.ui.page.main.student.model3d.GuideModel3dEntryRoute(guide, context, backdrop)
+    }
     renderGuideGalleryStateContent(
         state = resolvedGalleryState,
         error = error,

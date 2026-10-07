@@ -955,4 +955,16 @@
     <string name="guide_gallery_dynamic_lobby_reset_view">恢复视角</string>
     <string name="guide_gallery_dynamic_lobby_gestures">双指缩放，拖动移动，双击恢复视角</string>
     <string name="guide_gallery_dynamic_lobby_bgm_failed">BGM 加载失败，可点击重试。</string>
+    <string name="guide_model_3d_title">3D 模型</string>
+    <string name="guide_model_3d_hint">单指旋转，双指缩放或移动；也可切换模型与动作。</string>
+    <string name="guide_model_3d_open">查看 3D 模型</string>
+    <string name="guide_model_3d_failed">模型加载失败。请重试，或返回入口卡片查看 WIKI 来源。</string>
+    <string name="guide_model_3d_tools">模型工具</string>
+    <string name="guide_model_3d_position">动画进度</string>
+    <string name="guide_model_3d_position_value">%1$.2f / %2$.2f 秒</string>
+    <string name="guide_model_3d_speed">播放速度</string>
+    <string name="guide_model_3d_loop">循环播放</string>
+    <string name="guide_model_3d_outline">模型描边</string>
+    <string name="guide_model_3d_outline_width">描边宽度</string>
+    <string name="guide_model_3d_percent">%1$d%%</string>
 </resources>

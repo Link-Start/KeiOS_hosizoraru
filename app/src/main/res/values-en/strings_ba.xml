@@ -955,4 +955,16 @@
     <string name="guide_gallery_dynamic_lobby_reset_view">Reset view</string>
     <string name="guide_gallery_dynamic_lobby_gestures">Pinch to zoom, drag to move, and double-tap to reset the view</string>
     <string name="guide_gallery_dynamic_lobby_bgm_failed">BGM could not load. Tap Retry to try again.</string>
+    <string name="guide_model_3d_title">3D model</string>
+    <string name="guide_model_3d_hint">Drag to rotate, pinch to zoom or pan, and switch models or animations.</string>
+    <string name="guide_model_3d_open">View 3D model</string>
+    <string name="guide_model_3d_failed">The model could not load. Retry, or return to the entry card to view the Wiki source.</string>
+    <string name="guide_model_3d_tools">Model tools</string>
+    <string name="guide_model_3d_position">Animation position</string>
+    <string name="guide_model_3d_position_value">%1$.2f / %2$.2f s</string>
+    <string name="guide_model_3d_speed">Playback speed</string>
+    <string name="guide_model_3d_loop">Loop animation</string>
+    <string name="guide_model_3d_outline">Model outline</string>
+    <string name="guide_model_3d_outline_width">Outline width</string>
+    <string name="guide_model_3d_percent">%1$d%%</string>
 </resources>

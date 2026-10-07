@@ -51,6 +51,8 @@ python3 scripts/ba/generate_model_catalog.py \
 
 渲染使用贴图无光照材质、骨骼／形变动画、默认隐藏的可选道具与描边。动作里的 `extras.show`／`extras.hide` 标签会切换对应道具，并在更换动作时恢复默认状态，例如星野盾牌与泳装日富美的坦克。原生工具支持模型和动作选择、动作时长、进度拖动、25%～200% 播放速度、循环开关、描边开关及宽度、暂停、恢复视角、重试、旋转／缩放／平移和沉浸模式。静态模型禁用动画相关控件。隐藏控件保持当前动画和相机；进入后台停止绘制，返回后继续原状态。资源本身没有提供音频。
 
+工具面板中的“背景颜色”打开原生 MIUIX `ColorPalette` 色盘或 HSV `ColorPicker`，并支持 RGB／ARGB 文本输入。默认背景在应用的 MIUIX 背景色上混入少量主题色；应用主题跟随系统时，也会响应系统深浅色变化。自选 ARGB 通过 `KeiMmkv` 在学生查看器间共用，关闭调色面板或 Activity 进入停止状态时保存，不在滑块每次采样时写入。恢复默认会移除自选覆盖。透明度与当前主题默认背景混合，使 WebGL 画面和原生玻璃取样源使用相同的不透明背景；控件与系统栏图标根据最终背景的对比度切换明暗。调色只更新渲染器的清屏色，不重新创建 WebView、下载模型或改变相机／动画状态。
+
 ## 来源
 
 - [WIKI 模型清单](https://bluearchive.wiki/wiki/Models)、[柯伊图集](https://bluearchive.wiki/wiki/Kei/gallery)、[游戏身份字段](https://bluearchive.wiki/wiki/Kei)。

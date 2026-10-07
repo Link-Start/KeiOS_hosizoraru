@@ -168,7 +168,7 @@ async function load(config) {
     root = gltf.scene; parts = createModelParts(root); parts.apply(); prepareMaterials(root); scene.add(root);
     clips = gltf.animations; mixer = new THREE.AnimationMixer(root);
     mixer.addEventListener('finished', event => { if (event.action === action) { playing=false; ended=true; } });
-    selectAnimation(clips.find(c=>c.name==='Cafe_Reaction')?.name || clips.find(c=>c.name==='Idle')?.name || clips[0]?.name);
+    selectAnimation(clips.find(c=>c.name===config.defaultAnimation)?.name || clips.find(c=>c.name==='Cafe_Reaction')?.name || clips.find(c=>c.name==='Idle')?.name || clips[0]?.name);
     mixer.update(0); resetCamera(); ready = true;
   } catch (e) { if (token === generation && e.name !== 'AbortError') error = String(e.message || e); }
 }

@@ -22,6 +22,7 @@ internal data class BaModel3dResource(
     val wikiPage: String,
     val defaultFile: String,
     val models: List<BaModel3dAsset>,
+    val defaultAnimation: String = "",
 ) {
     val sourceUrl: String get() = "https://bluearchive.wiki/wiki/" + encodeModelPath(wikiPage) + "/gallery"
 }
@@ -113,7 +114,8 @@ internal class BaModel3dIndex private constructor(private val resources: List<Ba
                 }
                 val contentId = b.getLong("gameKeeContentId").also { require(it > 0) }
                 val characterId = b.getInt("characterId").also { require(it > 0) }
-                BaModel3dResource(contentId, characterId, dev, b.getString("wikiPage"), default, models)
+                val animation = b.optString("defaultAnimation").also { require(it.length <= 160) }
+                BaModel3dResource(contentId, characterId, dev, b.getString("wikiPage"), default, models, animation)
             }
             require(resources.map { it.contentId }.distinct().size == resources.size)
             require(resources.map { it.characterId }.distinct().size == resources.size)

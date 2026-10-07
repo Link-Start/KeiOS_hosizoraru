@@ -98,7 +98,8 @@ internal fun GuideModel3dPlayer(
         LaunchedEffect(view, scriptReady, model) {
             if (!scriptReady) return@LaunchedEffect
             ready = false; notifyState(BaModel3dPlaybackState())
-            view?.evaluateJavascript("window.keiosModel.load(${JSONObject().put("url", "$MODEL_ORIGIN/ba3d/models/${model.gitBlob}.glb")})", null)
+            view?.evaluateJavascript("window.keiosModel.load(${JSONObject().put("url", "$MODEL_ORIGIN/ba3d/models/${model.gitBlob}.glb")
+                .put("defaultAnimation", resource.defaultAnimation.takeIf { model.file == resource.defaultFile }.orEmpty())})", null)
         }
         LaunchedEffect(view, scriptReady, resumed, playing) {
             view?.let { web ->

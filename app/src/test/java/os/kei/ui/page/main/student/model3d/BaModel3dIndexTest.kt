@@ -79,6 +79,8 @@ class BaModel3dIndexTest {
         assertEquals(tank.defaultFile, attacker.defaultFile)
         assertEquals(10098, tank.characterId)
         assertEquals(10099, attacker.characterId)
+        assertEquals("02_Formation_Idle", tank.defaultAnimation)
+        assertEquals("01_Cafe_Reaction", attacker.defaultAnimation)
         assertNull(index.resolve(guide(621572, BaGuideRow("DevName", "CH0258_01"))))
         assertNull(index.resolve(guide(999999, BaGuideRow("DevName", "CH0258"))))
     }

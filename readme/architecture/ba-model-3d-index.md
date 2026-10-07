@@ -26,7 +26,7 @@ Examples verified against Wiki character-page metadata and GLB nodes:
 
 GLB nodes use `Hina_Original` and `Aris_Original` for the two legacy examples. These aliases are explicit registry entries, not a global assumption that every `Original`/`default` suffix is interchangeable. `Shiroko＊Terror.glb` contains both CH0263 nodes and EN0002 texture names; texture prefixes alone cannot establish identity. Kei Prototype has NP0269 resources and is an alternate model, not another playable CH0335 identity.
 
-Two important exceptions are explicit: Hoshino Battle Tank (10098 / CH0258_02 / article 621572) and Attacker (10099 / CH0258_01 / article 597535) share `Hoshino (Battle).glb`, while Shun Swimsuit adult (10143 / CH0355_01 / article 709616) selects model `(1)` and kid (10144 / CH0355_02 / article 709617) selects `(2)`. Their identities cannot collapse to a shared base name or a stripped resource prefix. The Wiki's legacy `Hihumi_Swimsuit` spelling is preserved even though the file is named `Hifumi (Swimsuit).glb`.
+Two important exceptions are explicit: Hoshino Battle Tank (10098 / CH0258_02 / article 621572) and Attacker (10099 / CH0258_01 / article 597535) share `Hoshino (Battle).glb` with explicit `defaultAnimation` 02_Formation_Idle and 01_Cafe_Reaction respectively, while Shun Swimsuit adult (10143 / CH0355_01 / article 709616) selects model `(1)` and kid (10144 / CH0355_02 / article 709617) selects `(2)`. Their identities cannot collapse to a shared base name or a stripped resource prefix. The Wiki's legacy `Hihumi_Swimsuit` spelling is preserved even though the file is named `Hifumi (Swimsuit).glb`.
 
 ## Resolution and additions
 

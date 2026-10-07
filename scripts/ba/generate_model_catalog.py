@@ -98,7 +98,7 @@ def generate(html, tree, previous, revision):
             raise ValueError('Invalid reviewed additional resource group')
         # Keep primary-source review notes outside the APK, while retaining all runtime identities.
         bindings.append({k: binding[k] for k in ('gameKeeContentId', 'characterId', 'developmentId',
-            'wikiPage', 'group', 'defaultFile', 'developmentAliases', 'additionalGroups') if k in binding})
+            'wikiPage', 'group', 'defaultFile', 'developmentAliases', 'additionalGroups', 'defaultAnimation') if k in binding})
     if any(alias in dev_ids and alias != dev for alias, dev in aliases.items()):
         raise ValueError('Alias shadows a canonical development identity')
     unbound = previous.get('unboundGroups')

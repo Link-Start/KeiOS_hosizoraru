@@ -2667,8 +2667,10 @@
         "gameKeeName": "星野(临战·攻击型)",
         "gameKeeAliases": "ホシノ（臨戦）,星野（武装）,Hoshino (Combat),肘星野,星战,百叔,战大叔",
         "wikiRevision": 123586,
-        "review": "GameKee title explicitly identifies Attacker; Wiki Character 10099 is the Attacker form. Keep CH0258_01 distinct from CH0258_02."
-      }
+        "review": "GameKee title explicitly identifies Attacker; Wiki Character 10099 is the Attacker form. Keep CH0258_01 distinct from CH0258_02.",
+        "animationForm": "Hoshino Battle clip prefix 02 is Tank and 01 is Attacker, corresponding to CH0258_02 and CH0258_01; exact embedded clip verified."
+      },
+      "defaultAnimation": "01_Cafe_Reaction"
     },
     {
       "gameKeeContentId": 598017,
@@ -3093,8 +3095,10 @@
         "gameKeeName": "星野(临战·防御型)",
         "gameKeeAliases": "ホシノ（臨戦）,星野（武装）,Hoshino (Combat),肘星野,星战,百叔,战大叔",
         "wikiRevision": 123445,
-        "review": "GameKee title explicitly identifies Tank; Wiki Character 10098 is the Tank form. Both battle roles share Hoshino (Battle).glb."
-      }
+        "review": "GameKee title explicitly identifies Tank; Wiki Character 10098 is the Tank form. Both battle roles share Hoshino (Battle).glb.",
+        "animationForm": "Hoshino Battle clip prefix 02 is Tank and 01 is Attacker, corresponding to CH0258_02 and CH0258_01; exact embedded clip verified."
+      },
+      "defaultAnimation": "02_Formation_Idle"
     },
     {
       "gameKeeContentId": 625765,

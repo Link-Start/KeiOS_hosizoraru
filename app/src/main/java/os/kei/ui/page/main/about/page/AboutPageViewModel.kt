@@ -151,6 +151,7 @@ private fun AboutPageSectionExpansionState.withCardExpanded(
         AboutSearchCard.Component -> copy(componentExpanded = expanded)
         AboutSearchCard.Build -> copy(buildExpanded = expanded)
         AboutSearchCard.Ui -> copy(uiFrameworkExpanded = expanded)
+        AboutSearchCard.Acknowledgements -> copy(acknowledgementsExpanded = expanded)
         AboutSearchCard.ProjectLicense -> copy(projectLicenseExpanded = expanded)
         AboutSearchCard.License -> copy(licenseExpanded = expanded)
         AboutSearchCard.Lab -> copy(componentLabExpanded = expanded)

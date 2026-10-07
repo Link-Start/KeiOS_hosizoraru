@@ -587,4 +587,13 @@
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">接入 Shizuku 权限桥接能力</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku 状态检查与能力调用</string>
+    <string name="about_card_acknowledgements_title">资源来源与鸣谢</string>
+    <string name="about_card_acknowledgements_subtitle">学生资料、3D 模型与动画来源</string>
+    <string name="about_acknowledgements_intro">感谢 Blue Archive Wiki 社区整理学生资料并提供 3D 展示参考，感谢 lihaohong6 维护 BlueArchiveModels 模型与动画资源。</string>
+    <string name="about_acknowledgements_wiki_role">资料与展示</string>
+    <string name="about_acknowledgements_models_role">模型与动画</string>
+    <string name="about_acknowledgements_wiki_name">Blue Archive Wiki</string>
+    <string name="about_acknowledgements_models_name">BlueArchiveModels</string>
+    <string name="about_acknowledgements_wiki_url">https://bluearchive.wiki/wiki/Models</string>
+    <string name="about_acknowledgements_models_url">https://github.com/lihaohong6/BlueArchiveModels</string>
 </resources>

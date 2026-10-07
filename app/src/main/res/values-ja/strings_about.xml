@@ -577,4 +577,13 @@
     <string name="about_component_lab_row_scope">検証範囲</string>
     <string name="about_component_lab_row_activity">ホスト方式</string>
     <string name="about_component_lab_row_components">コンポーネント</string>
+    <string name="about_card_acknowledgements_title">出典と謝辞</string>
+    <string name="about_card_acknowledgements_subtitle">生徒資料・3Dモデル・アニメーションの出典</string>
+    <string name="about_acknowledgements_intro">生徒情報の整理と3D表示の参考資料を提供する Blue Archive Wiki コミュニティ、および BlueArchiveModels のモデルとアニメーションを維持する lihaohong6 氏に感謝します。</string>
+    <string name="about_acknowledgements_wiki_role">参考資料</string>
+    <string name="about_acknowledgements_models_role">3Dモデル</string>
+    <string name="about_acknowledgements_wiki_name">Blue Archive Wiki</string>
+    <string name="about_acknowledgements_models_name">BlueArchiveModels</string>
+    <string name="about_acknowledgements_wiki_url">https://bluearchive.wiki/wiki/Models</string>
+    <string name="about_acknowledgements_models_url">https://github.com/lihaohong6/BlueArchiveModels</string>
 </resources>

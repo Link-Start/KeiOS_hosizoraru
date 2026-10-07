@@ -21,6 +21,7 @@ internal data class AboutPageSectionExpansionState(
     val githubExpanded: Boolean = false,
     val networkExpanded: Boolean = false,
     val mediaExpanded: Boolean = false,
+    val acknowledgementsExpanded: Boolean = true,
     val projectLicenseExpanded: Boolean = false,
     val licenseExpanded: Boolean = false,
     val componentLabExpanded: Boolean = true,

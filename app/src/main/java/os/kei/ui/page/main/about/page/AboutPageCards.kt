@@ -9,6 +9,7 @@ import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.about.model.AboutComponentEntry
 import os.kei.ui.page.main.about.model.AboutPermissionEntry
 import os.kei.ui.page.main.about.model.AboutTechDetails
+import os.kei.ui.page.main.about.section.AboutAcknowledgementsCardSection
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.about.section.AboutBuildSdkCardSection
 import os.kei.ui.page.main.about.section.AboutComponentCardSection
@@ -211,6 +212,17 @@ internal fun AboutSearchCardContent(
             )
         }
 
+        AboutSearchCard.Acknowledgements -> {
+            AboutAcknowledgementsCardSection(
+                cardColor = palette.licenseCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Acknowledgements),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Acknowledgements, it) },
+                onOpenSourceUrl = actions.onOpenExternalUrl,
+            )
+        }
+
         AboutSearchCard.ProjectLicense -> {
             AboutProjectLicenseCardSection(
                 cardColor = palette.projectLicenseCardColor,
@@ -282,6 +294,7 @@ private val AboutTechCards =
     listOf(
         AboutSearchCard.Build,
         AboutSearchCard.Ui,
+        AboutSearchCard.Acknowledgements,
         AboutSearchCard.ProjectLicense,
         AboutSearchCard.License,
     )
@@ -312,6 +325,7 @@ private fun aboutCardExpanded(
         AboutSearchCard.Component -> expansionState.componentExpanded
         AboutSearchCard.Build -> expansionState.buildExpanded
         AboutSearchCard.Ui -> expansionState.uiFrameworkExpanded
+        AboutSearchCard.Acknowledgements -> expansionState.acknowledgementsExpanded
         AboutSearchCard.ProjectLicense -> expansionState.projectLicenseExpanded
         AboutSearchCard.License -> expansionState.licenseExpanded
         AboutSearchCard.Lab -> expansionState.componentLabExpanded

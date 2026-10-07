@@ -586,4 +586,13 @@
     <string name="about_component_lab_row_scope">Validation scope</string>
     <string name="about_component_lab_row_activity">Host</string>
     <string name="about_component_lab_row_components">Components</string>
+    <string name="about_card_acknowledgements_title">Sources and acknowledgements</string>
+    <string name="about_card_acknowledgements_subtitle">Student references, 3D models and animations</string>
+    <string name="about_acknowledgements_intro">Thanks to the Blue Archive Wiki community for student information and 3D viewer references, and to lihaohong6 for maintaining the models and animations in BlueArchiveModels.</string>
+    <string name="about_acknowledgements_wiki_role">Wiki reference</string>
+    <string name="about_acknowledgements_models_role">3D models</string>
+    <string name="about_acknowledgements_wiki_name">Blue Archive Wiki</string>
+    <string name="about_acknowledgements_models_name">BlueArchiveModels</string>
+    <string name="about_acknowledgements_wiki_url">https://bluearchive.wiki/wiki/Models</string>
+    <string name="about_acknowledgements_models_url">https://github.com/lihaohong6/BlueArchiveModels</string>
 </resources>

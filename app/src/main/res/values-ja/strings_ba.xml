@@ -965,4 +965,11 @@
     <string name="guide_model_3d_outline">モデルの輪郭線</string>
     <string name="guide_model_3d_outline_width">輪郭線の幅</string>
     <string name="guide_model_3d_percent">%1$d%%</string>
+    <string name="guide_model_3d_background">背景色</string>
+    <string name="guide_model_3d_background_follow">アプリのテーマに合わせる</string>
+    <string name="guide_model_3d_background_hint">選んだ色をすぐにプレビューします。透明度に応じてテーマの背景色と混ざります。</string>
+    <string name="guide_model_3d_background_fine">細かく調整</string>
+    <string name="guide_model_3d_background_palette">カラーパレット</string>
+    <string name="guide_model_3d_background_hex">色の値（#RRGGBB または #AARRGGBB）</string>
+    <string name="guide_model_3d_background_reset">既定の背景に戻す</string>
 </resources>

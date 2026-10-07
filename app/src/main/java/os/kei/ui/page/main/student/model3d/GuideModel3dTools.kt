@@ -4,7 +4,6 @@ package os.kei.ui.page.main.student.model3d
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -17,6 +16,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.*
 import os.kei.ui.page.main.widget.sheet.*
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Only this leaf reads the periodically sampled position; the WebView/chrome are not rebuilt per tick. */
 @Composable
@@ -27,7 +27,7 @@ internal fun GuideModel3dTimeline(backdrop: Backdrop, position: FloatState, dura
     val total = duration.floatValue
     val current = preview?.times(total) ?: position.floatValue
     Column(Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.guide_model_3d_position_value, current, total), color = Color.White,
+        Text(stringResource(R.string.guide_model_3d_position_value, current, total), color = MiuixTheme.colorScheme.onBackground,
             fontSize = AppTypographyTokens.Supporting.fontSize, modifier = Modifier.padding(horizontal = 8.dp))
         LiquidMusicProgressSlider(
             value = { preview ?: if (total > 0) (position.floatValue / total).coerceIn(0f, 1f) else 0f },
@@ -44,10 +44,12 @@ internal fun GuideModel3dTimeline(backdrop: Backdrop, position: FloatState, dura
 internal fun GuideModel3dToolsSheet(show: Boolean, onDismiss: () -> Unit, hasAnimation: Boolean,
     speed: Float, loop: Boolean, outline: Boolean, outlineWidth: Float,
     onSpeed: (Float) -> Unit, onLoop: (Boolean) -> Unit, onOutline: (Boolean) -> Unit, onOutlineWidth: (Float) -> Unit,
-    onRetry: () -> Unit,
+    onRetry: () -> Unit, onBackground: () -> Unit,
 ) {
     SnapshotWindowBottomSheet(show = show, title = stringResource(R.string.guide_model_3d_tools), onDismissRequest = onDismiss) {
         SheetContentColumn(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalSpacing = 12.dp) {
+            AppStandaloneLiquidTextButton(text = stringResource(R.string.guide_model_3d_background), onClick = onBackground,
+                variant = GlassVariant.SheetAction, modifier = Modifier.fillMaxWidth())
             SheetSurfaceCard {
                 SheetSectionHeader(stringResource(R.string.guide_model_3d_speed),
                     summary = stringResource(R.string.guide_model_3d_percent, (speed * 100).toInt()))

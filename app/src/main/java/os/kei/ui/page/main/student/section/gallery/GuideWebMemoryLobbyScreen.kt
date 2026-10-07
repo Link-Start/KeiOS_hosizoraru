@@ -124,11 +124,13 @@ internal fun GuideWebMemoryLobbyScene(
     controlsVisible: Boolean = true,
     onShowControls: () -> Unit = {},
     camera: GuideWebMemoryLobbyCamera? = null,
+    backgroundColor: Color = Color.Black,
+    statusBarScrimColor: Color = Color.Black.copy(alpha = 0.30f),
     content: @Composable (Modifier) -> Unit,
 ) {
     val mediaBackdrop = rememberLayerBackdrop()
     BoxWithConstraints(
-        modifier = modifier.fillMaxSize().background(Color.Black)
+        modifier = modifier.fillMaxSize().background(backgroundColor)
             .testTag(GuideWebMemoryLobbySceneTag)
             .semantics { testTagsAsResourceId = true },
     ) {
@@ -156,7 +158,7 @@ internal fun GuideWebMemoryLobbyScene(
             val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             Box(
                 Modifier.fillMaxWidth().height(statusBarHeight + 20.dp).background(
-                    Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.30f), Color.Transparent)),
+                    Brush.verticalGradient(listOf(statusBarScrimColor, Color.Transparent)),
                 ),
             )
             Box(viewport.align(Alignment.Center).safeDrawingPadding()) {
@@ -193,7 +195,7 @@ internal fun GuideWebMemoryLobbyScene(
 }
 
 @Composable
-internal fun GuideWebMemoryLobbyLoading(visible: Boolean) {
+internal fun GuideWebMemoryLobbyLoading(visible: Boolean, textColor: Color = Color.White) {
     AnimatedVisibility(
         visible = visible,
         modifier = Modifier.fillMaxSize(),
@@ -209,8 +211,7 @@ internal fun GuideWebMemoryLobbyLoading(visible: Boolean) {
         ) {
             AppAronaLoadingPanel(
                 accent = MiuixTheme.colorScheme.primary,
-                // The cinematic viewport stays dark in both app themes.
-                textColor = Color.White,
+                textColor = textColor,
             )
         }
     }

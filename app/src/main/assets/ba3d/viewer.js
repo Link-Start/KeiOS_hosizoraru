@@ -3,11 +3,13 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {createModelParts} from './model-parts.js';
+import {modelBackgroundColor} from './model-background.js';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
 const renderer = new THREE.WebGLRenderer({alpha:false, antialias:true});
-renderer.setClearColor(0x0c1424);
+let background = modelBackgroundColor('#' + new URLSearchParams(location.hash.slice(1)).get('background')) || '#0c1424';
+renderer.setClearColor(background);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;
 renderer.setPixelRatio(window.devicePixelRatio || 1);
@@ -190,6 +192,11 @@ function setForeground(value) { foreground=!!value; if (foreground) loop(); else
 loop();
 window.keiosModel = {
   load, resetCamera, selectAnimation, setOptions, seek,
+  setBackground(value) {
+    const color = modelBackgroundColor(value);
+    if (!color) return false;
+    background = color; renderer.setClearColor(color); return true;
+  },
   setPlaying(value) {
     playing=!!value;
     if (playing && ended && action) { action.reset().play(); ended=false; }
@@ -198,7 +205,7 @@ window.keiosModel = {
   setForeground,
   state() { return {ready,error,url:loadedUrl,actions:clips.map(c=>c.name),durations:clips.map(c=>c.duration),selected,playing,
     time:action?.time || 0,duration:action?.getClip().duration || 0,ended,speed,loop:loopEnabled,outline:outlineEnabled,outlineWidth,
-    foreground,renderCalls:renderer.info.render.calls,
+    foreground,background,renderCalls:renderer.info.render.calls,
     visibleParts:parts?.visibleTagged() || [],
     camera:camera.position.toArray(),target:controls.target.toArray(),size:[innerWidth,innerHeight],
     canvasSize:[renderer.domElement.clientWidth,renderer.domElement.clientHeight]}; },

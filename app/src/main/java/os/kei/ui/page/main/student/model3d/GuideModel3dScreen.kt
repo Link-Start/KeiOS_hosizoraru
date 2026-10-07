@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -21,7 +22,10 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 
 @Composable
-internal fun GuideModel3dScreen(resource: BaModel3dResource, onDismiss: () -> Unit, onControlsVisible: (Boolean) -> Unit) {
+internal fun GuideModel3dScreen(resource: BaModel3dResource, backgroundColor: Color, customBackground: Int?,
+    onBackgroundChanged: (Int?) -> Unit, onBackgroundDismiss: () -> Unit,
+    onDismiss: () -> Unit, onControlsVisible: (Boolean) -> Unit,
+) {
     var file by rememberSaveable(resource.contentId) { mutableStateOf(resource.defaultFile) }
     val model = resource.models.firstOrNull { it.file == file } ?: resource.models.first()
     var playing by rememberSaveable(resource.contentId) { mutableStateOf(true) }
@@ -35,6 +39,7 @@ internal fun GuideModel3dScreen(resource: BaModel3dResource, onDismiss: () -> Un
     var seekRequest by remember { mutableStateOf(0 to 0f) }
     var scrubbing by remember { mutableStateOf(false) }
     var toolsVisible by rememberSaveable { mutableStateOf(false) }
+    var backgroundVisible by rememberSaveable { mutableStateOf(false) }
     var speed by rememberSaveable { mutableFloatStateOf(1f) }
     var loop by rememberSaveable { mutableStateOf(true) }
     var outline by rememberSaveable { mutableStateOf(true) }
@@ -46,6 +51,8 @@ internal fun GuideModel3dScreen(resource: BaModel3dResource, onDismiss: () -> Un
     LaunchedEffect(controlsVisible) { onControlsVisible(controlsVisible) }
     BackHandler(!controlsVisible) { controlsVisible = true }
     GuideWebMemoryLobbyScene(
+        backgroundColor = backgroundColor,
+        statusBarScrimColor = if (model3dUsesDarkContent(backgroundColor)) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.30f),
         controlsVisible = controlsVisible,
         onShowControls = { controlsVisible = true },
         header = { backdrop ->
@@ -82,7 +89,7 @@ internal fun GuideModel3dScreen(resource: BaModel3dResource, onDismiss: () -> Un
         },
     ) { viewport ->
         Box(viewport) {
-            GuideModel3dPlayer(resource, model, playing, actionRequest, reset, retry,
+            GuideModel3dPlayer(resource, model, playing, actionRequest, reset, retry, backgroundColor = backgroundColor,
                 options = BaModel3dOptions(speed, loop, outline, outlineWidth, scrubbing), seekRequest = seekRequest,
                 pollProgress = controlsVisible,
                 onState = { state ->
@@ -102,7 +109,10 @@ internal fun GuideModel3dScreen(resource: BaModel3dResource, onDismiss: () -> Un
     }
     GuideModel3dToolsSheet(toolsVisible, { toolsVisible = false }, actions.isNotEmpty(), speed, loop, outline, outlineWidth,
         onSpeed = { speed = it }, onLoop = { loop = it }, onOutline = { outline = it }, onOutlineWidth = { outlineWidth = it },
+        onBackground = { toolsVisible = false; backgroundVisible = true },
         onRetry = { retry++; failed = false; toolsVisible = false })
+    GuideModel3dBackgroundSheet(backgroundVisible, customBackground, backgroundColor, onBackgroundChanged,
+        onDismiss = { backgroundVisible = false; onBackgroundDismiss() })
 }
 
 @Composable

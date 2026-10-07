@@ -967,4 +967,11 @@
     <string name="guide_model_3d_outline">Model outline</string>
     <string name="guide_model_3d_outline_width">Outline width</string>
     <string name="guide_model_3d_percent">%1$d%%</string>
+    <string name="guide_model_3d_background">Background color</string>
+    <string name="guide_model_3d_background_follow">Follow app theme</string>
+    <string name="guide_model_3d_background_hint">Preview colors as you choose. Transparency blends the color with the theme background.</string>
+    <string name="guide_model_3d_background_fine">Fine adjustment</string>
+    <string name="guide_model_3d_background_palette">Color palette</string>
+    <string name="guide_model_3d_background_hex">Color value (#RRGGBB or #AARRGGBB)</string>
+    <string name="guide_model_3d_background_reset">Restore default background</string>
 </resources>

@@ -967,4 +967,11 @@
     <string name="guide_model_3d_outline">模型描边</string>
     <string name="guide_model_3d_outline_width">描边宽度</string>
     <string name="guide_model_3d_percent">%1$d%%</string>
+    <string name="guide_model_3d_background">背景颜色</string>
+    <string name="guide_model_3d_background_follow">跟随应用主题</string>
+    <string name="guide_model_3d_background_hint">选色后实时预览。透明度会将颜色与主题背景混合。</string>
+    <string name="guide_model_3d_background_fine">精细调色</string>
+    <string name="guide_model_3d_background_palette">色盘</string>
+    <string name="guide_model_3d_background_hex">颜色值（#RRGGBB 或 #AARRGGBB）</string>
+    <string name="guide_model_3d_background_reset">恢复默认背景</string>
 </resources>

@@ -2,7 +2,6 @@
 package os.kei.ui.page.main.student.model3d
 
 import android.annotation.SuppressLint
-import android.graphics.Color
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -14,6 +13,8 @@ import android.webkit.ConsoleMessage
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -39,6 +40,7 @@ internal fun GuideModel3dPlayer(
     actionRequest: Pair<Int, String>,
     resetRequest: Int,
     retry: Int,
+    backgroundColor: ComposeColor,
     options: BaModel3dOptions,
     seekRequest: Pair<Int, Float>,
     pollProgress: Boolean,
@@ -65,6 +67,7 @@ internal fun GuideModel3dPlayer(
         val session = remember(model.gitBlob) { BaModel3dCacheSession() }
         val currentSession by rememberUpdatedState(session)
         val currentModel by rememberUpdatedState(model)
+        val currentBackground by rememberUpdatedState(backgroundColor)
         DisposableEffect(session) { onDispose { session.close() } }
         LaunchedEffect(view, retry, model) {
             val web = view ?: return@LaunchedEffect
@@ -101,6 +104,11 @@ internal fun GuideModel3dPlayer(
             view?.evaluateJavascript("window.keiosModel.load(${JSONObject().put("url", "$MODEL_ORIGIN/ba3d/models/${model.gitBlob}.glb")
                 .put("defaultAnimation", resource.defaultAnimation.takeIf { model.file == resource.defaultFile }.orEmpty())})", null)
         }
+        LaunchedEffect(view, scriptReady, backgroundColor) {
+            view?.setBackgroundColor(backgroundColor.toArgb())
+            if (scriptReady) view?.evaluateJavascript(
+                "window.keiosModel.setBackground(${JSONObject.quote(model3dBackgroundHex(backgroundColor))})", null)
+        }
         LaunchedEffect(view, scriptReady, resumed, playing) {
             view?.let { web ->
                 if (resumed) web.onResume() else web.onPause()
@@ -135,7 +143,7 @@ internal fun GuideModel3dPlayer(
                             return true
                         }
                     }
-                    setBackgroundColor(Color.rgb(12, 20, 36))
+                    setBackgroundColor(currentBackground.toArgb())
                     setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
                     settings.apply {
                         javaScriptEnabled = true; domStorageEnabled = false
@@ -144,7 +152,7 @@ internal fun GuideModel3dPlayer(
                         setGeolocationEnabled(false); mediaPlaybackRequiresUserGesture = true
                     }
                     webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = request.url.toString() != MODEL_PAGE
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = request.url.toString().substringBefore('#') != MODEL_PAGE
                         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse {
                             val path = request.url.path.orEmpty()
                             if (request.url.scheme != "https" || request.url.host != "appassets.androidplatform.net" || request.method != "GET") return unavailable()
@@ -168,12 +176,13 @@ internal fun GuideModel3dPlayer(
                         }
                     }
                     view = this
-                    loadUrl(MODEL_PAGE)
+                    // The renderer starts with the right color, before the first JS state poll can arrive.
+                    loadUrl("$MODEL_PAGE#background=${model3dBackgroundHex(currentBackground).removePrefix("#")}")
                 }
             }, onRelease = { web ->
                 currentSession.close(); web.stopLoading(); web.onPause(); web.webViewClient = WebViewClient(); web.removeAllViews(); web.destroy()
             })
-            if (!failed) GuideWebMemoryLobbyLoading(visible = !ready)
+            if (!failed) GuideWebMemoryLobbyLoading(visible = !ready, textColor = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onBackground)
         }
     }
 }

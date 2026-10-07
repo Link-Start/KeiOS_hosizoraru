@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {createModelParts} from './model-parts.js';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
@@ -21,6 +22,7 @@ let root = null, mixer = null, action = null, clips = [], selected = '', ready =
 let foreground = true, playing = true, generation = 0, abort = null;
 let loopEnabled = true, speed = 1, outlineEnabled = true, outlineWidth = 0.25, scrubbing = false, ended = false;
 let loadedUrl = '';
+let parts = null;
 const clock = new THREE.Timer();
 
 function disposeScene(object) {
@@ -41,7 +43,7 @@ function disposeScene(object) {
 function disposeModel() {
   if (mixer && root) { mixer.stopAllAction(); mixer.uncacheRoot(root); }
   disposeScene(root);
-  root = null; mixer = null; action = null; clips = []; selected = ''; ready = false;
+  root = null; mixer = null; action = null; clips = []; parts = null; selected = ''; ready = false;
 }
 
 function prepareMaterials(model) {
@@ -125,6 +127,7 @@ function resetCamera() {
 function selectAnimation(name) {
   const clip = clips.find(c => c.name === name);
   if (!clip || !mixer) return;
+  parts?.apply(clip.userData || {});
   action?.stop(); action = mixer.clipAction(clip);
   action.setLoop(loopEnabled ? THREE.LoopRepeat : THREE.LoopOnce, loopEnabled ? Infinity : 1);
   action.clampWhenFinished = !loopEnabled;
@@ -162,7 +165,7 @@ async function load(config) {
     const data = await response.arrayBuffer();
     const gltf = await loader.parseAsync(data, './');
     if (token !== generation) { disposeScene(gltf.scene); return; }
-    root = gltf.scene; prepareMaterials(root); scene.add(root);
+    root = gltf.scene; parts = createModelParts(root); parts.apply(); prepareMaterials(root); scene.add(root);
     clips = gltf.animations; mixer = new THREE.AnimationMixer(root);
     mixer.addEventListener('finished', event => { if (event.action === action) { playing=false; ended=true; } });
     selectAnimation(clips.find(c=>c.name==='Cafe_Reaction')?.name || clips.find(c=>c.name==='Idle')?.name || clips[0]?.name);
@@ -196,6 +199,7 @@ window.keiosModel = {
   state() { return {ready,error,url:loadedUrl,actions:clips.map(c=>c.name),durations:clips.map(c=>c.duration),selected,playing,
     time:action?.time || 0,duration:action?.getClip().duration || 0,ended,speed,loop:loopEnabled,outline:outlineEnabled,outlineWidth,
     foreground,renderCalls:renderer.info.render.calls,
+    visibleParts:parts?.visibleTagged() || [],
     camera:camera.position.toArray(),target:controls.target.toArray(),size:[innerWidth,innerHeight],
     canvasSize:[renderer.domElement.clientWidth,renderer.domElement.clientHeight]}; },
   dispose() { ++generation; abort?.abort(); renderer.setAnimationLoop(null); disposeModel(); controls.dispose(); renderer.dispose(); },

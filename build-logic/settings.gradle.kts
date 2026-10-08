@@ -1,16 +1,18 @@
 pluginManagement {
     repositories {
-        google()
+        // Resolve Kotlin DSL bootstrap artifacts from Central before querying
+        // Google Maven, whose Android-only misses can fail with a transient 5xx.
         mavenCentral()
         gradlePluginPortal()
+        google()
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
         mavenCentral()
+        google()
         gradlePluginPortal()
     }
     versionCatalogs {

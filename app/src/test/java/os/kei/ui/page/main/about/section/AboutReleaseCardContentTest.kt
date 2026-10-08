@@ -15,19 +15,19 @@ import os.kei.ui.testing.repoRoot
  */
 class AboutReleaseCardContentTest {
     @Test
-    fun releaseCardPublishesV1160InEverySupportedLocale() {
+    fun releaseCardPublishesV1170InEverySupportedLocale() {
         aboutReleaseResourceFiles().forEach { resourceFile ->
             val resources = resourceFile.readText()
 
             assertContains(
                 resources,
-                """<string name="about_card_release_title">Release v1.16.0</string>""",
-                message = "${resourceFile.path} must publish the v1.16.0 card title",
+                """<string name="about_card_release_title">Release v1.17.0</string>""",
+                message = "${resourceFile.path} must publish the v1.17.0 card title",
             )
             assertContains(
                 resources,
-                """<string name="about_release_value_version">v1.16.0 · Android 15+ · arm64-v8a · targetSdk 37</string>""",
-                message = "${resourceFile.path} must publish the v1.16.0 version line",
+                """<string name="about_release_value_version">v1.17.0 · Android 15+ · arm64-v8a · targetSdk 37</string>""",
+                message = "${resourceFile.path} must publish the v1.17.0 version line",
             )
         }
     }

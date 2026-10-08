@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.16.0</string>
-    <string name="about_card_release_subtitle">版本追踪判断、刷新速度与网络诊断、Liquid Glass 渲染开销优化</string>
+    <string name="about_card_release_title">Release v1.17.0</string>
+    <string name="about_card_release_subtitle">动态回忆大厅、学生 3D 模型与日常体验修复</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -323,23 +323,23 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.16.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_tracking">版本追踪判断</string>
-    <string name="about_release_value_tracking">重新编号的项目不再被旧的大版本号永久压住，仅在列表显示出这种迹象时才读取一次 releases/latest；已被正式版取代的预发布、正式版之后 14 天无人更新的预览线，以及没有任何可下载文件的发行版都不再算作更新。无法确定的比较会如实显示，出乎意料的选择会在卡片上说明原因</string>
-    <string name="about_release_row_network">刷新与网络诊断</string>
-    <string name="about_release_value_network">请求不再占用线程，Atom 模式的两个请求并行发出：40 个仓库在 120 ms 延迟的测试服务器上从 1973 ms 降到 522 ms，API 模式批次从 803 ms 降到 402 ms。刷新历史会为慢项目标出耗时所在的网络阶段，附带请求数、流量与连接复用，并出现在导出与 MCP 中</string>
-    <string name="about_release_row_histories">旧版本与分享</string>
-    <string name="about_release_value_histories">发行版历史与 F-Droid 版本历史中的旧版本可查看 APK 信息并在应用内安装；所有分享与下载统一遵循“分享到安装器”和下载方式设置，F-Droid 索引文件名与旧地址数据包也已修正</string>
-    <string name="about_release_row_glass">Liquid Glass 渲染</string>
-    <string name="about_release_value_glass">纯色背景上的玻璃直接按效果链的输出颜色绘制，连续圆角裁剪移到玻璃自身图层内部：BA 办公室帧时间 p50 从 24.3 ms 降到 11.6 ms，设置页从 11.6 ms 降到 8.8 ms，OS 与 MCP 页 RenderThread p50 分别降低 16% 与 18%。底栏与 dock 保持两种形态组合，滑动开始时最慢的 UI 帧减半；卡片堆叠的内容、裁剪与按压位置问题一并修复，材质与动效不变</string>
-    <string name="about_release_row_gestures">手势与导航</string>
-    <string name="about_release_value_gestures">主页面切换与松手吸附使用 Miuix 页面导航弹簧；学生图鉴改用 Cross-Axis 翻页，列表惯性滚动中横滑直接翻页，音频进度条保留自己的拖动。MCP 页展开的卡片在进程回收后恢复</string>
-    <string name="about_release_row_security">媒体安全</string>
-    <string name="about_release_value_security">媒体会话按控制方是否受信任分配权限：其他应用只能读取 BGM 播放状态，不能再控制播放；应用自身、媒体通知、Android Auto 与 Wear 不受影响</string>
-    <string name="about_release_row_performance">性能与构建</string>
-    <string name="about_release_value_performance">Baseline Profile 在本版本代码上重新采集，六段旅程全部通过，包含 62,312 条 baseline 规则与 24,262 条 startup 规则。构建升级到 Gradle 9.8.0、AGP 9.4.1、Compose 1.12.1、Ktor 3.6.0 与 Miuix 2afdbb39，dav4jvm 换到正式版 4.1.0</string>
+    <string name="about_release_value_version">v1.17.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_tracking">预发行版追踪</string>
+    <string name="about_release_value_tracking">开启预发行选项后，仅预发行仓库也能扫描包名并追踪。主应用与插件按各自包名判断，避免串版；重新编号的项目和已被正式版取代的预发布也能正确处理，旧 Atom 判断会重新检查</string>
+    <string name="about_release_row_lobby">动态回忆大厅</string>
+    <string name="about_release_value_lobby">适配 WIKI 新的 Spine 回忆大厅，旧学生仍可选择 MP4。支持切换动作、缩放、移动和重置视角；隐藏控件后动画继续播放，点击画面恢复。有关联 BGM 时默认播放，可单独静音；加载沿用 Arona 动画，已下载资源可复用</string>
+    <string name="about_release_row_models">学生 3D 模型</string>
+    <string name="about_release_value_models">为已匹配模型资源的学生新增 3D 入口，可切换模型与动作、旋转、缩放和移动视角，调节进度、速度、循环及描边。背景适应深浅色模式，也可用调色盘自选并记住颜色；已下载模型可复用</string>
+    <string name="about_release_row_input">搜索与弹层</string>
+    <string name="about_release_value_input">修复搜索输入时光标跳到开头的问题，保留中间插入、选择范围与中文输入状态；键盘弹出或收起时，弹层的玻璃模糊背景保持连续</string>
+    <string name="about_release_row_startup">启动体验</string>
+    <string name="about_release_value_startup">冷启动先呈现与图标、深浅色主题协调的背景，等入口页面的本地状态准备好再淡出过渡，减少默认状态或读取中信息一闪而过；遵循过渡动画开关</string>
+    <string name="about_release_row_notifications">超级岛关闭时间</string>
+    <string name="about_release_value_notifications">新增超级岛自动关闭设置，可选不自动关闭或指定时长。GitHub 刷新进度仍按任务结束收尾，避免完成后的进度提示长时间停留</string>
+    <string name="about_release_row_performance">滚动体验</string>
+    <string name="about_release_value_performance">减少主要页面和玻璃控件的渲染开销，改善学生详情及多处页面的滚动，尤其是技能与等级选择区域；保留 Liquid Glass 材质、模糊、阴影和组件动画</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有 v1.15.x 用户升级；使用 GitHub 版本追踪的用户，尤其是追踪过更名项目、滚动预览标签或 CI 预发布的用户，提升最明显</string>
+    <string name="about_release_value_next">从公开 v1.15.x 或 v1.16 开发版升级可保留设置、追踪和收藏；本次重点改善学生图鉴鉴赏、版本追踪与搜索输入</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

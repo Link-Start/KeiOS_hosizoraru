@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">App identity and runtime information</string>
-    <string name="about_card_release_title">Release v1.16.0</string>
-    <string name="about_card_release_subtitle">Version-tracking decisions, refresh speed and network diagnostics, lower Liquid Glass rendering cost</string>
+    <string name="about_card_release_title">Release v1.17.0</string>
+    <string name="about_card_release_subtitle">Interactive lobbies, student 3D models, and everyday fixes</string>
     <string name="about_card_runtime_title">Runtime status</string>
     <string name="about_card_runtime_subtitle">Quick checks for notifications, Shizuku, and system state</string>
     <string name="about_card_permission_title">Permission list</string>
@@ -335,23 +335,23 @@
     <string name="about_label_security_patch">Security patch</string>
 
     <string name="about_release_row_version">Release line</string>
-    <string name="about_release_value_version">v1.16.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_tracking">How tracking decides</string>
-    <string name="about_release_value_tracking">A project that restarted its numbering is no longer held down by an old higher number, with releases/latest read only when the list shows that pattern. Pre-releases superseded by a shipped stable, preview lines left unfed for 14 days after a stable, and releases with no downloadable file are no longer updates. Uncertain comparisons say so, and a surprising choice is explained on the card</string>
-    <string name="about_release_row_network">Refresh and network diagnostics</string>
-    <string name="about_release_value_network">Requests no longer hold threads and Atom mode sends its two requests at once: 40 repositories against a 120 ms test server went from 1973 ms to 522 ms, and an API batch from 803 ms to 402 ms. Refresh history names the network phase that slowed an item, with request count, bytes, and connection reuse, also in exports and over MCP</string>
-    <string name="about_release_row_histories">Older builds and sharing</string>
-    <string name="about_release_value_histories">Older builds in the release and F-Droid histories open APK info and install in-app. Every share and download follows the share-to-installer and download settings, and F-Droid index file names and bundles with an old address are fixed</string>
-    <string name="about_release_row_glass">Liquid Glass rendering</string>
-    <string name="about_release_value_glass">Glass over a flat field draws its effect chain\'s colour directly, and continuous-corner clips happen inside the glass layer: BA Office frame p50 went from 24.3 ms to 11.6 ms, Settings from 11.6 ms to 8.8 ms, and RenderThread p50 fell by 16 percent on OS and 18 percent on MCP. The bottom bar and docks keep both forms composed, halving the slowest UI frame at scroll start, and card-pile content, culling, and press targets are fixed. Materials and motion are unchanged</string>
-    <string name="about_release_row_gestures">Gestures and navigation</string>
-    <string name="about_release_value_gestures">Main-page switches and swipe settling use Miuix\'s page-navigation spring. The Student Guide pages with Cross-Axis: a swipe during a coasting list pages directly, while the audio slider keeps its drag. Cards opened on the MCP page come back after process death</string>
-    <string name="about_release_row_security">Media security</string>
-    <string name="about_release_value_security">The media session grants commands by whether a controller is trusted: other apps can read BGM playback state but can no longer control it. The app, the media notification, Android Auto, and Wear are unaffected</string>
-    <string name="about_release_row_performance">Performance and build</string>
-    <string name="about_release_value_performance">The baseline profile is re-captured on this release\'s code, with all six journeys passing and 62,312 baseline plus 24,262 startup rules. Built with Gradle 9.8.0, AGP 9.4.1, Compose 1.12.1, Ktor 3.6.0, and Miuix 2afdbb39, with dav4jvm moved to the 4.1.0 release</string>
+    <string name="about_release_value_version">v1.17.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_tracking">Pre-release tracking</string>
+    <string name="about_release_value_tracking">Pre-release-only repositories can be scanned and tracked when enabled. Main apps and plugins are matched by package name. Renumbered projects and pre-releases superseded by stable releases are handled correctly, and old Atom results are checked again</string>
+    <string name="about_release_row_lobby">Interactive Memorial Lobbies</string>
+    <string name="about_release_value_lobby">Supports the WIKI Spine lobbies while keeping MP4 available for older students. Choose actions, zoom, pan, or reset the view. Hiding controls keeps the animation playing; tap the scene to restore them. Linked BGM plays by default with a separate mute button. Arona accompanies loading, and downloaded assets are reused</string>
+    <string name="about_release_row_models">Student 3D models</string>
+    <string name="about_release_value_models">Students with matched model resources have a 3D entry. Choose models and animations, rotate, zoom, pan, seek, and adjust speed, looping, and outlines. The background follows light/dark mode or remembers a custom palette color. Downloaded models are reused</string>
+    <string name="about_release_row_input">Search and sheets</string>
+    <string name="about_release_value_input">Fixes the cursor jumping to the beginning while typing, preserving insertion, selection, and Chinese composition. Sheet glass keeps a continuous blurred background as the keyboard opens or closes</string>
+    <string name="about_release_row_startup">Startup experience</string>
+    <string name="about_release_value_startup">Cold starts use a background suited to the icon and light/dark theme, then fade into a destination with its local state prepared. This reduces flashes of default or loading values and follows the transition-animation setting</string>
+    <string name="about_release_row_notifications">Super Island closing time</string>
+    <string name="about_release_value_notifications">Choose no automatic closing or a closing interval for Super Islands. GitHub refresh progress still closes when its task finishes, so completed progress does not linger</string>
+    <string name="about_release_row_performance">Scrolling</string>
+    <string name="about_release_value_performance">Reduces main-page and glass rendering overhead and scrolling stalls in student details, especially skill and level selectors, while preserving Liquid Glass materials, blur, shadows, and component animations</string>
     <string name="about_release_row_next">Upgrade advice</string>
-    <string name="about_release_value_next">Recommended for everyone on v1.15.x. GitHub version-tracking users, especially those tracking renamed projects, rolling preview tags, or CI pre-releases, gain the most</string>
+    <string name="about_release_value_next">Upgrading from the published v1.15.x or a v1.16 development build retains settings, tracked projects, and favorites. This update focuses on Student Guide viewing, version tracking, and search input</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

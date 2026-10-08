@@ -17,11 +17,12 @@ import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.about.ui.AboutSectionCard
 import os.kei.ui.page.main.os.appLucideAppWindowIcon
+import os.kei.ui.page.main.os.appLucideBellIcon
 import os.kei.ui.page.main.os.appLucideBranchIcon
-import os.kei.ui.page.main.os.appLucideConfirmIcon
-import os.kei.ui.page.main.os.appLucideGridIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
+import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.appLucideVersionIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -55,39 +56,39 @@ fun AboutReleaseCardSection(
                 icon = appLucideVersionIcon(),
             )
             AboutReleaseHighlightBlock(
+                title = stringResource(R.string.about_release_row_lobby),
+                value = stringResource(R.string.about_release_value_lobby),
+                icon = appLucidePlayIcon(),
+            )
+            AboutReleaseHighlightBlock(
+                title = stringResource(R.string.about_release_row_models),
+                value = stringResource(R.string.about_release_value_models),
+                icon = appLucidePackageIcon(),
+            )
+            AboutReleaseHighlightBlock(
                 title = stringResource(R.string.about_release_row_tracking),
                 value = stringResource(R.string.about_release_value_tracking),
                 icon = appLucideBranchIcon(),
             )
             AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_network),
-                value = stringResource(R.string.about_release_value_network),
-                icon = appLucideGridIcon(),
+                title = stringResource(R.string.about_release_row_input),
+                value = stringResource(R.string.about_release_value_input),
+                icon = appLucideSearchIcon(),
             )
             AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_histories),
-                value = stringResource(R.string.about_release_value_histories),
-                icon = appLucidePackageIcon(),
-            )
-            AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_glass),
-                value = stringResource(R.string.about_release_value_glass),
-                icon = appLucideLayersIcon(),
-            )
-            AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_gestures),
-                value = stringResource(R.string.about_release_value_gestures),
+                title = stringResource(R.string.about_release_row_startup),
+                value = stringResource(R.string.about_release_value_startup),
                 icon = appLucideAppWindowIcon(),
-            )
-            AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_security),
-                value = stringResource(R.string.about_release_value_security),
-                icon = appLucideConfirmIcon(),
             )
             AboutReleaseHighlightBlock(
                 title = stringResource(R.string.about_release_row_performance),
                 value = stringResource(R.string.about_release_value_performance),
                 icon = appLucideLayersIcon(),
+            )
+            AboutReleaseHighlightBlock(
+                title = stringResource(R.string.about_release_row_notifications),
+                value = stringResource(R.string.about_release_value_notifications),
+                icon = appLucideBellIcon(),
             )
             AboutReleaseHighlightBlock(
                 title = stringResource(R.string.about_release_row_next),

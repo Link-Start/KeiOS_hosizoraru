@@ -90,7 +90,7 @@ class GitHubRepositoryDiscoveryFacade(
             existingItems = existingItems,
         )
 
-    suspend fun scanPackageNameFromLatestStableApk(
+    suspend fun scanPackageNameFromRepositoryApk(
         request: GitHubApkPackageNameScanRequest,
     ): Result<GitHubApkPackageNameScanResult> =
         withContext(ioDispatcher) {

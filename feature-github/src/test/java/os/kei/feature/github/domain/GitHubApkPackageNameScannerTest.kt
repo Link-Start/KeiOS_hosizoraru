@@ -13,6 +13,21 @@ import kotlin.test.assertTrue
 
 class GitHubApkPackageNameScannerTest {
     @Test
+    fun `scanner passes editor and global prerelease permission without retaining previous scan`() = runBlocking {
+        val source = FakeScanSource(BinaryManifestFixture.build("net.extrawdw.apps.miuisucks.powerkeeper"))
+        val scanner = GitHubApkPackageNameScanner(source)
+        for ((editor, global) in listOf(false to false, true to false, false to true, false to false)) {
+            val result = scanner.scan(GitHubApkPackageNameScanRequest(
+                repoUrl = "https://github.com/dingwen07/hyperos-fcm-fix",
+                lookupConfig = GitHubLookupConfig(checkAllTrackedPreReleases = global),
+                includePreRelease = editor,
+            )).getOrThrow()
+            assertEquals(editor || global, source.requestedPreRelease)
+            assertEquals("net.extrawdw.apps.miuisucks.powerkeeper", result.packageName)
+        }
+    }
+
+    @Test
     fun `scanner resolves latest stable apk and extracts package name`() = runBlocking {
         val source = FakeScanSource(
             manifestBytes = BinaryManifestFixture.build("os.kei.scanned")
@@ -153,18 +168,21 @@ class GitHubApkPackageNameScannerTest {
         private val readDelayMsByAsset: Map<String, Long> = emptyMap()
     ) : GitHubApkPackageNameScanSource {
         var releaseLoadCount = 0
+        var requestedPreRelease = false
         var scannedDownloadUrl = ""
         val scannedAssetNames: MutableList<String> =
             Collections.synchronizedList(mutableListOf())
 
-        override suspend fun loadLatestStableRelease(
+        override suspend fun loadScanRelease(
             owner: String,
             repo: String,
-            lookupConfig: GitHubLookupConfig
-        ): Result<GitHubStableReleaseTarget> {
+            lookupConfig: GitHubLookupConfig,
+            includePreRelease: Boolean,
+        ): Result<GitHubScanReleaseTarget> {
             releaseLoadCount += 1
+            requestedPreRelease = includePreRelease
             return Result.success(
-                GitHubStableReleaseTarget(
+                GitHubScanReleaseTarget(
                     tag = "v1.2.3",
                     releaseUrl = "https://github.com/$owner/$repo/releases/tag/v1.2.3"
                 )
@@ -174,7 +192,7 @@ class GitHubApkPackageNameScannerTest {
         override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
-            release: GitHubStableReleaseTarget,
+            release: GitHubScanReleaseTarget,
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> {
             return Result.success(

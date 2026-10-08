@@ -7,8 +7,8 @@ import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.domain.GitHubApkPackageNameScanSource
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
-import os.kei.feature.github.domain.GitHubStableReleaseApkAssets
-import os.kei.feature.github.domain.GitHubStableReleaseTarget
+import os.kei.feature.github.domain.GitHubScanReleaseApkAssets
+import os.kei.feature.github.domain.GitHubScanReleaseTarget
 import os.kei.feature.github.domain.GitHubStarImportApkVerificationCache
 import os.kei.feature.github.domain.GitHubStarImportApkVerifier
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -150,24 +150,26 @@ class GitHubStarImportPageRepositoryTest {
     }
 
     private class FakeApkSource : GitHubApkPackageNameScanSource {
-        override suspend fun loadLatestStableRelease(
+        override suspend fun loadScanRelease(
             owner: String,
             repo: String,
-            lookupConfig: GitHubLookupConfig
-        ): Result<GitHubStableReleaseTarget> = Result.failure(IllegalStateException("unused"))
+            lookupConfig: GitHubLookupConfig,
+            includePreRelease: Boolean,
+        ): Result<GitHubScanReleaseTarget> = Result.failure(IllegalStateException("unused"))
 
         override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
-            release: GitHubStableReleaseTarget,
+            release: GitHubScanReleaseTarget,
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> = Result.failure(IllegalStateException("unused"))
 
-        override suspend fun loadLatestStableApkAssets(
+        override suspend fun loadScanReleaseApkAssets(
             owner: String,
             repo: String,
-            lookupConfig: GitHubLookupConfig
-        ): Result<GitHubStableReleaseApkAssets> = Result.failure(IllegalStateException("unused"))
+            lookupConfig: GitHubLookupConfig,
+            includePreRelease: Boolean,
+        ): Result<GitHubScanReleaseApkAssets> = Result.failure(IllegalStateException("unused"))
 
         override suspend fun readAndroidManifestBytes(
             asset: GitHubReleaseAssetFile,

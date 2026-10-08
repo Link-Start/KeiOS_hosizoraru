@@ -1111,7 +1111,7 @@
     <string name="github_track_sheet_btn_scan_package">扫描包名</string>
     <string name="github_track_sheet_btn_scan_package_running">扫描中</string>
     <string name="github_track_sheet_summary_package_optional">可留空仅跟踪仓库版本；后续填入包名或安装对应 App 后会自动联动刷新</string>
-    <string name="github_track_sheet_summary_package_link">包名用于匹配本机安装状态；也可以通过最新稳定版 APK 自动扫描。</string>
+    <string name="github_track_sheet_summary_package_link">包名用于匹配本机安装状态；扫描会按预发行版本选项读取可用 APK。</string>
     <string name="github_track_sheet_summary_package_direct_apk">包名用于匹配本机安装状态；扫描包名会解析订阅源指向的 APK Manifest。</string>
     <string name="github_track_sheet_summary_package_git">Git 来源通过 Release 与 Tag 判断远端版本；包名会用于本机安装状态和 Release APK Manifest 匹配。</string>
     <string name="github_track_sheet_summary_package_fdroid">F-Droid 使用包名作为主身份；如果仓库地址是包详情页，也会在保存时自动解析包名。</string>

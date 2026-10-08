@@ -166,7 +166,7 @@ internal class McpGitHubDiscoveryTools(
 
     private suspend fun buildRepoPackageScanText(repoUrl: String, expectedPackageName: String): String {
         if (repoUrl.isBlank()) return "ok=false\nmessage=repoUrl_required"
-        return discoveryFacade.scanPackageNameFromLatestStableApk(
+        return discoveryFacade.scanPackageNameFromRepositoryApk(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
                 lookupConfig = trackService.loadLookupConfigBlocking(),

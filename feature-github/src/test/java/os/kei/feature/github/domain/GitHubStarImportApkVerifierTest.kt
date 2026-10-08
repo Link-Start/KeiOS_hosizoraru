@@ -15,8 +15,8 @@ class GitHubStarImportApkVerifierTest {
     fun `verifier reports latest stable apk assets`() = runBlocking {
         val source = FakeApkVerificationSource(
             manifestBytes = BinaryManifestFixture.build("demo.app"),
-            releaseAssets = GitHubStableReleaseApkAssets(
-                release = GitHubStableReleaseTarget(
+            releaseAssets = GitHubScanReleaseApkAssets(
+                release = GitHubScanReleaseTarget(
                     tag = "v1.0.0",
                     releaseUrl = "https://github.com/demo/app/releases/tag/v1.0.0"
                 ),
@@ -84,8 +84,8 @@ class GitHubStarImportApkVerifierTest {
                 "demo-metadata.apk" to byteArrayOf(0x01, 0x02),
                 "demo-universal.apk" to BinaryManifestFixture.build("demo.universal")
             ),
-            releaseAssets = GitHubStableReleaseApkAssets(
-                release = GitHubStableReleaseTarget(
+            releaseAssets = GitHubScanReleaseApkAssets(
+                release = GitHubScanReleaseTarget(
                     tag = "v1.0.1",
                     releaseUrl = "https://github.com/demo/app/releases/tag/v1.0.1"
                 ),
@@ -141,33 +141,35 @@ class GitHubStarImportApkVerifierTest {
 }
 
 private class FakeApkVerificationSource(
-    private val releaseAssets: GitHubStableReleaseApkAssets? = null,
+    private val releaseAssets: GitHubScanReleaseApkAssets? = null,
     private val manifestBytes: ByteArray? = null,
     private val manifestBytesByAsset: Map<String, ByteArray> = emptyMap(),
     private val error: Throwable? = null
 ) : GitHubApkPackageNameScanSource {
-    override suspend fun loadLatestStableRelease(
+    override suspend fun loadScanRelease(
         owner: String,
         repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseTarget> {
+        lookupConfig: GitHubLookupConfig,
+        includePreRelease: Boolean,
+    ): Result<GitHubScanReleaseTarget> {
         return Result.failure(UnsupportedOperationException())
     }
 
     override suspend fun fetchApkAssets(
         owner: String,
         repo: String,
-        release: GitHubStableReleaseTarget,
+        release: GitHubScanReleaseTarget,
         lookupConfig: GitHubLookupConfig
     ): Result<List<GitHubReleaseAssetFile>> {
         return Result.failure(UnsupportedOperationException())
     }
 
-    override suspend fun loadLatestStableApkAssets(
+    override suspend fun loadScanReleaseApkAssets(
         owner: String,
         repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseApkAssets> {
+        lookupConfig: GitHubLookupConfig,
+        includePreRelease: Boolean,
+    ): Result<GitHubScanReleaseApkAssets> {
         error?.let { return Result.failure(it) }
         return Result.success(requireNotNull(releaseAssets))
     }

@@ -2,164 +2,152 @@ package os.kei.feature.github.data.remote
 
 import os.kei.core.io.cancellableResult
 import os.kei.feature.github.domain.GitHubApkPackageNameScanSource
-import os.kei.feature.github.domain.GitHubStableReleaseApkAssets
-import os.kei.feature.github.domain.GitHubStableReleaseTarget
-import os.kei.feature.github.domain.scanPreferHtmlAssets
+import os.kei.feature.github.domain.GitHubScanReleaseApkAssets
+import os.kei.feature.github.domain.GitHubScanReleaseTarget
+import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 
 class GitHubApkPackageNameScanRepository(
-    private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader()
+    private val manifestReader: GitHubApkManifestReader = GitHubApkManifestReader(),
+    private val releases: GitHubPackageScanReleaseSource = RemoteGitHubPackageScanReleaseSource,
 ) : GitHubApkPackageNameScanSource {
-    override suspend fun loadLatestStableRelease(
+    override suspend fun loadScanRelease(
         owner: String,
         repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseTarget> = cancellableResult {
-        val snapshot = when (lookupConfig.selectedStrategy) {
-            GitHubLookupStrategyOption.AtomFeed -> {
-                GitHubAtomReleaseStrategy.loadSnapshot(owner, repo).getOrThrow()
-            }
+        lookupConfig: GitHubLookupConfig,
+        includePreRelease: Boolean,
+    ): Result<GitHubScanReleaseTarget> = loadScanReleaseApkAssets(
+        owner, repo, lookupConfig, includePreRelease,
+    ).map { it.release }
 
-            GitHubLookupStrategyOption.GitHubApiToken -> {
-                GitHubApiTokenReleaseStrategy(
-                    apiToken = lookupConfig.apiToken
-                ).loadSnapshot(owner, repo).getOrThrow()
+    override suspend fun loadScanReleaseApkAssets(
+        owner: String,
+        repo: String,
+        lookupConfig: GitHubLookupConfig,
+        includePreRelease: Boolean,
+    ): Result<GitHubScanReleaseApkAssets> = cancellableResult {
+        // /latest deliberately excludes prereleases. Keep its inexpensive stable path,
+        // but use the release window when the editor permits the preview channel.
+        if (!includePreRelease && lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken) {
+            tryLatestStableApkAssets(owner, repo, lookupConfig)?.let {
+                return@cancellableResult it
             }
         }
-        check(snapshot.hasStableRelease) { "This repository has no stable release" }
-        val latestStable = snapshot.latestStable
-        val tag = latestStable.rawTag.trim().ifBlank {
-            GitHubReleaseAssetRepository.parseReleaseTagFromUrl(latestStable.link)
+
+        val selected = cancellableResult {
+            releases.loadSnapshot(owner, repo, lookupConfig).getOrThrow()
         }
-        check(tag.isNotBlank()) { "This repository has no stable release tag" }
-        GitHubStableReleaseTarget(
-            tag = tag,
-            releaseUrl = latestStable.link.trim().ifBlank {
-                GitHubVersionUtils.buildReleaseTagUrl(owner, repo, tag)
+        val snapshot = selected.getOrElse {
+            val fallback = lookupConfig.copy(
+                selectedStrategy = when (lookupConfig.selectedStrategy) {
+                    GitHubLookupStrategyOption.AtomFeed -> GitHubLookupStrategyOption.GitHubApiToken
+                    GitHubLookupStrategyOption.GitHubApiToken -> GitHubLookupStrategyOption.AtomFeed
+                },
+            )
+            releases.loadSnapshot(owner, repo, fallback).getOrThrow()
+        }
+        val candidates = scanCandidates(snapshot, includePreRelease)
+
+        var stableFallback: GitHubScanReleaseApkAssets? = null
+        var sawAllowedRelease = false
+        var firstFailure: Throwable? = null
+        for (candidate in candidates) {
+            val result = cancellableResult {
+                releases.fetchApkAssets(owner, repo, candidate.release, lookupConfig).getOrThrow()
             }
+            val bundle = result.getOrNull()
+            if (bundle == null) {
+                if (firstFailure == null) firstFailure = result.exceptionOrNull()
+                continue
+            }
+            // Atom cannot reliably classify numeric tags such as v0.3.1. Asset
+            // metadata carries the API flag or the release page's Pre-release badge.
+            val isPreRelease = bundle.isPreRelease ?: candidate.isPreRelease
+            if (!includePreRelease && isPreRelease) continue
+            sawAllowedRelease = true
+            val assets = bundle.scanAssets(owner, repo) ?: continue
+            if (!includePreRelease || isPreRelease) return@cancellableResult assets
+            if (stableFallback == null) stableFallback = assets
+        }
+        stableFallback?.let { return@cancellableResult it }
+        // Atom's inferred channel can also exclude a real stable release whose
+        // tag contains alpha/beta. Retain the authoritative /latest fallback.
+        if (!includePreRelease && lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed) {
+            tryLatestStableApkAssets(owner, repo, lookupConfig)?.let { return@cancellableResult it }
+        }
+        firstFailure?.let { throw it }
+        error(
+            if (sawAllowedRelease) "The target release contains no usable APK"
+            else if (includePreRelease && candidates.isEmpty()) "This repository has no usable release"
+            else "This repository has no stable release",
         )
-    }
-
-    override suspend fun loadLatestStableApkAssets(
-        owner: String,
-        repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseApkAssets> {
-        return when (lookupConfig.selectedStrategy) {
-            GitHubLookupStrategyOption.GitHubApiToken -> {
-                loadLatestStableApkAssetsFromApi(
-                    owner = owner,
-                    repo = repo,
-                    lookupConfig = lookupConfig
-                ).recoverCatching {
-                    loadLatestStableApkAssetsFromSelectedStrategy(
-                        owner = owner,
-                        repo = repo,
-                        lookupConfig = lookupConfig
-                    ).getOrThrow()
-                }
-            }
-
-            GitHubLookupStrategyOption.AtomFeed -> {
-                loadLatestStableApkAssetsFromSelectedStrategy(
-                    owner = owner,
-                    repo = repo,
-                    lookupConfig = lookupConfig
-                ).recoverCatching {
-                    loadLatestStableApkAssetsFromApi(
-                        owner = owner,
-                        repo = repo,
-                        lookupConfig = lookupConfig
-                    ).getOrThrow()
-                }
-            }
-        }
-    }
-
-    private suspend fun loadLatestStableApkAssetsFromApi(
-        owner: String,
-        repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseApkAssets> {
-        return GitHubReleaseAssetRepository.fetchLatestStableApkAssets(
-            owner = owner,
-            repo = repo,
-            aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-            apiToken = lookupConfig.apiToken
-        ).map { bundle ->
-            GitHubStableReleaseApkAssets(
-                release = GitHubStableReleaseTarget(
-                    tag = bundle.tagName,
-                    releaseUrl = bundle.htmlUrl.ifBlank {
-                        GitHubVersionUtils.buildReleaseTagUrl(owner, repo, bundle.tagName)
-                    }
-                ),
-                assets = bundle.assets.filter { asset ->
-                    asset.name.endsWith(".apk", ignoreCase = true)
-                }
-            )
-        }
-    }
-
-    private suspend fun loadLatestStableApkAssetsFromSelectedStrategy(
-        owner: String,
-        repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseApkAssets> {
-        return try {
-            super.loadLatestStableApkAssets(
-                owner = owner,
-                repo = repo,
-                lookupConfig = lookupConfig
-            )
-        } finally {
-            clearScanFallbackCaches(lookupConfig)
-        }
     }
 
     override suspend fun fetchApkAssets(
         owner: String,
         repo: String,
-        release: GitHubStableReleaseTarget,
-        lookupConfig: GitHubLookupConfig
-    ): Result<List<GitHubReleaseAssetFile>> {
-        return GitHubReleaseAssetRepository.fetchApkAssets(
-            owner = owner,
-            repo = repo,
-            rawTag = release.tag,
-            releaseUrl = release.releaseUrl,
-            preferHtml = lookupConfig.scanPreferHtmlAssets,
-            aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-            includeAllAssets = false,
-            apiToken = lookupConfig.apiToken
-        ).map { bundle ->
-            bundle.assets.filter { asset ->
-                asset.name.endsWith(".apk", ignoreCase = true)
-            }
-        }
-    }
+        release: GitHubScanReleaseTarget,
+        lookupConfig: GitHubLookupConfig,
+    ): Result<List<GitHubReleaseAssetFile>> = releases.fetchApkAssets(
+        owner, repo, release, lookupConfig,
+    ).map { bundle -> bundle.assets.filter { it.name.endsWith(".apk", ignoreCase = true) } }
 
     override suspend fun readAndroidManifestBytes(
         asset: GitHubReleaseAssetFile,
-        lookupConfig: GitHubLookupConfig
-    ): Result<ByteArray> {
-        return manifestReader.readAndroidManifestBytes(asset = asset, lookupConfig = lookupConfig)
+        lookupConfig: GitHubLookupConfig,
+    ): Result<ByteArray> = manifestReader.readAndroidManifestBytes(asset, lookupConfig)
+
+    private suspend fun tryLatestStableApkAssets(
+        owner: String,
+        repo: String,
+        config: GitHubLookupConfig,
+    ): GitHubScanReleaseApkAssets? = cancellableResult {
+        releases.fetchLatestStableApkAssets(owner, repo, config).getOrThrow()
+    }.getOrNull()?.takeIf { it.isPreRelease != true }?.scanAssets(owner, repo)
+
+    private fun GitHubReleaseAssetBundle.scanAssets(owner: String, repo: String): GitHubScanReleaseApkAssets? {
+        val apks = assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
+        if (apks.isEmpty() || tagName.isBlank()) return null
+        return GitHubScanReleaseApkAssets(
+            release = GitHubScanReleaseTarget(
+                tag = tagName,
+                releaseUrl = htmlUrl.ifBlank { GitHubVersionUtils.buildReleaseTagUrl(owner, repo, tagName) },
+            ),
+            assets = apks,
+        )
+    }
+
+    private fun scanCandidates(
+        snapshot: GitHubRepositoryReleaseSnapshot,
+        includePreRelease: Boolean,
+    ): List<ScanCandidate> {
+        val ranked = GitHubReleaseCandidateRanker.newestFirst(snapshot.feed.entries)
+        val candidates = buildList {
+            if (includePreRelease) {
+                snapshot.latestPreRelease?.let { add(ScanCandidate(it.rawTag, it.link, true)) }
+                ranked.filter { it.isLikelyPreRelease }.forEach { add(ScanCandidate(it.tag, it.link, true)) }
+            }
+            if (snapshot.hasStableRelease) {
+                val stable = snapshot.latestStable
+                add(ScanCandidate(stable.rawTag, stable.link, false))
+            }
+            ranked.filter { !it.isLikelyPreRelease }.forEach { add(ScanCandidate(it.tag, it.link, false)) }
+        }
+        return candidates.filter { it.release.tag.isNotBlank() }
+            .distinctBy { it.release.tag }
+            .take(MAX_RELEASE_SCAN_CANDIDATES)
+    }
+
+    private data class ScanCandidate(val release: GitHubScanReleaseTarget, val isPreRelease: Boolean) {
+        constructor(tag: String, url: String, isPreRelease: Boolean) : this(
+            GitHubScanReleaseTarget(tag.trim().ifBlank { GitHubReleaseAssetRepository.parseReleaseTagFromUrl(url) }, url),
+            isPreRelease,
+        )
     }
 
     companion object {
-        private fun clearScanFallbackCaches(lookupConfig: GitHubLookupConfig) {
-            when (lookupConfig.selectedStrategy) {
-                GitHubLookupStrategyOption.AtomFeed -> {
-                    GitHubAtomReleaseStrategy.clearCaches()
-                }
-
-                GitHubLookupStrategyOption.GitHubApiToken -> {
-                    GitHubApiTokenReleaseStrategy(
-                        apiToken = lookupConfig.apiToken
-                    ).clearCaches()
-                }
-            }
-        }
+        private const val MAX_RELEASE_SCAN_CANDIDATES = 12
     }
 }

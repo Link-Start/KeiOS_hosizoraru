@@ -4,6 +4,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.io.cancellableResult
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -14,39 +15,42 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 
-data class GitHubStableReleaseTarget(
+data class GitHubScanReleaseTarget(
     val tag: String,
     val releaseUrl: String
 )
 
-data class GitHubStableReleaseApkAssets(
-    val release: GitHubStableReleaseTarget,
+data class GitHubScanReleaseApkAssets(
+    val release: GitHubScanReleaseTarget,
     val assets: List<GitHubReleaseAssetFile>
 )
 
 interface GitHubApkPackageNameScanSource {
-    suspend fun loadLatestStableRelease(
+    suspend fun loadScanRelease(
         owner: String,
         repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseTarget>
+        lookupConfig: GitHubLookupConfig,
+        includePreRelease: Boolean = false,
+    ): Result<GitHubScanReleaseTarget>
 
     suspend fun fetchApkAssets(
         owner: String,
         repo: String,
-        release: GitHubStableReleaseTarget,
+        release: GitHubScanReleaseTarget,
         lookupConfig: GitHubLookupConfig
     ): Result<List<GitHubReleaseAssetFile>>
 
-    suspend fun loadLatestStableApkAssets(
+    suspend fun loadScanReleaseApkAssets(
         owner: String,
         repo: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseApkAssets> = runCatching {
-        val release = loadLatestStableRelease(
+        lookupConfig: GitHubLookupConfig,
+        includePreRelease: Boolean = false,
+    ): Result<GitHubScanReleaseApkAssets> = cancellableResult {
+        val release = loadScanRelease(
             owner = owner,
             repo = repo,
-            lookupConfig = lookupConfig
+            lookupConfig = lookupConfig,
+            includePreRelease = includePreRelease,
         ).getOrThrow()
         val assets = fetchApkAssets(
             owner = owner,
@@ -54,7 +58,7 @@ interface GitHubApkPackageNameScanSource {
             release = release,
             lookupConfig = lookupConfig
         ).getOrThrow()
-        GitHubStableReleaseApkAssets(
+        GitHubScanReleaseApkAssets(
             release = release,
             assets = assets
         )
@@ -78,10 +82,11 @@ class GitHubApkPackageNameScanner(
         val owner = parsed.first
         val repo = parsed.second
         val releaseAssets = withContext(ioDispatcher) {
-            source.loadLatestStableApkAssets(
+            source.loadScanReleaseApkAssets(
                 owner = owner,
                 repo = repo,
-                lookupConfig = request.lookupConfig
+                lookupConfig = request.lookupConfig,
+                includePreRelease = request.includePreRelease || request.lookupConfig.checkAllTrackedPreReleases,
             )
         }.getOrThrow()
         val release = releaseAssets.release
@@ -91,7 +96,7 @@ class GitHubApkPackageNameScanner(
             lookupConfig = request.lookupConfig,
             expectedPackageName = request.expectedPackageName
         )
-            ?: error("The latest stable release contains no APK asset")
+            ?: error("The target release contains no usable APK")
         GitHubApkPackageNameScanResult(
             owner = owner,
             repo = repo,

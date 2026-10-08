@@ -155,7 +155,8 @@ data class GitHubPackageRepositoryScanResult(
 data class GitHubApkPackageNameScanRequest(
     val repoUrl: String,
     val lookupConfig: GitHubLookupConfig,
-    val expectedPackageName: String = ""
+    val expectedPackageName: String = "",
+    val includePreRelease: Boolean = false,
 )
 
 data class GitHubApkPackageNameScanResult(

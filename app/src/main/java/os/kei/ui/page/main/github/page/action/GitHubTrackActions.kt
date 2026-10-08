@@ -390,23 +390,27 @@ internal class GitHubTrackActions(
         }
         state.packageNameScanRunning = true
         state.repoScanCandidates = emptyList()
+        val sourceMode = state.trackSourceModeInput
+        val request = GitHubApkPackageNameScanRequest(
+            repoUrl = state.repoUrlInput,
+            lookupConfig = state.lookupConfig,
+            expectedPackageName = state.packageNameInput.trim(),
+            includePreRelease = state.preferPreReleaseInput,
+        )
         scope.launch {
             try {
                 val result =
-                    when (state.trackSourceModeInput) {
+                    when (sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> {
-                            repository.scanPackageNameFromLatestStableApk(
-                                GitHubApkPackageNameScanRequest(
-                                    repoUrl = state.repoUrlInput,
-                                    lookupConfig = state.lookupConfig,
-                                ),
+                            repository.scanPackageNameFromRepositoryApk(
+                                request,
                             )
                         }
 
                         GitHubTrackedSourceMode.DirectApk -> {
                             repository.scanPackageNameFromDirectApk(
-                                repoUrl = state.repoUrlInput,
-                                lookupConfig = state.lookupConfig,
+                                repoUrl = request.repoUrl,
+                                lookupConfig = request.lookupConfig,
                             )
                         }
 

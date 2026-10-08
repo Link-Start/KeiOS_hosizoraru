@@ -552,13 +552,14 @@ class GitHubPackageRepositoryResolverTest {
         val scannedStrategies: MutableList<GitHubLookupStrategyOption> =
             Collections.synchronizedList(mutableListOf())
 
-        override suspend fun loadLatestStableRelease(
+        override suspend fun loadScanRelease(
             owner: String,
             repo: String,
-            lookupConfig: GitHubLookupConfig
-        ): Result<GitHubStableReleaseTarget> {
+            lookupConfig: GitHubLookupConfig,
+            includePreRelease: Boolean,
+        ): Result<GitHubScanReleaseTarget> {
             return Result.success(
-                GitHubStableReleaseTarget(
+                GitHubScanReleaseTarget(
                     tag = "v1.0.0",
                     releaseUrl = "https://github.com/$owner/$repo/releases/tag/v1.0.0"
                 )
@@ -568,7 +569,7 @@ class GitHubPackageRepositoryResolverTest {
         override suspend fun fetchApkAssets(
             owner: String,
             repo: String,
-            release: GitHubStableReleaseTarget,
+            release: GitHubScanReleaseTarget,
             lookupConfig: GitHubLookupConfig
         ): Result<List<GitHubReleaseAssetFile>> {
             val repoKey = "${owner.lowercase()}/${repo.lowercase()}"

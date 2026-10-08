@@ -529,8 +529,8 @@ internal class GitHubPageRepository(
         existingItems: List<GitHubTrackedApp>,
     ): Result<GitHubAppRepositorySearchResult> = discoveryRepository.searchRepositoriesForApp(request, existingItems)
 
-    suspend fun scanPackageNameFromLatestStableApk(request: GitHubApkPackageNameScanRequest): Result<GitHubApkPackageNameScanResult> =
-        discoveryRepository.scanPackageNameFromLatestStableApk(request)
+    suspend fun scanPackageNameFromRepositoryApk(request: GitHubApkPackageNameScanRequest): Result<GitHubApkPackageNameScanResult> =
+        discoveryRepository.scanPackageNameFromRepositoryApk(request)
 
     suspend fun scanPackageNameFromDirectApk(
         repoUrl: String,

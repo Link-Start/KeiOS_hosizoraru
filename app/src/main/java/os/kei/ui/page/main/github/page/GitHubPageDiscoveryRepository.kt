@@ -218,10 +218,10 @@ internal class GitHubPageDiscoveryRepository(
             existingItems = existingItems,
         )
 
-    suspend fun scanPackageNameFromLatestStableApk(
+    suspend fun scanPackageNameFromRepositoryApk(
         request: GitHubApkPackageNameScanRequest
     ): Result<GitHubApkPackageNameScanResult> =
-        discoveryFacade.scanPackageNameFromLatestStableApk(request)
+        discoveryFacade.scanPackageNameFromRepositoryApk(request)
 
     suspend fun scanPackageNameFromDirectApk(
         repoUrl: String,

@@ -54,7 +54,7 @@ class GitHubStarImportApkVerifier(
         }?.let { return it.copy(fromCache = true) }
 
         val releaseAssetsResult = withContext(ioDispatcher) {
-            source.loadLatestStableApkAssets(
+            source.loadScanReleaseApkAssets(
                 owner = owner,
                 repo = repo,
                 lookupConfig = lookupConfig

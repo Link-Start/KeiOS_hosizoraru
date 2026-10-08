@@ -1054,7 +1054,7 @@
     <string name="github_track_sheet_btn_scan_package">Scan package</string>
     <string name="github_track_sheet_btn_scan_package_running">Scanning</string>
     <string name="github_track_sheet_summary_package_optional">Leave empty to track only repository version. Filling a package name later or installing the matching app will link refresh automatically.</string>
-    <string name="github_track_sheet_summary_package_link">The package name matches local install state. It can also be scanned from the latest stable APK.</string>
+    <string name="github_track_sheet_summary_package_link">The package name matches local install state. Scanning follows your prerelease options to find a usable APK.</string>
     <string name="github_track_sheet_summary_package_direct_apk">The package name matches local install state. Package scanning resolves the APK Manifest behind this subscription.</string>
     <string name="github_track_sheet_summary_package_git">Git sources compare remote versions from Release and Tag metadata. The package name is used for local install state and Release APK Manifest matching.</string>
     <string name="github_track_sheet_summary_package_fdroid">F-Droid uses the package name as the primary identity. Package page URLs can also fill it during save.</string>

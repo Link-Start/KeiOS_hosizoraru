@@ -92,8 +92,8 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 
 ## v1.17.0 Highlights
 
-This release is being prepared. Final Baseline Profile collection and signed APK verification are
-still pending; the stable download link continues to resolve to the published stable release.
+This release is being prepared. Its complete six-journey Baseline Profile has been collected on
+HyperOS Phone; the stable download link still resolves to the published stable release.
 
 - Interactive Spine Memorial Lobbies add action selection, zoom, pan, view reset, and linked BGM.
   Hiding controls keeps the animation playing, and older students retain their MP4 option.
@@ -121,8 +121,8 @@ Read the full feature tour:
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The public stable channel always resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
-- This source targets `v1.17.0`. Its local preparation tag will be finalized after Baseline Profile
-  collection; v1.17.0 has not been published yet.
+- This source targets `v1.17.0`. Its local preparation tag will be finalized after release
+  artifact verification; v1.17.0 has not been published yet.
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.8.0`, Kotlin `2.4.21-RC`,
   Compose `1.12.1`, Android Gradle Plugin `9.4.1`, Ktor `3.6.0`.

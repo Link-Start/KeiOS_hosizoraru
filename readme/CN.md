@@ -74,7 +74,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 
 ## v1.17.0 重点变化
 
-本版本处于发布准备阶段，最终 Baseline Profile 采集与签名 APK 核对尚待完成；稳定版下载入口仍指向已经发布的稳定版。
+本版本处于发布准备阶段，已在 HyperOS Phone 完成六段 Baseline Profile 采集；稳定版下载入口仍指向已经发布的稳定版。
 
 - Spine 动态回忆大厅支持动作切换、缩放、移动、重置视角与关联 BGM；隐藏控件后动画继续播放，老学生的 MP4 观看方式也保留。
 - 已匹配 3D 资源的学生可切换模型和动画、调整视角、进度、速度、循环和描边；背景支持深浅色默认值及可保存的调色盘。
@@ -95,7 +95,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
 - 公开稳定版始终通过 [最新稳定版](https://github.com/hosizoraru/KeiOS/releases/latest) 获取。
-- 当前源码目标为 `v1.17.0`。本地预备 tag 将在 Baseline Profile 采集完成后指向最终发布提交；v1.17.0 尚未发布。
+- 当前源码目标为 `v1.17.0`。本地预备 tag 将在发布产物验收后指向最终发布提交；v1.17.0 尚未发布。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.8.0`、Kotlin `2.4.21-RC`、
   Compose `1.12.1`、Android Gradle Plugin `9.4.1`、Ktor `3.6.0`。

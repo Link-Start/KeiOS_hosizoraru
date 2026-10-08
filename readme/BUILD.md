@@ -9,7 +9,8 @@
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The public stable channel resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
 - Source targets v1.17.0 with interactive lobbies, student 3D tools, search fixes, and package-aware
-  pre-release tracking. Final Baseline Profile collection and release APK verification are pending.
+  pre-release tracking. The six-journey Baseline Profile has been collected on HyperOS Phone;
+  v1.17.0 has not been published yet.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 

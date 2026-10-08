@@ -2,9 +2,9 @@
 
 <!-- markdownlint-disable MD013 -->
 
-> 发布准备：当前公开稳定版为 v1.15.0，v1.16.0 是本地开发里程碑。本文合并 v1.16 阶段与后续 v1.17 阶段的用户可见变化。正式发布前仍需在最终代码上重新采集 Baseline Profile，并核对签名 APK、版本和打包结果。当前尚未发布 v1.17.0。
+> 发布准备：当前公开稳定版为 v1.15.0，v1.16.0 是本地开发里程碑。本文合并 v1.16 阶段与后续 v1.17 阶段的用户可见变化。六段 Baseline Profile 采集已在 HyperOS Phone 完成。签名 APK、版本和打包结果按构建指南核对，当前尚未发布 v1.17.0。
 >
-> Release preparation: the published stable release is v1.15.0; v1.16.0 is a local development milestone. These notes combine the v1.16 work and subsequent v1.17 changes. Baseline Profile collection on the final source and signed APK verification are still required before publishing. v1.17.0 has not been published yet.
+> Release preparation: the published stable release is v1.15.0; v1.16.0 is a local development milestone. These notes combine the v1.16 work and subsequent v1.17 changes. The six-journey Baseline Profile has been collected on HyperOS Phone. Signed APK, version, and packaging checks follow the build guide; v1.17.0 has not been published yet.
 
 ## 中文
 

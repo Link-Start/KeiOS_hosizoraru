@@ -189,5 +189,6 @@ Settings collect the runtime controls in one place:
 - Build baseline: Java 21, Gradle Wrapper `9.8.0`, Kotlin `2.4.21-RC`, Android Gradle Plugin
   `9.4.1`, Ktor `3.6.0`, generated Baseline Profiles, and shared build-logic conventions.
 - Baseline Profile collection covers six bounded journeys. Capture results and release freshness
-  are checked separately; current source requires a new capture before v1.17.0 publication.
+  are checked separately; the v1.17.0 capture completed on HyperOS Phone, including forced wide-window
+  coverage. Native HyperOS Pad collection follows when that device is configured.
   See the [build guide](BUILD.md) and [collection plan](../docs/planning/baseline-profile-coverage.md).

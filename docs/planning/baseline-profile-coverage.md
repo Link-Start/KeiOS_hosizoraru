@@ -87,6 +87,46 @@ The Gradle merge is the authority for combining method flags and duplicate rules
 from the six journeys. Regenerate obsolete signatures from current code; do not
 delete library or animation rules merely to reduce the textual rule count.
 
+### Accepted HyperOS Phone capture, 2026-10-09
+
+For the v1.17.0 release preparation, the complete connected task captured runtime
+source `d6797fe31` on `KeiOS_HyperOS4_Phone` (`emulator-5580`, API 37,
+HyperOS 4.0.18.0, 1120×2436 at 480 dpi, 6 vCPU / 8 GiB). Gradle completed
+in 9m59s; all six journeys passed with zero failures or skips. The fresh-export
+guard accepted six distinct journey outputs before the normal AndroidX merge.
+
+| Generated output | Previous accepted rules | Fresh rules | Added signatures | Removed signatures |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline | 60,337 | 59,676 | 3,295 | 3,956 |
+| Startup | 24,434 | 24,555 | 682 | 561 |
+
+The six exports contain 213,147 rule lines. After within-journey and cross-journey
+signature deduplication, their union is exactly the 59,676 generated baseline
+signatures: no fresh signature is omitted and no old capture is appended.
+Both generated files have zero duplicate or invalid rules. Startup matches only
+`startupAndFirstScroll`, and every startup signature exists in baseline. Flags
+follow the installed AndroidX 1.5 merge policy; rules were not deleted or
+rewritten manually to reach a count target.
+
+Named baseline coverage includes 71 startup-transition/destination/view-model
+rules, 1,573 main-host rules, 5,867 Student Guide rules, 4,350 Media3 rules,
+109 Liquid Sheet rules, 2,529 liquid-glass rules and 1,546 Backdrop rules.
+`startUserScroll`, `dragBy`, `settleAfterDrag` and
+`animateLoadedPagerSettlePosition` remain present. The adaptive export reaches
+wide lanes and the student-guide sidebar; this is Phone plus forced-window
+coverage, not native Pad device acceptance. Recollect on the planned HyperOS Pad
+when it is configured.
+
+Collection used the two disposable APK identities and a host-only SDK ADB shim
+bound to the existing port 5039. Its init script skips the included `build-logic`
+build. Existing user APKs were not replaced, cleared or uninstalled. After the
+run, the original SDK configuration, input property, window size/density,
+letterbox style, system settings and music volume were restored. The formal and
+Debug app preference hashes remained unchanged. The diagnostic app's GitHub
+refresh data changed while its own scheduled background refresh ran; APK identity
+and data-directory inode were unchanged. Capture duration and rule totals are
+collection metadata, not an application speedup measurement.
+
 ### Accepted Phone and Tablet capture, 2026-10-06
 
 The complete connected matrix captured source `18414116a` on

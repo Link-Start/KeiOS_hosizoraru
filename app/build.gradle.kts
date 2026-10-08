@@ -1,212 +1,23 @@
 import com.android.build.api.variant.BuildConfigField
-import org.gradle.api.provider.ValueSource
-import org.gradle.api.provider.ValueSourceParameters
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
+import os.kei.buildlogic.AppSemVer
+import os.kei.buildlogic.countGeneratedProfileRules
+import os.kei.buildlogic.miuixVersion
+import os.kei.buildlogic.readGradleOrLocalPropertyOrNull
+import os.kei.buildlogic.resolveKeiosVersionMetadata
 
-data class AppSemVer(
-    val major: Int,
-    val minor: Int,
-    val patch: Int,
-) {
-    val name: String = "$major.$minor.$patch"
+val versionMetadata = resolveKeiosVersionMetadata(AppSemVer(major = 1, minor = 16, patch = 0))
+val releaseVersion = versionMetadata.releaseVersion
+val benchmarkVersion = versionMetadata.benchmarkVersion
+val versionAnchorTag = versionMetadata.versionAnchorTag
+val gitVersionSnapshot = versionMetadata.gitVersionSnapshot
+val buildTimestampMillisProvider = versionMetadata.buildTimestampMillisProvider
+val commitTimestampMillis = versionMetadata.commitTimestampMillis
+val releaseVersionName = versionMetadata.releaseVersionName
+val releaseVersionCode = versionMetadata.releaseVersionCode
+val nonReleaseVersionName = versionMetadata.nonReleaseVersionName
+val preReleaseVersionCode = versionMetadata.preReleaseVersionCode
 
-    fun toVersionCode(commitCount: Int): Int =
-        (major * 10_000_000) +
-            (minor * 100_000) +
-            (patch * 1_000) +
-            commitCount.coerceIn(0, 999)
-}
-
-fun maxSemVer(
-    first: AppSemVer,
-    second: AppSemVer,
-): AppSemVer =
-    when {
-        first.major != second.major -> if (first.major > second.major) first else second
-        first.minor != second.minor -> if (first.minor > second.minor) first else second
-        first.patch >= second.patch -> first
-        else -> second
-    }
-
-fun parseSemVerTagOrNull(raw: String?): AppSemVer? {
-    val normalized = raw?.trim().orEmpty()
-    val match = Regex("""^v?(\d+)\.(\d+)\.(\d+)$""").matchEntire(normalized) ?: return null
-    val (major, minor, patch) = match.destructured
-    return AppSemVer(
-        major = major.toInt(),
-        minor = minor.toInt(),
-        patch = patch.toInt(),
-    )
-}
-
-data class GitVersionSnapshot(
-    val relativeCommitCount: Int,
-    val totalCommitCount: Int,
-    val shortHash: String,
-    val branchName: String,
-    val worktreeDirty: Boolean,
-    val gitAvailable: Boolean,
-)
-
-fun runGitCommandOrNull(vararg args: String): String? =
-    runCatching {
-        val output =
-            providers.exec {
-                commandLine("git", *args)
-                workingDir = rootDir
-                isIgnoreExitValue = true
-            }
-        val exitCode = output.result.get().exitValue
-        val stdout = output.standardOutput.asText.get().trim()
-        stdout.takeIf { exitCode == 0 && it.isNotEmpty() }
-    }.getOrNull()
-
-fun latestMergedSemVerTagOrNull(): String? =
-    runGitCommandOrNull("tag", "--merged", "HEAD", "--sort=-v:refname")
-        ?.lineSequence()
-        ?.map { it.trim() }
-        ?.firstOrNull { parseSemVerTagOrNull(it) != null }
-
-fun gitRelativeCommitCountOrNull(anchorTag: String): Int? =
-    runGitCommandOrNull("rev-list", "--count", "$anchorTag..HEAD")?.toIntOrNull()
-
-fun gitTotalCommitCountOrNull(): Int? =
-    runGitCommandOrNull("rev-list", "--count", "HEAD")?.toIntOrNull()
-
-fun readLocalPropertyOrNull(key: String): String? {
-    val localPropsFile = rootProject.file("local.properties")
-    if (!localPropsFile.exists()) return null
-    return runCatching {
-        val props = Properties()
-        localPropsFile.inputStream().use(props::load)
-        props.getProperty(key)
-    }.getOrNull()
-}
-
-fun readGradleOrLocalPropertyOrNull(key: String): String? =
-    providers.gradleProperty(key).orNull
-        ?: readLocalPropertyOrNull(key)
-
-fun readGradleEnvOrLocalPropertyOrNull(
-    key: String,
-    envKey: String,
-): String? =
-    providers.gradleProperty(key).orNull
-        ?: providers.environmentVariable(envKey).orNull
-        ?: readLocalPropertyOrNull(key)
-
-fun readBooleanPropertyOrNull(key: String): Boolean? =
-    providers.gradleProperty(key).orNull?.toBooleanStrictOrNull()
-        ?: readLocalPropertyOrNull(key)?.toBooleanStrictOrNull()
-
-fun readBooleanBuildPropertyOrNull(
-    key: String,
-    envKey: String,
-): Boolean? =
-    providers.gradleProperty(key).orNull?.toBooleanStrictOrNull()
-        ?: providers.environmentVariable(envKey).orNull?.toBooleanStrictOrNull()
-        ?: readLocalPropertyOrNull(key)?.toBooleanStrictOrNull()
-
-fun readIntBuildPropertyOrNull(
-    key: String,
-    envKey: String,
-): Int? =
-    readGradleEnvOrLocalPropertyOrNull(key, envKey)
-        ?.trim()
-        ?.toIntOrNull()
-
-fun normalizeGitLabel(
-    value: String?,
-    fallback: String,
-): String =
-    value
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-        ?.replace(Regex("""[^A-Za-z0-9._-]"""), "-")
-        ?: fallback
-
-fun normalizeGitHash(value: String?): String = normalizeGitLabel(value, fallback = "local").take(12)
-
-abstract class BuildTimestampValueSource : ValueSource<Long, ValueSourceParameters.None> {
-    override fun obtain(): Long = System.currentTimeMillis()
-}
-
-val releaseTargetVersion = AppSemVer(major = 1, minor = 16, patch = 0)
-val configuredReleaseVersion =
-    parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.version.name", "KEIOS_VERSION_NAME"))
-val configuredVersionAnchorTag =
-    readGradleEnvOrLocalPropertyOrNull("keios.version.anchorTag", "KEIOS_VERSION_ANCHOR_TAG")
-val discoveredVersionAnchorTag = configuredVersionAnchorTag ?: latestMergedSemVerTagOrNull()
-val discoveredReleaseVersion = parseSemVerTagOrNull(discoveredVersionAnchorTag)
-val releaseVersion =
-    configuredReleaseVersion
-        ?: discoveredReleaseVersion?.let { maxSemVer(it, releaseTargetVersion) }
-        ?: releaseTargetVersion
-val benchmarkVersion =
-    parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.nextVersion.name", "KEIOS_NEXT_VERSION_NAME"))
-        ?: releaseVersion.copy(patch = releaseVersion.patch + 1)
-val versionAnchorTag = discoveredVersionAnchorTag ?: "v${releaseVersion.name}"
-val gitShortHashValue =
-    normalizeGitHash(
-        readGradleEnvOrLocalPropertyOrNull("keios.git.shortHash", "KEIOS_GIT_SHORT_HASH")
-            ?: runGitCommandOrNull("rev-parse", "--short", "HEAD"),
-    )
-val gitBranchNameValue =
-    normalizeGitLabel(
-        readGradleEnvOrLocalPropertyOrNull("keios.git.branchName", "KEIOS_GIT_BRANCH_NAME")
-            ?: runGitCommandOrNull("rev-parse", "--abbrev-ref", "HEAD"),
-        fallback = "local",
-    )
-val gitDirtyValue = readBooleanBuildPropertyOrNull("keios.git.worktreeDirty", "KEIOS_GIT_WORKTREE_DIRTY") ?: false
-val gitRelativeCommitCount =
-    readIntBuildPropertyOrNull("keios.git.relativeCommitCount", "KEIOS_GIT_RELATIVE_COMMIT_COUNT")
-        ?: gitRelativeCommitCountOrNull(versionAnchorTag)
-        ?: 0
-val gitTotalCommitCount =
-    readIntBuildPropertyOrNull("keios.git.totalCommitCount", "KEIOS_GIT_TOTAL_COMMIT_COUNT")
-        ?: gitTotalCommitCountOrNull()
-        ?: 0
-val gitVersionSnapshot =
-    GitVersionSnapshot(
-        relativeCommitCount = gitRelativeCommitCount,
-        totalCommitCount = gitTotalCommitCount,
-        shortHash = gitShortHashValue,
-        branchName = gitBranchNameValue,
-        worktreeDirty = gitDirtyValue,
-        gitAvailable =
-            readBooleanBuildPropertyOrNull("keios.git.available", "KEIOS_GIT_AVAILABLE")
-                ?: (gitTotalCommitCount > 0 || gitShortHashValue != "local"),
-    )
-val buildTimestampMillisOverride =
-    readGradleEnvOrLocalPropertyOrNull("keios.build.timestampMillis", "KEIOS_BUILD_TIMESTAMP_MILLIS")
-        ?.trim()
-        ?.toLongOrNull()
-        ?.takeIf { it > 0L }
-val buildTimestampMillisProvider =
-    buildTimestampMillisOverride
-        ?.let { providers.provider { it } }
-        ?: providers.of(BuildTimestampValueSource::class.java) {}
-val commitTimestampMillis: Long = run {
-    val overrideMillis =
-        readGradleEnvOrLocalPropertyOrNull("keios.git.commitTimestampMillis", "KEIOS_GIT_COMMIT_TIMESTAMP_MILLIS")
-            ?.trim()
-            ?.toLongOrNull()
-    if (overrideMillis != null && overrideMillis > 0L) return@run overrideMillis
-
-    val commitMillisSec = runGitCommandOrNull("log", "-1", "--format=%ct")?.trim()?.toLongOrNull()
-    if (commitMillisSec != null && commitMillisSec > 0L) return@run commitMillisSec * 1000L
-
-    0L
-}
-val releaseVersionName = releaseVersion.name
-val releaseVersionCode = releaseVersion.toVersionCode(commitCount = 999)
-val nonReleaseVersionName =
-    "${benchmarkVersion.name}+${gitVersionSnapshot.relativeCommitCount}.g${gitVersionSnapshot.shortHash}"
-val preReleaseVersionCode =
-    benchmarkVersion.toVersionCode(
-        commitCount = gitVersionSnapshot.relativeCommitCount.coerceIn(0, 998),
-    )
 // Machine-local overrides should live in ~/.gradle/gradle.properties (preferred) or local.properties.
 // JDK resolution itself is intentionally not hardcoded here: the project already tracks a cross-platform
 // Gradle daemon JVM (JetBrains Java 21) for macOS/Windows/Linux. Use org.gradle.java.home only as a
@@ -217,10 +28,7 @@ val preReleaseVersionCode =
 // - keios.release.storePassword
 // - keios.release.keyAlias
 // - keios.release.keyPassword
-val miuixVersion =
-    providers.gradleProperty("miuix.version").orNull
-        ?: readLocalPropertyOrNull("miuix.version")
-        ?: libs.versions.miuix.get()
+val miuixVersion = miuixVersion()
 val coreKtxVersion = libs.versions.androidx.core.get()
 val activityComposeVersion = libs.versions.activity.compose.get()
 val materialVersion = libs.versions.material.get()
@@ -264,31 +72,20 @@ val projectJavaVersion = JavaVersion.toVersion(libs.versions.java.get())
 val projectJvmTarget = JvmTarget.fromTarget(libs.versions.java.get())
 val r8DexStartupOptimizationProperty = "android.experimental.r8.dex-startup-optimization"
 
-fun countGeneratedProfileRules(fileName: String): Int {
-    val profileFile = layout.projectDirectory.file("src/release/generated/baselineProfiles/$fileName").asFile
-    if (!profileFile.isFile) return 0
-    return profileFile.useLines { lines ->
-        lines.count { line ->
-            val trimmed = line.trim()
-            trimmed.isNotEmpty() && !trimmed.startsWith("#")
-        }
-    }
-}
-
 val baselineProfileRuleCount = countGeneratedProfileRules("baseline-prof.txt")
 val startupProfileRuleCount = countGeneratedProfileRules("startup-prof.txt")
 
 plugins {
-    alias(libs.plugins.android.application)
+    id("keios.android.application")
     alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.roborazzi)
-    alias(libs.plugins.kotlin.compose)
+    id("keios.android.compose")
+    id("keios.miuix")
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "os.kei"
-    compileSdk = projectCompileSdk
 
     signingConfigs {
         getByName("debug") {
@@ -309,8 +106,6 @@ android {
 
     defaultConfig {
         applicationId = "os.kei"
-        minSdk = projectMinSdk
-        targetSdk = projectTargetSdk
         versionCode = releaseVersionCode
         versionName = releaseVersionName
         ndk {
@@ -458,14 +253,9 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = projectJavaVersion
-        targetCompatibility = projectJavaVersion
-    }
 
     buildFeatures {
         buildConfig = true
-        compose = true
     }
 
     lint {
@@ -480,7 +270,6 @@ android {
         }
     }
 
-    compileSdkMinor = 0
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
@@ -562,34 +351,6 @@ androidComponents {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(projectJvmTarget)
-    }
-}
-
-composeCompiler {
-    val reportsEnabled = providers.gradleProperty("composeCompilerReports").orNull == "true"
-    if (reportsEnabled) {
-        reportsDestination = layout.buildDirectory.dir("compose_compiler")
-        metricsDestination = layout.buildDirectory.dir("compose_compiler")
-    }
-}
-
-configurations.configureEach {
-    resolutionStrategy.dependencySubstitution {
-        substitute(module("top.yukonga.miuix.kmp:miuix-ui"))
-            .using(module("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion"))
-        substitute(module("top.yukonga.miuix.kmp:miuix-preference"))
-            .using(module("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion"))
-        substitute(module("top.yukonga.miuix.kmp:miuix-icons"))
-            .using(module("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"))
-        substitute(module("top.yukonga.miuix.kmp:miuix-blur"))
-            .using(module("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"))
-        substitute(module("top.yukonga.miuix.kmp:miuix-nav"))
-            .using(module("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion"))
-    }
-}
 
 dependencies {
     baselineProfile(project(":baselineprofile"))

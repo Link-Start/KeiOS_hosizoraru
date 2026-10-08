@@ -1,24 +1,18 @@
 plugins {
-    alias(libs.plugins.android.library)
+    id("keios.android.library")
 }
 
 android {
     namespace = "os.kei.core.system"
-    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     buildFeatures {
         aidl = true
     }
 
     defaultConfig {
-        minSdk = libs.versions.min.sdk.get().toInt()
         consumerProguardFiles("src/main/keepRules/core-system-rules.keep")
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
-        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
-    }
 }
 
 dependencies {

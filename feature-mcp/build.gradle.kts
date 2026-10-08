@@ -1,20 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
+    id("keios.android.library")
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "os.kei.feature.mcp"
-    compileSdk = libs.versions.compile.sdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.min.sdk.get().toInt()
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
-        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
-    }
 
     testOptions {
         unitTests.isIncludeAndroidResources = true

@@ -32,6 +32,8 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "KeiOS"
+includeBuild("build-logic")
+
 include(":app")
 include(":baselineprofile")
 include(":core-concurrency")

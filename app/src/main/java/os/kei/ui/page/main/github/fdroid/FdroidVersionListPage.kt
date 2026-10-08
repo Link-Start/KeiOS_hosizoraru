@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -39,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -99,6 +97,8 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.page.main.widget.glass.AppTextInputContent
+import os.kei.ui.page.main.widget.glass.AppTextInputContentStyle
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
@@ -956,20 +956,22 @@ private fun FdroidVersionFilterField(
         backdrop = backdrop,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            BasicTextField(
+            AppTextInputContent(
                 value = value,
                 onValueChange = { text -> onValueChange(text.take(40)) },
+                label = "",
                 singleLine = true,
-                textStyle =
-                    TextStyle(
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
+                style =
+                    AppTextInputContentStyle(
+                        textStyle = TextStyle(
+                            color = MiuixTheme.colorScheme.onBackground,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                        ),
+                        placeholderColor = Color.Transparent,
+                        wrapFieldContentHeight = false,
                     ),
-                // The default brush is opaque black, which on this app's dark theme is a caret drawn on
-                // near-black. The release list's page field has the same bug; this one does not inherit it.
-                cursorBrush = SolidColor(MiuixTheme.colorScheme.onBackground),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
                 modifier =

@@ -57,6 +57,7 @@ fun AppTextInputContent(
     onFocusActiveChange: ((Boolean) -> Unit)? = null,
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
+    val inputBinding = rememberAppTextInputBinding(value, onValueChange)
     val verticalContentAlignment =
         if (singleLine) {
             Alignment.CenterVertically
@@ -74,8 +75,8 @@ fun AppTextInputContent(
     @Composable
     fun TextInput(modifier: Modifier) {
         BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
+            value = inputBinding.value,
+            onValueChange = inputBinding.onValueChange,
             enabled = enabled,
             readOnly = readOnly,
             singleLine = singleLine,
@@ -113,7 +114,7 @@ fun AppTextInputContent(
                             .then(wrapContentHeightModifier),
                     contentAlignment = contentAlignment,
                 ) {
-                    if (value.isBlank()) {
+                    if (inputBinding.value.text.isBlank()) {
                         BasicText(
                             text = label,
                             style = style.textStyle.copy(color = style.placeholderColor),

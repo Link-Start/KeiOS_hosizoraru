@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -96,6 +95,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppTextInputContent
+import os.kei.ui.page.main.widget.glass.AppTextInputContentStyle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
@@ -890,16 +891,21 @@ private fun GitHubReleasePageJumpField(
         shape = ContinuousCapsule,
         backdrop = backdrop,
     ) {
-        BasicTextField(
+        AppTextInputContent(
             value = value,
             onValueChange = onValueChange,
+            label = "",
             singleLine = true,
-            textStyle =
-                TextStyle(
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center,
+            style =
+                AppTextInputContentStyle(
+                    textStyle = TextStyle(
+                        color = MiuixTheme.colorScheme.onBackground,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    ),
+                    placeholderColor = Color.Transparent,
+                    wrapFieldContentHeight = false,
                 ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { onSubmit() }),

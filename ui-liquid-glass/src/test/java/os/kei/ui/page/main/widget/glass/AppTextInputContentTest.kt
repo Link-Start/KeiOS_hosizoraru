@@ -1,13 +1,19 @@
 package os.kei.ui.page.main.widget.glass
 
 import android.app.Application
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -17,12 +23,16 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -33,6 +43,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -47,6 +62,232 @@ import kotlin.test.assertTrue
 class AppTextInputContentTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun successiveEditsKeepTheCursorAtTheInsertionPoint() {
+        lateinit var valueState: MutableState<String>
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("") }
+            AppTextInputContent(
+                value = valueState.value,
+                onValueChange = { valueState.value = it },
+                label = "Search",
+                style = inputStyle(),
+                fieldModifier = Modifier.testTag(FIELD_TAG),
+            )
+        }
+
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick().performTextInput("g")
+        assertEquals(TextRange(1), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+        field.performTextInput("i")
+        field.performTextInput("t")
+        composeRule.runOnIdle { assertEquals("git", valueState.value) }
+        assertEquals(TextRange(3), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+
+        field.performTextInputSelection(TextRange(1))
+        field.performTextInput("hub")
+        composeRule.runOnIdle { assertEquals("ghubit", valueState.value) }
+        assertEquals(TextRange(4), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+    }
+
+    @Test
+    fun sheetSearchFieldKeepsSelectionThroughMaterialRecomposition() {
+        lateinit var valueState: MutableState<String>
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("") }
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppLiquidSearchField(
+                    value = valueState.value,
+                    onValueChange = { valueState.value = it },
+                    label = "Name or package",
+                    backdrop = null,
+                    variant = GlassVariant.SheetInput,
+                )
+            }
+        }
+        val field = composeRule.onNode(hasSetTextAction())
+        field.performClick()
+        for ((index, letter) in "git".withIndex()) {
+            field.performTextInput(letter.toString())
+            assertEquals(TextRange(index + 1), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+        }
+        composeRule.runOnIdle { assertEquals("git", valueState.value) }
+    }
+
+    @Test
+    fun imeComposingTextKeepsTheInsertionPointAndReplacesItsOwnComposition() {
+        lateinit var valueState: MutableState<String>
+        var connection: InputConnection? = null
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("") }
+            InterceptPlatformTextInput(
+                interceptor = { request, _ ->
+                    connection = request.createInputConnection(EditorInfo())
+                    awaitCancellation()
+                },
+            ) {
+                AppTextInputContent(
+                    value = valueState.value,
+                    onValueChange = { valueState.value = it },
+                    label = "Search",
+                    style = inputStyle(),
+                    fieldModifier = Modifier.testTag(FIELD_TAG),
+                )
+            }
+        }
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick()
+        composeRule.waitUntil { connection != null }
+        for (text in listOf("g", "gi", "git")) {
+            composeRule.runOnIdle { assertTrue(connection!!.setComposingText(text, 1)) }
+            composeRule.waitForIdle()
+            assertEquals(TextRange(text.length), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+            composeRule.runOnIdle { assertEquals(text, valueState.value) }
+        }
+        composeRule.runOnIdle { assertTrue(connection!!.commitText("git", 1)) }
+        composeRule.waitForIdle()
+        composeRule.runOnIdle { assertEquals("git", valueState.value) }
+    }
+
+    @Test
+    fun portalledFieldKeepsSelectionWhenItsOwnerEchoesTextBack() {
+        lateinit var valueState: MutableState<String>
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("") }
+            val host = remember { LiquidOverlayHostState() }
+            val value = valueState.value
+            CompositionLocalProvider(LocalLiquidOverlayHost provides host) {
+                LiquidOverlayPortal {
+                    AppTextInputContent(
+                        value = value,
+                        onValueChange = { valueState.value = it },
+                        label = "Search",
+                        style = inputStyle(),
+                        fieldModifier = Modifier.testTag(FIELD_TAG),
+                    )
+                }
+            }
+            host.Content()
+        }
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick()
+        for ((index, letter) in "git".withIndex()) {
+            field.performTextInput(letter.toString())
+            assertEquals(TextRange(index + 1), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+        }
+        composeRule.runOnIdle { assertEquals("git", valueState.value) }
+    }
+
+    @Test
+    fun aDelayedModelEchoDoesNotClampAwayTheEditorsSelection() {
+        lateinit var valueState: MutableState<String>
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("") }
+            val scope = rememberCoroutineScope()
+            AppTextInputContent(
+                value = valueState.value,
+                onValueChange = { text ->
+                    scope.launch { withFrameNanos { }; valueState.value = text }
+                },
+                label = "Search",
+                style = inputStyle(),
+                fieldModifier = Modifier.testTag(FIELD_TAG),
+            )
+        }
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick()
+        for ((index, letter) in "git".withIndex()) {
+            field.performTextInput(letter.toString())
+            assertEquals(TextRange(index + 1), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+        }
+        composeRule.runOnIdle { assertEquals("git", valueState.value) }
+    }
+
+    @Test
+    fun delayedImeEchoPreservesTheCompositionUntilItIsCommitted() {
+        lateinit var valueState: MutableState<String>
+        var connection: InputConnection? = null
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("") }
+            val scope = rememberCoroutineScope()
+            InterceptPlatformTextInput(
+                interceptor = { request, _ ->
+                    connection = request.createInputConnection(EditorInfo())
+                    awaitCancellation()
+                },
+            ) {
+                AppTextInputContent(
+                    value = valueState.value,
+                    onValueChange = { text ->
+                        scope.launch { withFrameNanos { }; valueState.value = text }
+                    },
+                    label = "Search",
+                    style = inputStyle(),
+                    fieldModifier = Modifier.testTag(FIELD_TAG),
+                )
+            }
+        }
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick()
+        composeRule.waitUntil { connection != null }
+        for (text in listOf("n", "ni", "nih", "nihao")) {
+            composeRule.runOnIdle { assertTrue(connection!!.setComposingText(text, 1)) }
+            composeRule.waitForIdle()
+            assertEquals(TextRange(text.length), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+            composeRule.runOnIdle { assertEquals(text, valueState.value) }
+        }
+        composeRule.runOnIdle { assertTrue(connection!!.commitText("你好", 1)) }
+        composeRule.waitForIdle()
+        assertEquals(AnnotatedString("你好"), field.fetchSemanticsNode().config[SemanticsProperties.EditableText])
+        assertEquals(TextRange(2), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+    }
+
+    @Test
+    fun normalizationCanRejectInputWithoutLeavingTheRejectedTextInTheEditor() {
+        lateinit var valueState: MutableState<String>
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("12") }
+            AppTextInputContent(
+                value = valueState.value,
+                onValueChange = { valueState.value = it.filter(Char::isDigit) },
+                label = "Number",
+                style = inputStyle(),
+                fieldModifier = Modifier.testTag(FIELD_TAG),
+            )
+        }
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick()
+        field.performTextInputSelection(TextRange(2))
+        field.performTextInput("a")
+        assertEquals(AnnotatedString("12"), field.fetchSemanticsNode().config[SemanticsProperties.EditableText])
+        field.performTextInput("3")
+        composeRule.runOnIdle { assertEquals("123", valueState.value) }
+        assertEquals(TextRange(3), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+    }
+
+    @Test
+    fun externalClearResetsSelectionAndSelectionOnlyEditsDoNotPublishText() {
+        lateinit var valueState: MutableState<String>
+        var changes = 0
+        composeRule.setContent {
+            valueState = remember { mutableStateOf("hello") }
+            AppTextInputContent(
+                value = valueState.value,
+                onValueChange = { changes++; valueState.value = it },
+                label = "Search",
+                style = inputStyle(),
+                fieldModifier = Modifier.testTag(FIELD_TAG),
+            )
+        }
+        val field = composeRule.onNodeWithTag(FIELD_TAG, useUnmergedTree = true)
+        field.performClick()
+        field.performTextInputSelection(TextRange(2, 4))
+        composeRule.runOnIdle { assertEquals(0, changes); valueState.value = "" }
+        assertEquals(TextRange(0), field.fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+        field.performTextInput("g")
+        composeRule.runOnIdle { assertEquals("g", valueState.value); assertEquals(1, changes) }
+    }
 
     @Test
     fun editableFieldKeepsLeadingContentOutsideItsValueAndSelectionSemantics() {

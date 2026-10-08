@@ -12,6 +12,7 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubVersionCandidateSource
 import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
 import os.kei.feature.github.model.githubReleaseIgnoreKeyMatches
 import os.kei.feature.github.model.suppressesAllReleaseUpdates
@@ -79,13 +80,27 @@ object GitHubReleaseEvaluationEngine {
         /** Injected so the staleness rule below can be pinned by a test rather than drift with the day. */
         nowMillis: Long = System.currentTimeMillis(),
     ): GitHubReleaseEvaluationResult {
+        // A repository may label a plain numbered build as Pre-release. That lane hint must not
+        // stop an exact installed-name match in a pre-release-only product. A stable lane remains
+        // on the original semantic comparison path so an equal-number preview cannot shadow it.
+        val localNamesForPreviewOnly = if (!snapshot.hasStableRelease && localVersion.isNotBlank()) {
+            GitHubVersionUtils.normalizeVersionCandidates(localVersion).toSet()
+        } else emptySet()
         val matchedEntry = snapshot.feed.entries.firstOrNull { entry ->
             GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 candidates = entry.versionCandidates,
                 remoteChannel = entry.channel,
-            ) == 0
+            ) == 0 || (
+                entry.isLikelyPreRelease && localNamesForPreviewOnly.isNotEmpty() &&
+                    entry.versionCandidates.any { candidate ->
+                        candidate.source.priority <= GitHubVersionCandidateSource.Link.priority &&
+                            GitHubVersionUtils.normalizeVersionCandidates(candidate.value).any {
+                                it in localNamesForPreviewOnly
+                            }
+                    }
+                )
         }
         val matchedCurrentStable = snapshot.hasStableRelease &&
             matchedEntry != null &&

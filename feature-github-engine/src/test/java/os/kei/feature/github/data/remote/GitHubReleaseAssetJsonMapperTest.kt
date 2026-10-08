@@ -6,6 +6,24 @@ import kotlin.test.assertEquals
 
 class GitHubReleaseAssetJsonMapperTest {
     @Test
+    fun `api release lane preserves true false and unknown separately`() {
+        for (lane in listOf("true", "false", null)) {
+            val field = lane?.let { ",\"prerelease\":$it" }.orEmpty()
+            val release = "{\"tag_name\":\"v1.0\"$field}".parseJsonObjectOrNull()!!
+            assertEquals(lane?.toBoolean(), GitHubReleaseAssetJsonMapper.parseReleaseBundle(release).isPreRelease)
+        }
+    }
+
+    @Test
+    fun `html stub carries explicit prerelease evidence through the api shape`() {
+        val stub = GitHubReleaseAssetJsonMapper.buildReleaseStub(
+            releaseName = "Plugin 1.0", rawTag = "plugin-v1.0", releaseUrl = "https://example.test/release",
+            isPreRelease = true,
+        )
+        assertEquals(true, GitHubReleaseAssetJsonMapper.parseReleaseBundle(stub).isPreRelease)
+    }
+
+    @Test
     fun `release body maps into asset bundle notes`() {
         val release = """
         {

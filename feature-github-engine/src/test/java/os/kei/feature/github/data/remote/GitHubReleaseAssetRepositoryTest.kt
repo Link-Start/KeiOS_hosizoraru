@@ -54,6 +54,7 @@ class GitHubReleaseAssetRepositoryTest {
 
                 bundles.forEach { bundle ->
                     assertEquals(listOf("demo.apk"), bundle.assets.map { it.name })
+                    assertEquals(true, bundle.isPreRelease)
                     assertEquals(
                         """
                         Notes
@@ -90,6 +91,7 @@ class GitHubReleaseAssetRepositoryTest {
             <html>
               <body>
                 <h1 class="d-inline mr-3">Version 1</h1>
+                <span class="Label Label--warning ml-2">Pre-release</span>
                 <relative-time datetime="2026-05-01T10:00:00Z"></relative-time>
                 <include-fragment src="${server.url("/demo/app/releases/expanded_assets/v1")}"></include-fragment>
                 <div class="markdown-body">

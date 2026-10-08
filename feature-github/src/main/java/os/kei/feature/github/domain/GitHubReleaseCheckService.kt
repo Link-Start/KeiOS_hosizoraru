@@ -298,8 +298,14 @@ object GitHubReleaseCheckService {
                 )
             )
         }
-        val snapshot = snapshotResult.snapshot
+        val repositorySnapshot = snapshotResult.snapshot
         val preciseStartNs = System.nanoTime()
+        val snapshot = GitHubReleasePackageScope.resolve(
+            item = repositoryItem,
+            snapshot = repositorySnapshot,
+            lookupConfig = lookupConfig,
+            resolver = preciseApkVersionResolver,
+        )
         val preciseVersions = resolvePreciseApkVersions(
             item = item,
             localVersion = localVersion,
@@ -315,7 +321,7 @@ object GitHubReleaseCheckService {
             localVersion = localVersion,
             localVersionCode = localVersionCode,
             purpose = profilePurposeOverride ?: lookupConfig.defaultRepositoryProfilePurpose(),
-            releaseSnapshot = snapshot,
+            releaseSnapshot = repositorySnapshot,
             preciseStableApkVersion = preciseVersions.stable,
             precisePreReleaseApkVersion = preciseVersions.preRelease,
             existingRepositoryProfile = existingRepositoryProfile

@@ -82,7 +82,7 @@ data class GitHubLookupConfig(
 
 fun GitHubLookupConfig.githubCheckSourceSignature(): String {
     return listOf(
-        "check-v2",
+        "check-v3-package-scope",
         selectedStrategy.storageId,
         apiToken.trim().isNotBlank().toString(),
         checkAllTrackedPreReleases.toString(),

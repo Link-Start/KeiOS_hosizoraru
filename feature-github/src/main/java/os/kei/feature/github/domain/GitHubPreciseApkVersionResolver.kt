@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.GitHubExecution
+import os.kei.core.io.cancellableResult
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
@@ -40,11 +41,23 @@ interface GitHubPreciseApkVersionSource {
     ): Result<GitHubApkManifestInfo>
 }
 
+/** Positive package evidence, distinct from a timeout or an APK we could not read. */
+internal class GitHubApkPackageMismatchException(expectedPackageName: String) :
+    IllegalStateException("No APK manifest matched package $expectedPackageName")
+
+internal data class GitHubResolvedApkRelease(
+    val version: GitHubRemoteApkVersionInfo,
+    val isPreRelease: Boolean?,
+)
+
 class GitHubPreciseApkVersionResolver(
     private val source: GitHubPreciseApkVersionSource = DefaultGitHubPreciseApkVersionSource()
 ) {
     suspend fun resolve(request: GitHubPreciseApkVersionRequest): Result<GitHubRemoteApkVersionInfo> =
-        runCatching {
+        resolveRelease(request).map { it.version }
+
+    internal suspend fun resolveRelease(request: GitHubPreciseApkVersionRequest): Result<GitHubResolvedApkRelease> =
+        cancellableResult {
             val rawTag = request.release.rawTag.trim().ifBlank {
                 GitHubReleaseAssetRepository.parseReleaseTagFromUrl(request.release.link)
             }
@@ -59,10 +72,12 @@ class GitHubPreciseApkVersionResolver(
                 releaseUrl = releaseUrl,
                 lookupConfig = request.lookupConfig
             ).getOrThrow()
-            val apkAssets = GitHubApkCandidateSelectionEngine.planInspection(
+            val allApkAssets = GitHubApkCandidateSelectionEngine.planInspection(
                 assets = bundle.assets,
                 expectedPackageName = request.packageName,
+                maxCandidates = Int.MAX_VALUE,
             )
+            val apkAssets = allApkAssets.take(GitHubApkCandidateSelectionEngine.DEFAULT_MAX_INSPECTION_CANDIDATES)
             check(apkAssets.isNotEmpty()) { "Release contains no APK asset" }
 
             val requestedPackageName = request.packageName.trim()
@@ -73,20 +88,26 @@ class GitHubPreciseApkVersionResolver(
             )
             val selected = inspected.selected
             if (selected == null) {
-                throw inspected.firstFailure
-                    ?: IllegalStateException("No APK manifest could be inspected")
+                throw inspected.firstFailure ?: when {
+                    inspected.packageMismatchVerified && apkAssets.size == allApkAssets.size ->
+                        GitHubApkPackageMismatchException(requestedPackageName)
+                    else -> IllegalStateException("No APK manifest could be inspected")
+                }
             }
             val (asset, info) = selected
 
-            GitHubRemoteApkVersionInfo(
-                releaseName = bundle.releaseName.ifBlank { request.release.rawName },
-                releaseTag = bundle.tagName.ifBlank { rawTag },
-                releaseUrl = bundle.htmlUrl.ifBlank { releaseUrl },
-                assetName = asset.name,
-                packageName = info.packageName,
-                versionName = info.versionName,
-                versionCode = info.versionCode,
-                fetchSource = info.fetchSource.ifBlank { bundle.fetchSource }
+            GitHubResolvedApkRelease(
+                version = GitHubRemoteApkVersionInfo(
+                    releaseName = bundle.releaseName.ifBlank { request.release.rawName },
+                    releaseTag = bundle.tagName.ifBlank { rawTag },
+                    releaseUrl = bundle.htmlUrl.ifBlank { releaseUrl },
+                    assetName = asset.name,
+                    packageName = info.packageName,
+                    versionName = info.versionName,
+                    versionCode = info.versionCode,
+                    fetchSource = info.fetchSource.ifBlank { bundle.fetchSource },
+                ),
+                isPreRelease = bundle.isPreRelease,
             )
         }
 
@@ -126,6 +147,7 @@ class GitHubPreciseApkVersionResolver(
                 return ApkInspectSelection(
                     selected = selection.candidate.asset to selection.candidate.manifest,
                     firstFailure = firstFailure,
+                    packageMismatchVerified = false,
                 )
             }
         }
@@ -138,11 +160,13 @@ class GitHubPreciseApkVersionResolver(
         }
         return ApkInspectSelection(
             selected = selected?.candidate?.let { it.asset to it.manifest },
-            firstFailure = firstFailure ?: if (requestedPackageName.isNotBlank()) {
-                IllegalStateException("No APK manifest matched package $requestedPackageName")
-            } else {
-                null
-            },
+            firstFailure = firstFailure,
+            packageMismatchVerified = requestedPackageName.isNotBlank() &&
+                inspectedCandidates.size == apkAssets.size &&
+                inspectedCandidates.all {
+                    it.manifest.packageName.isNotBlank() &&
+                        !it.manifest.packageName.equals(requestedPackageName, ignoreCase = true)
+                },
         )
     }
 
@@ -152,7 +176,8 @@ class GitHubPreciseApkVersionResolver(
 
     private data class ApkInspectSelection(
         val selected: Pair<GitHubReleaseAssetFile, GitHubApkManifestInfo>?,
-        val firstFailure: Throwable?
+        val firstFailure: Throwable?,
+        val packageMismatchVerified: Boolean,
     )
 }
 

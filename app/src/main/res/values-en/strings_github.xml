@@ -1150,7 +1150,7 @@
     <string name="github_item_actions_run_value">%1$s · recorded at %2$s</string>
     <string name="github_item_actions_run_not_recorded">Not recorded yet</string>
     <string name="github_track_sheet_label_precise_apk_version">More precise version logic</string>
-    <string name="github_track_sheet_summary_precise_apk_version">Controls whether this project reads real versionName and versionCode from the remote APK Manifest. It can follow global settings or override them.</string>
+    <string name="github_track_sheet_summary_precise_apk_version">Choose whether to compare this project using the versions embedded in its APK. Follow the global setting or choose a setting for this project.</string>
     <string name="github_track_sheet_summary_precise_apk_version_git">When Release APK assets are resolved, reads real versionName and versionCode from the remote APK Manifest. Platforms such as Gitee, GitLab, and Gitea depend on APKs provided by the Release.</string>
     <string name="github_track_sheet_summary_precise_apk_version_fdroid">F-Droid indexes already provide versionName, versionCode, APK hashes, and signer data, so this source uses index-native version data.</string>
     <string name="github_track_sheet_summary_precise_apk_version_follow_global">Following global: global is currently %1$s</string>

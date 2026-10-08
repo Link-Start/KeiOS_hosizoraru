@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import os.kei.core.json.encodeCompact
@@ -43,6 +44,7 @@ object GitHubReleaseAssetCacheStore {
         hasApiToken: Boolean
     ): String {
         return listOf(
+            "release-lane-v1",
             owner.trim().lowercase(),
             repo.trim().lowercase(),
             rawTag.trim().lowercase(),
@@ -197,6 +199,7 @@ object GitHubReleaseAssetCacheStore {
             put("shortCommitSha", bundle.shortCommitSha)
             put("fetchSource", bundle.fetchSource)
             put("sourceConfigSignature", bundle.sourceConfigSignature)
+            bundle.isPreRelease?.let { put("isPreRelease", it) }
             put(
                 "assets",
                 buildJsonArray {
@@ -270,7 +273,8 @@ object GitHubReleaseAssetCacheStore {
             showingAllAssets = obj.optBoolean("showingAllAssets", false),
             shortCommitSha = obj.optString("shortCommitSha").trim(),
             fetchSource = obj.optString("fetchSource").trim(),
-            sourceConfigSignature = obj.optString("sourceConfigSignature").trim()
+            sourceConfigSignature = obj.optString("sourceConfigSignature").trim(),
+            isPreRelease = (obj["isPreRelease"] as? JsonPrimitive)?.booleanOrNull,
         )
     }
 

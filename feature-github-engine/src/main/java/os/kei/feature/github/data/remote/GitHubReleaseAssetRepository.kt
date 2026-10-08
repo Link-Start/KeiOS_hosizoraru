@@ -32,6 +32,10 @@ object GitHubReleaseAssetRepository {
     private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
     private const val MAX_RELEASE_HTML_RESPONSE_BYTES = 4L * 1024L * 1024L
     private val htmlBlockOptions = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+    private val preReleaseBadgeRegex = Regex(
+        """<span\b[^>]*class="[^"]*\bLabel\b[^"]*"[^>]*>\s*Pre-release\s*</span>""",
+        htmlBlockOptions,
+    )
     private val htmlHrefRegex = Regex("""href="([^"]+)"""", RegexOption.IGNORE_CASE)
     private val releaseTitleRegex =
         Regex("""<h1[^>]*class="[^"]*d-inline[^"]*"[^>]*>(.*?)</h1>""", htmlBlockOptions)
@@ -514,7 +518,8 @@ object GitHubReleaseAssetRepository {
             releaseUrl = metadata.htmlUrl,
             releaseUpdatedAtMillis = metadata.releaseUpdatedAtMillis,
             releaseNotesBody = metadata.releaseNotesBody,
-            assets = assets
+            assets = assets,
+            isPreRelease = true.takeIf { preReleaseBadgeRegex.containsMatchIn(releaseHtml) },
         )
     }
 
@@ -781,14 +786,16 @@ object GitHubReleaseAssetRepository {
         releaseUrl: String,
         releaseUpdatedAtMillis: Long? = null,
         releaseNotesBody: String = "",
-        assets: List<GitHubReleaseAssetFile> = emptyList()
+        assets: List<GitHubReleaseAssetFile> = emptyList(),
+        isPreRelease: Boolean? = null,
     ): JsonObject = GitHubReleaseAssetJsonMapper.buildReleaseStub(
         releaseName = releaseName,
         rawTag = rawTag,
         releaseUrl = releaseUrl,
         releaseUpdatedAtMillis = releaseUpdatedAtMillis,
         releaseNotesBody = releaseNotesBody,
-        assets = assets
+        assets = assets,
+        isPreRelease = isPreRelease,
     )
 
     private fun parseReleaseBundle(release: JsonObject): GitHubReleaseAssetBundle =

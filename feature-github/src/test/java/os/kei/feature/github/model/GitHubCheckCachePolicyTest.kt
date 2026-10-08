@@ -7,6 +7,22 @@ import kotlin.test.assertTrue
 
 class GitHubCheckCachePolicyTest {
     @Test
+    fun `github package scoped checks invalidate old repository wide cache`() {
+        val item = tracked(sourceMode = GitHubTrackedSourceMode.GitHubRepository)
+        val config = GitHubLookupConfig()
+        val current = item.checkSourceSignature(config)
+        assertTrue(GitHubCheckCacheEntry(sourceConfigSignature = current)
+            .isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+        assertFalse(GitHubCheckCacheEntry(sourceConfigSignature = config.githubCheckSourceSignature())
+            .isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+        assertFalse(GitHubCheckCacheEntry(sourceConfigSignature = "check-v2|atom_feed|false|false|false|false|false|balanced")
+            .isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+        assertFalse(GitHubCheckCacheEntry()
+            .isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+        assertFalse(item.copy(packageName = "another.app").checkSourceSignature(config) == current)
+    }
+
+    @Test
     fun `direct apk cache validates against direct apk source signature`() {
         val item = tracked(sourceMode = GitHubTrackedSourceMode.DirectApk)
         val lookupConfig = GitHubLookupConfig().forTrackedItem(item)
@@ -109,12 +125,12 @@ class GitHubCheckCachePolicyTest {
     }
 
     @Test
-    fun `github repository cache keeps global check source signature`() {
+    fun `github repository cache includes global configuration and target package`() {
         val item = tracked(sourceMode = GitHubTrackedSourceMode.GitHubRepository)
         val lookupConfig = GitHubLookupConfig()
-        val signature = lookupConfig.githubCheckSourceSignature()
+        val signature = item.checkSourceSignature(lookupConfig)
 
-        assertEquals(signature, item.checkSourceSignature(lookupConfig))
+        assertEquals("${lookupConfig.githubCheckSourceSignature()}|package=demo.app", signature)
         assertTrue(
             GitHubCheckCacheEntry(
                 sourceStrategyId = GitHubLookupStrategyOption.AtomFeed.storageId,

@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.put
 import os.kei.core.json.optArray
 import os.kei.core.json.optInt
@@ -19,13 +20,15 @@ object GitHubReleaseAssetJsonMapper {
         releaseUrl: String,
         releaseUpdatedAtMillis: Long? = null,
         releaseNotesBody: String = "",
-        assets: List<GitHubReleaseAssetFile> = emptyList()
+        assets: List<GitHubReleaseAssetFile> = emptyList(),
+        isPreRelease: Boolean? = null,
     ): JsonObject {
         return buildJsonObject {
             put("name", releaseName)
             put("tag_name", rawTag)
             put("html_url", releaseUrl)
             put("body", releaseNotesBody)
+            isPreRelease?.let { put("prerelease", it) }
             put(
                 "published_at",
                 releaseUpdatedAtMillis?.let { Instant.ofEpochMilli(it).toString() }
@@ -94,7 +97,8 @@ object GitHubReleaseAssetJsonMapper {
             releaseUpdatedAtMillis = releaseUpdatedAtMillis,
             releaseNotesBody = release.optString("body").trim(),
             assets = assets,
-            shortCommitSha = ""
+            shortCommitSha = "",
+            isPreRelease = (release["prerelease"] as? JsonPrimitive)?.booleanOrNull,
         )
     }
 

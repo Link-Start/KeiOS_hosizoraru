@@ -1207,7 +1207,7 @@
     <string name="github_item_actions_run_value">%1$s · 记录于 %2$s</string>
     <string name="github_item_actions_run_not_recorded">尚未记录</string>
     <string name="github_track_sheet_label_precise_apk_version">更精准的版本号逻辑</string>
-    <string name="github_track_sheet_summary_precise_apk_version">控制这个项目是否读取远端 APK Manifest 中的真实 versionName 与 versionCode，可跟随全局或单独覆盖。</string>
+    <string name="github_track_sheet_summary_precise_apk_version">选择此项目是否使用 APK 内的版本号进行比较，可跟随全局设置或单独指定。</string>
     <string name="github_track_sheet_summary_precise_apk_version_git">解析到 Release APK 资产时读取远端 APK Manifest 中的真实 versionName 与 versionCode；Gitee、GitLab、Gitea 等平台取决于 Release 是否提供 APK。</string>
     <string name="github_track_sheet_summary_precise_apk_version_fdroid">F-Droid index 已提供 versionName、versionCode、APK 哈希和 signer 信息，因此此来源默认使用索引原生版本号。</string>
     <string name="github_track_sheet_summary_precise_apk_version_follow_global">跟随全局：当前全局为 %1$s</string>

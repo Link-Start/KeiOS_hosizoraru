@@ -43,6 +43,8 @@ data class GitHubReleaseAssetBundle(
     val shortCommitSha: String = "",
     val fetchSource: String = "",
     val sourceConfigSignature: String = "",
+    /** Null when the source did not explicitly identify the release lane. */
+    val isPreRelease: Boolean? = null,
 )
 
 data class GitHubReleaseNotesTarget(

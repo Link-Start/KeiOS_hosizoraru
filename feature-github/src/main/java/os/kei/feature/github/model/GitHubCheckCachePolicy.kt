@@ -14,7 +14,7 @@ fun GitHubTrackedApp.checkSourceSignature(
         GitHubTrackedSourceMode.GitRepository -> gitRepositoryCheckSourceSignature(lookupConfig)
         GitHubTrackedSourceMode.FdroidRepository -> fdroidRepositoryCheckSourceSignature()
         GitHubTrackedSourceMode.GitHubRepository -> {
-            val base = lookupConfig.githubCheckSourceSignature()
+            val base = "${lookupConfig.githubCheckSourceSignature()}|package=${packageName.trim().lowercase(Locale.ROOT)}"
             if (externalBuildUntilRelease) "$base|external-build" else base
         }
     }
@@ -89,6 +89,7 @@ fun GitHubCheckCacheEntry.isValidForTrackedItem(
                     !lookupConfig.checkAllTrackedPreReleases
         item.isFdroidRepositoryTrack() -> false
         item.isGitRepositoryTrack() -> false
+        item.packageName.isNotBlank() -> false // Legacy checks did not establish release product identity.
         lookupConfig.preciseApkVersionEnabled -> false
         else -> sourceId == activeStrategyId
     }

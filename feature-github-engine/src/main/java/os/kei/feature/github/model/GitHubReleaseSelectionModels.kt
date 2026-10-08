@@ -24,6 +24,9 @@ enum class GitHubReleaseRejection {
 
     /** The same version as the chosen stable, wearing a pre-release tag. */
     SameVersionAsStable,
+
+    /** Its release family publishes APKs for a different application in this shared repository. */
+    OtherPackage,
 }
 
 /** One release that was considered and set aside, with the rule that set it aside. */

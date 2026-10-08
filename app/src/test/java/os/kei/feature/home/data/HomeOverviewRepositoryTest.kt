@@ -125,6 +125,8 @@ class HomeOverviewRepositoryTest {
                         githubItem.id to
                             GitHubCheckCacheEntry(
                                 sourceStrategyId = GitHubLookupStrategyOption.AtomFeed.storageId,
+                                sourceConfigSignature =
+                                    githubItem.checkSourceSignature(lookupConfig.forTrackedItem(githubItem)),
                             ),
                         gitItem.id to
                             GitHubCheckCacheEntry(
@@ -173,6 +175,30 @@ class HomeOverviewRepositoryTest {
         assertEquals(1, overview.preReleaseUpdateCount)
         assertEquals(1, overview.failedCount)
         assertEquals(1_000L, overview.cachedRefreshMs)
+    }
+
+    @Test
+    fun githubOverviewDoesNotCountUpdatesFromLegacyAtomCache() {
+        val config = GitHubLookupConfig(selectedStrategy = GitHubLookupStrategyOption.AtomFeed)
+        val item = trackedApp(
+            repoUrl = "https://github.com/demo/app", owner = "demo", repo = "app", packageName = "demo.app",
+        )
+        val snapshot = GitHubTrackSnapshot(
+            items = listOf(item),
+            lookupConfig = config,
+            checkCache = mapOf(item.id to GitHubCheckCacheEntry(
+                sourceConfigSignature = "check-v3-package-scope|atom_feed|false|false|false|false|false|basic|package=demo.app",
+                hasUpdate = true,
+                hasPreReleaseUpdate = true,
+                message = GitHubTrackedReleaseStatus.Failed.failureMessage("old failure"),
+            )),
+        )
+        val overview = loadHomeGitHubOverview(snapshot, CacheFreshnessSnapshot.Empty, nowMs = 2_000L)
+        assertEquals(1, overview.trackedCount)
+        assertEquals(0, overview.cacheHitCount)
+        assertEquals(0, overview.updatableCount)
+        assertEquals(0, overview.preReleaseUpdateCount)
+        assertEquals(0, overview.failedCount)
     }
 
     @Test

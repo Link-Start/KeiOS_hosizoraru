@@ -16,7 +16,14 @@ class GitHubWorkflowContractTest {
         // Every module's tests, by the unqualified task name. Until 2026-09-25 this pinned
         // `:app:testDebugUnitTest`, and the ~1,500 tests of the extracted modules never ran in CI:
         // the same allowlist failure the paths-ignore test below describes, one level down.
-        assertContains(workflow, "./gradlew testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace")
+        val testCommands = runCommandsOf(workflow).map { it.split(Regex("\\s+")) }
+            .filter { "testDebugUnitTest" in it }
+        assertEquals(1, testCommands.size, "CI must run every module's unit tests")
+        val testCommand = testCommands.single()
+        listOf("./gradlew", ":build-logic:check", "testDebugUnitTest",
+            "-Proborazzi.test.verify=true", "--continue", "--stacktrace").forEach {
+            assertContains(testCommand, it, "The unit test job must validate build logic and screenshots")
+        }
         // Commands only, so the comment explaining the history can still name the old task.
         val qualified = runCommandsOf(workflow).filter { MODULE_QUALIFIED_TEST_TASK.containsMatchIn(it) }
         assertTrue(
@@ -74,7 +81,12 @@ class GitHubWorkflowContractTest {
                     "gradle/libs.versions.toml",
                     "gradlew",
                     ".github/actions/setup-android-gradle-build/action.yml",
-                )
+                    "build-logic/build.gradle.kts",
+                    "build-logic/settings.gradle.kts",
+                ) + File(repoRoot(), "build-logic/src").walkTopDown()
+                    .filter { it.isFile && it.extension in setOf("kt", "kts") }
+                    .map { it.relativeTo(repoRoot()).invariantSeparatorsPath }
+                    .toList()
 
         listOf("ci-debug-apk.yml", "ci-benchmark-apk.yml").forEach { name ->
             val workflow = workflowText(name)

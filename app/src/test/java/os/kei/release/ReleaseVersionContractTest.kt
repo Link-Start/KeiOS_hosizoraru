@@ -14,9 +14,9 @@ class ReleaseVersionContractTest {
         val releaseTargetMatch =
             requireNotNull(
                 Regex(
-                    """releaseTargetVersion\s*=\s*AppSemVer\(major\s*=\s*(\d+),\s*minor\s*=\s*(\d+),\s*patch\s*=\s*(\d+)\)""",
+                    """resolveKeiosVersionMetadata\s*\(\s*AppSemVer\(major\s*=\s*(\d+),\s*minor\s*=\s*(\d+),\s*patch\s*=\s*(\d+)\)""",
                 ).find(buildScript),
-            ) { "app/build.gradle.kts must declare releaseTargetVersion" }
+            ) { "app/build.gradle.kts must pass the release target to resolveKeiosVersionMetadata" }
         val releaseVersion = releaseTargetMatch.groupValues.drop(1).joinToString(".")
 
         val ciAction = projectRoot.resolve(".github/actions/setup-android-gradle-build/action.yml").readText()

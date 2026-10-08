@@ -8,6 +8,9 @@ import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Test
 import os.kei.core.io.BoundedContentTextReadTooLargeException
+import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
+import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -16,6 +19,63 @@ class GitHubAtomReleaseStrategyTest {
     @After
     fun tearDown() {
         GitHubAtomReleaseStrategy.clearCaches()
+    }
+
+    @Test
+    fun `release index redirect classifies numeric prerelease only feed and keeps tracking policy effective`() = runBlocking {
+        for (absolute in listOf(false, true)) {
+            GitHubAtomReleaseStrategy.clearCaches()
+            MockWebServer().use { server ->
+                val path = "/dingwen07/hyperos-fcm-fix/releases"
+                val location = if (absolute) server.url(path).toString() else path
+                server.routeAtom(
+                    feed = atomFeed(
+                        AtomEntry("v0.3.1", updated = "2026-10-06T10:00:00Z"),
+                        AtomEntry("v0.3.0", updated = "2026-09-29T10:00:00Z"),
+                    ),
+                    latest = MockResponse().setResponseCode(302).setHeader("Location", location),
+                )
+                val snapshot = server.loadAtomSnapshotTrace("dingwen07", "hyperos-fcm-fix").result.getOrThrow()
+                assertFalse(snapshot.hasStableRelease)
+                assertTrue(snapshot.feed.entries.all { it.isLikelyPreRelease })
+                assertEquals("v0.3.1", snapshot.latestPreRelease?.rawTag)
+                val installed = GitHubReleaseEvaluationEngine.evaluate(
+                    localVersion = "0.3.1", localVersionCode = 11, snapshot = snapshot,
+                    policy = GitHubReleaseEvaluationPolicy(preferPreRelease = true),
+                )
+                assertEquals(GitHubTrackedReleaseStatus.PreReleaseTracked, installed.status)
+                assertFalse(installed.hasPreReleaseUpdate)
+                val outdated = GitHubReleaseEvaluationEngine.evaluate(
+                    localVersion = "0.3.0", localVersionCode = 10, snapshot = snapshot,
+                    policy = GitHubReleaseEvaluationPolicy(preferPreRelease = true),
+                )
+                assertTrue(outdated.hasPreReleaseUpdate)
+                assertEquals(GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable, outdated.status)
+                val disabled = GitHubReleaseEvaluationEngine.evaluate(
+                    localVersion = "unknown", localVersionCode = -1, snapshot = snapshot,
+                    policy = GitHubReleaseEvaluationPolicy(preferPreRelease = false),
+                )
+                assertFalse(disabled.showPreReleaseInfo)
+                assertEquals(GitHubTrackedReleaseStatus.ONLY_PRERELEASES_HINT_MESSAGE, disabled.releaseHint)
+            }
+        }
+    }
+
+    @Test
+    fun `other origin repository or login redirect does not deny inferred stable releases`() = runBlocking {
+        for (location in listOf(
+            "https://example.org/demo/app/releases",
+            "/different/app/releases",
+            "/login?return_to=/demo/app/releases",
+            "/demo/app/releases?auth=required",
+        )) {
+            GitHubAtomReleaseStrategy.clearCaches()
+            MockWebServer().use { server ->
+                server.routeAtom(sampleAtomFeedXml(), MockResponse().setResponseCode(302).setHeader("Location", location))
+                val snapshot = server.loadAtomSnapshotTrace().result.getOrThrow()
+                assertTrue(snapshot.hasStableRelease, location)
+            }
+        }
     }
 
     @Test

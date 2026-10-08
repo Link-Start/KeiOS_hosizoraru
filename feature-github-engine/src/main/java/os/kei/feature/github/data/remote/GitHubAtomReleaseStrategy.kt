@@ -295,6 +295,16 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         val result = cancellableResult {
             noRedirectRequestClient.executeCancellable(request) { response ->
                 val location = response.header("Location").orEmpty()
+                val redirectUrl = response.request.url.resolve(location)
+                // A prerelease-only repository redirects /releases/latest to its
+                // own release index instead of returning a tag (or an API-style 404).
+                // Other destinations and origins do not establish a release lane.
+                val returnedToReleaseIndex = response.isRedirect && location.isNotBlank() && redirectUrl != null &&
+                    redirectUrl.scheme == response.request.url.scheme &&
+                    redirectUrl.host == response.request.url.host &&
+                    redirectUrl.port == response.request.url.port &&
+                    redirectUrl.encodedPath.trimEnd('/').equals("/$owner/$repo/releases", ignoreCase = true) &&
+                    redirectUrl.query == null
                 val finalUrl = when {
                     location.isNotBlank() -> location
                     response.request.url.toString().contains("/releases/tag/") ->
@@ -312,9 +322,9 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
                         link = finalUrl
                     )
 
-                    // The one answer that is a statement. `/releases/latest` skips pre-releases, so a
-                    // 404 is GitHub saying there is no non-pre-release release to point at.
-                    response.code == HTTP_NOT_FOUND ->
+                    // Both the missing latest and the same-repository index redirect
+                    // say there is no non-pre-release release to point at.
+                    response.code == HTTP_NOT_FOUND || returnedToReleaseIndex ->
                         GitHubAtomLatestLookup(outcome = GitHubAtomLatestOutcome.NoStableRelease)
 
                     // Rate limited, a 5xx, a redirect somewhere else, an interstitial. None of these

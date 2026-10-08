@@ -82,7 +82,10 @@ data class GitHubLookupConfig(
 
 fun GitHubLookupConfig.githubCheckSourceSignature(): String {
     return listOf(
-        "check-v3-package-scope",
+        // Old Atom checks could classify numeric prereleases as stable when
+        // /latest redirected to the release index. Recompute those cached lanes.
+        if (selectedStrategy == GitHubLookupStrategyOption.AtomFeed) "check-v4-atom-release-index"
+        else "check-v3-package-scope",
         selectedStrategy.storageId,
         apiToken.trim().isNotBlank().toString(),
         checkAllTrackedPreReleases.toString(),

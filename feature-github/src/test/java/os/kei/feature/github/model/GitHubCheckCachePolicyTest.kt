@@ -7,6 +7,26 @@ import kotlin.test.assertTrue
 
 class GitHubCheckCachePolicyTest {
     @Test
+    fun `Atom checks from before release index handling are recomputed without losing the track`() {
+        val item = tracked(sourceMode = GitHubTrackedSourceMode.GitHubRepository)
+        val config = GitHubLookupConfig(selectedStrategy = GitHubLookupStrategyOption.AtomFeed)
+        val legacy = "check-v3-package-scope|atom_feed|false|false|false|false|false|basic|package=demo.app"
+        val cached = GitHubCheckCacheEntry(sourceConfigSignature = legacy, latestStableRawTag = "v0.3.1")
+        assertFalse(cached.isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+        assertTrue(cached.copy(sourceConfigSignature = item.checkSourceSignature(config))
+            .isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+    }
+
+    @Test
+    fun `API checks retain the previous package scope cache format`() {
+        val item = tracked(sourceMode = GitHubTrackedSourceMode.GitHubRepository)
+        val config = GitHubLookupConfig(selectedStrategy = GitHubLookupStrategyOption.GitHubApiToken)
+        val legacy = "check-v3-package-scope|github_api_token|false|false|false|false|false|basic|package=demo.app"
+        assertTrue(GitHubCheckCacheEntry(sourceConfigSignature = legacy)
+            .isValidForTrackedItem(item, config, config.selectedStrategy.storageId))
+    }
+
+    @Test
     fun `github package scoped checks invalidate old repository wide cache`() {
         val item = tracked(sourceMode = GitHubTrackedSourceMode.GitHubRepository)
         val config = GitHubLookupConfig()

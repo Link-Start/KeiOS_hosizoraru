@@ -32,6 +32,18 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
   the release profile path.
 - Keep local JDK paths and tokens in untracked local config files.
 
+### Shared Build Logic
+
+The root settings include an independent `build-logic` build. Its convention plugins own shared
+Android SDK/JDK defaults, Compose compiler settings, MIUIX override/substitution rules, unit test JVM
+exports, and release/diagnostic variant pairing. Each module applies the appropriate convention
+explicitly; module namespaces, dependencies, signing and special build types stay in that module.
+The included build imports the main version catalog, so AGP/Kotlin versions have one source.
+
+Git version helpers and the profile-capture verification task also live there. Validate them without
+a device using `./gradlew -p build-logic check`. See [Build Logic](../build-logic/README.md) for plugin
+ownership and configuration-cache checks. This command does not generate Baseline Profiles.
+
 ### Versioning
 
 - CI injects version metadata through Gradle properties generated from the latest merged semver tag

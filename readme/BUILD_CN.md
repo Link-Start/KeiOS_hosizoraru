@@ -29,6 +29,17 @@
   Benchmark 构建会接入同一份 profile 目录，用于预发行性能验证。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
 
+### 共享构建逻辑
+
+根 settings 通过 `includeBuild` 接入独立的 `build-logic`。约定插件统一维护 Android SDK/JDK
+默认值、Compose 编译器设置、MIUIX 版本覆盖与 Android 产物替换、单元测试 JVM exports，
+以及 Release/Diagnostic 变体配对。各模块显式应用对应插件，命名空间、依赖、签名和特殊
+构建类型仍由模块维护。独立构建导入主项目的版本目录，AGP/Kotlin 版本只需在一处更新。
+
+Git 版本元数据辅助代码和 Profile 采集完整性校验任务也位于该目录。可使用
+`./gradlew -p build-logic check` 在没有设备时验证插件及其测试。插件职责和配置缓存检查见
+[构建逻辑说明](../build-logic/README.md)。这个命令不会执行 Baseline Profile 采集。
+
 ### 版本号规则
 
 - CI 会在 Gradle 外根据当前 HEAD 已合入的最新 semver tag 和当前发布目标注入版本元数据。

@@ -208,8 +208,9 @@ jobs:
       # its main code too, so the separate library compile step this replaced is covered.
       # `roborazzi.test.verify` compares the screenshot tests against their tracked goldens;
       # without it they only compose. `--continue` reports every failing module, not the first.
-      - name: Run unit tests (all modules) and verify screenshots
-        run: ./gradlew testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace
+      # Included builds are independent: the Android task selector does not run build-logic tests.
+      - name: Validate build logic, run unit tests (all modules) and verify screenshots
+        run: ./gradlew :build-logic:check testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace
 
       - name: Upload test results
         if: failure()
@@ -218,6 +219,9 @@ jobs:
           name: unit-test-results
           path: |
             */build/reports/tests/testDebugUnitTest/
+            build-logic/build/reports/tests/test/
+            build-logic/build/test-results/test/
+            build-logic/build/reports/plugin-development/
             app/build/outputs/roborazzi/
           retention-days: 7
 
@@ -227,7 +231,7 @@ jobs:
           {
             echo "### Unit tests"
             echo ""
-            echo "- Tasks: \`testDebugUnitTest\` (every module), screenshots verified"
+            echo "- Tasks: \`:build-logic:check\`, \`testDebugUnitTest\` (every Android module), screenshots verified"
             echo "- Commit: \`$(git rev-parse HEAD)\`"
             echo "- Run number: \`${GITHUB_RUN_NUMBER}\`"
           } >> "${GITHUB_STEP_SUMMARY}"

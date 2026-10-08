@@ -67,7 +67,7 @@ jobs:
   build-debug-apk:
     name: Build debug APK
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     env:
       ANDROID_BUILD_TOOLS_VERSION: "37.0.0"
@@ -169,7 +169,7 @@ jobs:
   unit-tests:
     name: Unit tests
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       ANDROID_BUILD_TOOLS_VERSION: "37.0.0"

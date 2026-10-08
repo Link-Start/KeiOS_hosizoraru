@@ -197,6 +197,9 @@ git diff --check
 
 工作流路径：`.github/workflows/ci-debug-apk.yml`
 
+- Runner：APK 与测试 job 均使用 `ubuntu-26.04`。显式指定 LTS 版本，避免
+  `ubuntu-latest` 自动迁移操作系统；Ubuntu 26.04 镜像本身仍会更新。Java 21、Gradle Wrapper
+  和所需 Android SDK 组件由构建步骤显式配置。
 - 触发方式：`master` 分支 `push` 与非 draft `pull_request`；仅 Markdown/readme 变更会跳过。
 - 手动触发：`workflow_dispatch`，可选 `commit`（commit SHA / branch / tag）。
 - 构建产物：自动构建并上传 Debug APK 到 GitHub Actions。
@@ -211,6 +214,7 @@ git diff --check
 
 工作流路径：`.github/workflows/ci-benchmark-apk.yml`
 
+- Runner：`ubuntu-26.04`，与 Debug 和测试 job 使用相同的 Java、Gradle、Android 配置。
 - 触发方式：`master` 分支 `push`；仅 Markdown/readme 变更会跳过。
 - 手动触发：`workflow_dispatch`，可选 `commit`（commit SHA / branch / tag）。
 - 默认行为：`commit` 为空时构建所选分支的最新提交。

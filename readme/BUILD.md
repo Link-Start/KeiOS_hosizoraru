@@ -248,6 +248,9 @@ Current baseline scope:
 
 Workflow: `.github/workflows/ci-debug-apk.yml`
 
+- Runner: `ubuntu-26.04` for APK and test jobs. The explicit LTS label avoids automatic
+  `ubuntu-latest` OS migrations. Image updates still occur within Ubuntu 26.04; Java 21,
+  the Gradle Wrapper, and required Android SDK components are configured explicitly.
 - Trigger: `push` and non-draft `pull_request` on `master`; Markdown/readme-only changes are
   ignored.
 - Manual trigger: `workflow_dispatch` with optional `commit` (commit SHA / branch / tag).
@@ -263,6 +266,7 @@ Workflow: `.github/workflows/ci-debug-apk.yml`
 
 Workflow: `.github/workflows/ci-benchmark-apk.yml`
 
+- Runner: `ubuntu-26.04`, using the same Java/Gradle/Android setup as debug and test jobs.
 - Trigger: `push` on `master`; Markdown/readme-only changes are ignored.
 - Manual trigger: `workflow_dispatch` with optional `commit` (commit SHA / branch / tag).
 - Default behavior: build latest commit on selected branch when `commit` is empty.

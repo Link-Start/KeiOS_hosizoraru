@@ -63,7 +63,7 @@ runs:
       run: |
         set -euo pipefail
 
-        # GitHub's ubuntu image ships the whole Android SDK: ANDROID_HOME is exported for every
+        # The pinned Ubuntu 26.04 image ships the Android SDK: ANDROID_HOME is exported for every
         # step, the licences are pre-accepted, and it currently carries both things this build
         # names -- build-tools 37.0.0 and platforms;android-37.0. So there is nothing to install
         # and no `android-actions/setup-android` in front of this. That action cost ~8s a job and

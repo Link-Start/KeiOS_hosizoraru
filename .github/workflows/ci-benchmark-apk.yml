@@ -51,7 +51,7 @@ defaults:
 jobs:
   build-benchmark-apk:
     name: Build benchmark APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     env:
       ANDROID_BUILD_TOOLS_VERSION: "37.0.0"

@@ -198,6 +198,8 @@ internal fun LiquidSheetPresentation(
     // Height is orthogonal to presentation: dragging the grabber resizes the sheet while its bottom
     // edge stays anchored, which has nothing to do with sliding it off-screen.
     val naturalHeightPx = remember { mutableIntStateOf(0) }
+    val renderedHeightPx = remember { mutableIntStateOf(0) }
+    val overlayHeightPx = remember { mutableIntStateOf(0) }
     val resizedHeightPx = remember { mutableFloatStateOf(0f) }
     val userResized = remember { mutableStateOf(false) }
 
@@ -238,14 +240,17 @@ internal fun LiquidSheetPresentation(
 
     fun presentation(): Float = liquidSheetPresentation(hidden.floatValue)
 
-    fun scrimBlurHeightPx(): Int =
-        liquidSheetScrimBlurHeightPx(
-            windowHeightPx = windowHeightPx,
-            sheetHeightPx = currentHeightPx(),
+    fun scrimBlurHeightPx(): Int {
+        val overlayHeight = overlayHeightPx.intValue
+        val renderedHeight = renderedHeightPx.intValue
+        return liquidSheetScrimBlurHeightPx(
+            windowHeightPx = if (overlayHeight > 0) overlayHeight.toFloat() else windowHeightPx,
+            sheetHeightPx = if (renderedHeight > 0) renderedHeight.toFloat() else currentHeightPx(),
             offsetPx = offsetPx(),
             cornerRadiusPx = with(density) { cornerRadius.toPx() },
             sheetSpansWindowWidth = sheetSpansWindowWidth,
         )
+    }
 
     // Built here rather than passed in: the material has to invert the sheet's own translation for
     // its backdrop sample, so it needs `offsetPx` — which only exists at this level.
@@ -591,7 +596,11 @@ internal fun LiquidSheetPresentation(
 
     // ---- rendering ----------------------------------------------------------------------------
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier.fillMaxSize().onSizeChanged { size ->
+            overlayHeightPx.intValue = size.height
+        },
+    ) {
         if (enableDim) {
             LiquidSheetScrim(
                 backdrop = if (surface.glassEnabled) LocalSceneBackdrop.current else null,
@@ -640,6 +649,10 @@ internal fun LiquidSheetPresentation(
                 .liquidSheetOptionalHeightPx {
                     if (userResized.value) currentHeightPx().roundToInt() else 0
                 }.onSizeChanged { size ->
+                    // The blur plate must meet the panel that is actually drawn. Natural height is
+                    // deliberately frozen while the IME is open, but filtering can still shrink the
+                    // content then. Reusing that pre-IME height leaves a sharp band above the sheet.
+                    renderedHeightPx.intValue = size.height
                     // Read off the layout pass and never written back into it: placement is a
                     // graphicsLayer translation, so this cannot feed the measure loop the previous
                     // sheet created by writing its height from onGloballyPositioned.

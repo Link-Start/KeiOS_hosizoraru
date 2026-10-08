@@ -8,9 +8,8 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The public stable channel resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
-- `master` is prepared as the v1.16.0 source baseline for more reliable version-tracking decisions,
-  faster refreshes with per-phase network diagnostics, lower Liquid Glass rendering cost, and a
-  Baseline Profile re-captured on the release code.
+- Source targets v1.17.0 with interactive lobbies, student 3D tools, search fixes, and package-aware
+  pre-release tracking. Final Baseline Profile collection and release APK verification are pending.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 
@@ -51,9 +50,9 @@ ownership and configuration-cache checks. This command does not generate Baselin
 - Local builds can override `keios.version.name`, `keios.nextVersion.name`,
   `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
 - Release builds use the newer value between the latest merged semver tag and the current release
-  target, for example `1.16.0`.
+  target, for example `1.17.0`.
 - Debug and benchmark builds use the next patch version plus commit count and short SHA, for example
-  `1.16.1+12.gabcdef0`.
+  `1.17.1+12.gabcdef0`.
 - Local builds resolve git metadata directly when CI metadata is absent, using the latest merged tag
   as the commit-count anchor and the current release target as the release base when it is newer.
 - Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
@@ -194,37 +193,53 @@ verify both `assets/dexopt/baseline.prof` and `baseline.profm`. See
 [the collection plan](../docs/planning/baseline-profile-coverage.md) for coverage and
 device restoration. Collection success is separate from a measured speedup.
 
-### v1.16.0 Release Gate
+### v1.17.0 Release Gate
 
-Use this gate before tagging or publishing a stable APK:
+Release preparation can update notes, version targets, and an unpublished local preparation tag.
+Finalize the tag and publish only after collection and artifact checks pass on the final source.
+An occupied AVD must not be used for these checks.
+
+Run the device-independent checks first:
 
 ```bash
-./gradlew :app:compileDebugKotlin
-./gradlew :app:testDebugUnitTest
-./gradlew :app:verifyRoborazziDebug
+./gradlew :build-logic:check testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace
+git diff --check
+```
+
+Once the selected AVD is available, collect with an explicit serial:
+
+```bash
+ANDROID_SERIAL=<available-avd-serial> ./gradlew :app:generateReleaseBaselineProfile
+```
+
+Verify all six journeys, fresh nonempty exports, and both generated source files. Commit the accepted
+outputs and any final runtime fixes before applying the committed-ref freshness gate:
+
+```bash
 scripts/qa/baseline_profile_freshness.sh
 ./gradlew :app:lintVitalRelease :app:assembleRelease :app:assembleBenchmark
-git diff --check
 ```
 
 Recommended focused checks for this release:
 
-- GitHub tracking: a project that restarted its numbering shows its current release, a pre-release
-  of a shipped stable is not offered, a release with no files is not an update, and the card explains
-  a surprising choice. Refresh history names the slow network phase for a slow item.
-- Release and F-Droid histories open APK info for an older build and install it in-app; share and
-  download follow the installer and download settings on every surface.
-- Main pages, sheets, and small glass controls look the same as the previous release over flat fields
-  and background images, including shadows, highlights, and pile rims; the bottom bar and docks swap
-  forms without a composition hitch at scroll start.
-- The Student Guide pages with Cross-Axis: a swipe during a coasting list pages, the audio slider seeks
-  without paging, and tab taps land.
-- `scripts/qa/baseline_profile_freshness.sh` reports fresh for both sources and dependency versions.
-  The merged baseline and startup profiles are nonempty, retain the named paths in the collection plan,
-  and are packaged under `assets/dexopt/`. Dated textual rule counts are capture metadata, not fixed gates.
-- Release APK signing, `1.16.0` / `11600999` metadata, R8/minify output, Baseline Profile packaging,
-  and the signer certificate are verified.
-- GitHub Release upload notes are copied from [Release Notes v1.16.0](RELEASE_V1.16.0.md).
+- Search: continuous typing, middle insertion, text selection, and Chinese IME composition retain
+  the cursor and composing state; sheet blur remains continuous during keyboard transitions.
+- GitHub: a pre-release-only repository can scan and track with the option enabled; main-app and
+  plugin package identities stay separate across API, Atom, refresh, and restart.
+- Student Guide: legacy MP4 and migrated Spine entries coexist where provided; animation continues
+  in immersion and after view reset; linked BGM mute/background behavior is correct. Verify 3D model
+  and outfit selection, camera, timeline, speed, loop, outline, and saved background contrast.
+- Cold starts use the correct light/dark launch background and prepared destination; disabling
+  transition animations still works. Glass materials and component motion remain unchanged.
+- The freshness gate reports fresh for committed sources and dependency versions; account separately
+  for uncommitted runtime edits. Profiles must be nonempty and retain the named collection paths.
+  Rule counts describe a capture and are not fixed release gates.
+- Verify release signing, version 1.17.0 / versionCode 11700999, R8/lint, and packaged
+  assets/dexopt/baseline.prof plus baseline.profm.
+- Point the unpublished local v1.17.0 tag at the final accepted release commit, then verify its target
+  and the built APK metadata. Do not replace a published tag by force.
+- Use [Release Notes v1.17.0](RELEASE_V1.17.0.md), remove its preparation notice after the checks pass,
+  and publish the signed APK with its checksum.
 
 ### Screenshot Baseline
 

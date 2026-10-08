@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack | Jetpack Compose, Miuix, liquid-glass chrome |
 | Runtime stack | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
 | Languages | Simplified Chinese, English, Japanese |
-| Source release | `v1.16.0` |
+| Source release target | `v1.17.0` (release preparation) |
 
 ## Quick Links
 
@@ -81,7 +81,8 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   configurable one-tap dailies, per-account Quick Settings tiles and launcher shortcuts,
   server-aware calendar/pool data, Super Island notifications, and student-guide entry points.
 - Student Guide catalog with full-page search, sorting, long-lived implemented-student detail
-  cache, media cache, Memorial Lobby cards and PiP video playback, BGM favorites with removal Undo,
+  cache, media cache, MP4 and interactive Spine Memorial Lobbies, student 3D model tools,
+  PiP video playback, BGM favorites with removal Undo,
   native media notifications, gallery viewing, media export, liquid bottom dock, and import/export
   for favorites.
 - Settings for theme, motion, v2 liquid-glass components, bottom-bar effect policy, search focus
@@ -89,22 +90,27 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.16.0 Highlights
+## v1.17.0 Highlights
 
-- GitHub tracking decides more reliably: projects that restarted their numbering, pre-releases
-  superseded by a shipped stable or left unfed for 14 days, and releases with no downloadable file
-  are read correctly, uncertain comparisons say so, and a surprising choice explains itself.
-- Refresh requests no longer hold threads and Atom mode sends its two requests at once: 40
-  repositories went from 1973 ms to 522 ms against a 120 ms test server. Slow items name the network
-  phase that cost them, in history, exports, and MCP.
-- Liquid Glass over a flat field draws its effect chain's colour directly, and continuous-corner clips
-  happen inside the glass layer: BA Office frame p50 24.3 ms to 11.6 ms, RenderThread p50 down 16% on
-  OS and 18% on MCP, with materials and motion unchanged.
-- Older builds in the release and F-Droid histories open APK info and install in-app; every share and
-  download follows the installer and download settings. The Student Guide pages with Miuix Cross-Axis,
-  and the media session gives untrusted controllers read-only access.
-- Built with Gradle 9.8.0, AGP 9.4.1, Compose 1.12.1, Ktor 3.6.0, Miuix 2afdbb39, and dav4jvm 4.1.0,
-  with a Baseline Profile re-captured on this release's code.
+This release is being prepared. Final Baseline Profile collection and signed APK verification are
+still pending; the stable download link continues to resolve to the published stable release.
+
+- Interactive Spine Memorial Lobbies add action selection, zoom, pan, view reset, and linked BGM.
+  Hiding controls keeps the animation playing, and older students retain their MP4 option.
+- Students with mapped 3D resources have model and animation selection, camera controls, seeking,
+  speed, looping, outlines, and a saved background palette with light/dark defaults.
+- Search fields preserve cursor, selection, and Chinese composition; sheet blur stays continuous
+  as the keyboard opens or closes.
+- Pre-release-only repositories can be scanned when pre-releases are enabled. Main apps and plugins
+  sharing a repository are tracked by their own APK package identity, and old Atom results refresh.
+- Theme-aware cold-start transitions reduce flashes of initial state. Student details and other
+  pages scroll with less unnecessary work while keeping the glass materials and animations.
+- Choose when Super Islands close; quiet Shell commands now time out instead of waiting indefinitely.
+- Also includes the local v1.16 work: more reliable version selection, refresh diagnostics, in-app
+  installation of historical releases/F-Droid builds, and lower glass rendering overhead.
+
+See [v1.17.0 release notes](readme/RELEASE_V1.17.0.md) for the complete upgrade from the published
+v1.15.0. The v1.16.0 notes document a local development milestone.
 
 Read the full feature tour:
 
@@ -115,7 +121,8 @@ Read the full feature tour:
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The public stable channel always resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
-- This source snapshot and its local release tag target `v1.16.0`.
+- This source targets `v1.17.0`. Its local preparation tag will be finalized after Baseline Profile
+  collection; v1.17.0 has not been published yet.
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.8.0`, Kotlin `2.4.21-RC`,
   Compose `1.12.1`, Android Gradle Plugin `9.4.1`, Ktor `3.6.0`.
@@ -124,6 +131,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
+- [Release Notes v1.17.0 (preparation)](readme/RELEASE_V1.17.0.md)
 - [Release Notes v1.16.0](readme/RELEASE_V1.16.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)

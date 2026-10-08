@@ -8,8 +8,8 @@
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
 - 公开稳定版通过 [最新稳定版](https://github.com/hosizoraru/KeiOS/releases/latest) 获取。
-- `master` 已准备为 v1.16.0 源码基线，覆盖更可靠的版本追踪判断、带网络阶段诊断的更快刷新、
-  更低的 Liquid Glass 渲染开销，以及在发布代码上重新采集的 Baseline Profile。
+- 当前源码目标为 v1.17.0，包含动态回忆大厅、学生 3D 工具、搜索修复与按包名识别的预发行版追踪。
+  最终 Baseline Profile 采集和正式 APK 核对尚待完成。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出 Debug、Benchmark 与 Release APK。
 
@@ -45,8 +45,8 @@ Git 版本元数据辅助代码和 Profile 采集完整性校验任务也位于�
 - CI 会在 Gradle 外根据当前 HEAD 已合入的最新 semver tag 和当前发布目标注入版本元数据。
 - 本地构建可在 `~/.gradle/gradle.properties` 或 `local.properties` 覆盖
   `keios.version.name`、`keios.nextVersion.name`、`keios.version.anchorTag` 与 `keios.git.*`。
-- Release 构建使用最新已合入 semver tag 与当前发布目标之间更新的版本，例如 `1.16.0`。
-- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.16.1+12.gabcdef0`。
+- Release 构建使用最新已合入 semver tag 与当前发布目标之间更新的版本，例如 `1.17.0`。
+- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.17.1+12.gabcdef0`。
 - 缺少 CI 注入 metadata 的本地构建会直接读取 git metadata，以最新已合入 tag 作为 commit 数锚点，并在发布目标更新时使用发布目标作为 release base。
 - 包名链路保持精简：Debug 安装为 `os.kei.debug`；Benchmark 与 Release 安装为 `os.kei`。
 - 当前 CI artifact 名称保持简洁：`KeiOS_<versionName>`，APK 文件名为 `KeiOS_<versionName>.apk`。
@@ -152,28 +152,44 @@ scripts/dev/avd_tablet.sh    # Android 17 平板（KeiOS_Pad_API37_Validation）
 （`.diag`）。在验证用 AVD 上这正是本意；在随身手机上不是，因此非模拟器目标默认拒绝，必须显式传
 `--allow-physical`。
 
-### v1.16.0 发布门禁
+### v1.17.0 发布门禁
 
-打 tag 或发布稳定版 APK 前建议跑完：
+发布准备阶段可以同步文案、版本目标，并建立未推送的本地预备 tag。采集和产物验证通过后，
+再让 tag 指向最终源码并发布；被其他任务占用的 AVD 不参与这些检查。
+
+先完成不依赖设备的检查：
 
 ```bash
-./gradlew :app:compileDebugKotlin
-./gradlew :app:testDebugUnitTest
-./gradlew :app:verifyRoborazziDebug
-scripts/qa/baseline_profile_freshness.sh
-./gradlew :app:lintVitalRelease :app:assembleRelease :app:assembleBenchmark
+./gradlew :build-logic:check testDebugUnitTest -Proborazzi.test.verify=true --continue --stacktrace
 git diff --check
 ```
 
-本次发布建议重点复查：
+选定 AVD 空闲后，显式绑定设备采集：
 
-- GitHub 追踪：重新编号的项目显示其当前版本，已发布正式版的预发布不再被提示，没有文件的发行版不算更新，出乎意料的选择会在卡片上说明原因；刷新历史会为慢项目标出耗时的网络阶段。
-- 发行版与 F-Droid 历史可为旧版本打开 APK 信息并在应用内安装；各处的分享与下载都遵循安装器与下载设置。
-- 主要页面、Sheet 与小型玻璃控件在纯色背景和背景图上与上一版观感一致，包括阴影、高光与堆叠卡片边缘；底栏与 dock 切换形态时，滑动开始不出现组合卡顿。
-- 学生图鉴使用 Cross-Axis 翻页：列表惯性滚动中横滑直接翻页，音频进度条拖动只调整进度不翻页，点 Tab 正确落页。
-- `scripts/qa/baseline_profile_freshness.sh` 对源码与依赖版本都报告 fresh，合并产物包含 62,312 条 baseline 规则与 24,262 条 startup 规则，并打包到 `assets/dexopt/`。
-- Release APK 的签名、`1.16.0` / `11600999` 元数据、R8/minify 输出、Baseline Profile 打包和签名证书完成验证。
-- GitHub Release 发布文案使用 [Release Notes v1.16.0](RELEASE_V1.16.0.md)。
+```bash
+ANDROID_SERIAL=<空闲-avd-serial> ./gradlew :app:generateReleaseBaselineProfile
+```
+
+核对六段旅程、有效且新鲜的导出及两份生成源文件。先提交已验收的采集结果和最终运行时修复，
+再运行比较已提交引用的新鲜度门禁：
+
+```bash
+scripts/qa/baseline_profile_freshness.sh
+./gradlew :app:lintVitalRelease :app:assembleRelease :app:assembleBenchmark
+```
+
+本次发布重点复查：
+
+- 搜索：连续输入、中间插入、文字选择、中文输入法组词保留光标和编辑状态；键盘切换时弹层模糊连续。
+- GitHub：仅预发行仓库开启选项后可扫描与追踪；API、Atom、刷新与重启后，主应用和插件按各自包名判断版本。
+- 学生图鉴：有资源时 MP4 与 Spine 入口共存；沉浸和重置视角不中断动画；BGM 静音及后台行为正确。
+  3D 模型与服装对应、视角、进度、速度、循环、描边、背景保存和控件对比度正确。
+- 冷启动深浅色背景及入口状态正确，关闭过渡动画仍正常；玻璃材质和组件动效保留。
+- 新鲜度门禁对已提交源码和依赖报告 fresh，未提交运行时变更另行核对；生成文件非空且保留采集计划的路径。
+  规则数量只记录当次采集，不作为固定发布门禁。
+- 正式 APK 的签名、1.17.0 / versionCode 11700999、R8/lint，以及 assets/dexopt/baseline.prof 和 baseline.profm 完成核对。
+- 让未推送的本地 v1.17.0 tag 指向最终验收提交，复核 tag 目标与 APK 元数据；不强制替换已发布的 tag。
+- 使用 [Release Notes v1.17.0](RELEASE_V1.17.0.md)，检查通过后移除发布准备提示，发布签名 APK 和校验文件。
 
 ### 截图基线
 

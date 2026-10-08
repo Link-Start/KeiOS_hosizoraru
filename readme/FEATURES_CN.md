@@ -100,6 +100,9 @@ BA 页面是 Blue Archive 办公室仪表盘：
   卫星学园筛选。
 - 学生与相关条目详情支持资料、攻略/模拟、NPC / 卫星角色标签分类、鉴赏媒体、本地化语音语言标签、音频/视频内容和来源分享。
 - 礼物偏好解析保留礼物图片和态度标记。
+- MP4 回忆大厅保留；Spine 动态回忆大厅支持动作切换、缩放、移动、重置视角、关联 BGM 和静音，隐藏控件不会中断动画。
+- 有对应资源的学生支持 3D 模型和动画选择、视角操作、进度、速度、循环、描边及可保存的背景调色盘。
+  Spine 素材与模型文件采用有容量限制的缓存，复用已下载资源。
 - 回忆大厅 BGM 收藏库支持播放队列、液态底栏、mini player、批量缓存、失败重试、删除撤销、导入导出、原生媒体通知和跳回学生详情。
 - 媒体缓存和导出流程支持表达包/媒体包打包保存。
 - NPC 与卫星条目适配较早期的 GameKee 页面，补齐更广的影画鉴赏解析、相关角色分类、更轻的信息行和缺少实装学生字段时的兼容。
@@ -116,7 +119,7 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - 图标设计以 Android Designs 作为默认图标，并提供 Apple Designs 焕新版图标切换。
 - 二级页面自定义背景图和透明度覆盖卡片、chrome 与弹层场景。
 - 通知权限、电池优化、OEM 自启动、应用列表访问和 Shizuku 状态。
-- 超级岛通知样式、HyperOS 兼容绕过和恢复延迟调节。
+- 超级岛通知样式、自动关闭时间、HyperOS 兼容绕过和恢复延迟调节；GitHub 刷新进度仍按任务结束收尾。
 - 复制/文本选择模式、缓存诊断、调试日志、日志 ZIP 导出和一键清理缓存。
 - 本地 GitHub Issue 反馈与结构化日志等级控制。
 - 调试组件实验室与 Liquid 组件样张用于检查共享 chrome、按钮、下拉菜单、滑杆、进度条和 dock 行为。
@@ -127,8 +130,9 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - 包名：`os.kei`。
 - ABI：`arm64-v8a`。
 - Android 基线：Android 15+（`minSdk 35`），`targetSdk=37`。
-- UI 技术栈：Jetpack Compose `1.12.0`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
+- UI 技术栈：Jetpack Compose `1.12.1`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
   Chrome、MMKV 偏好存储。
-- 构建基线：Java 21、Gradle Wrapper `9.7.1`、Kotlin `2.4.20-RC2`、Android Gradle Plugin
-  `9.4.0-rc02`、Ktor `3.5.2`、已生成的 Baseline Profiles 与 Gradle 项目工具链。
-- 正式版 Baseline Profile 包含 61,226 条 baseline 规则与 24,123 条 startup 规则；六段旅程的总回放上限为 16 次，在当前 A17 Phone AVD 上约 9–17 分钟完成。
+- 构建基线：Java 21、Gradle Wrapper `9.8.0`、Kotlin `2.4.21-RC`、Android Gradle Plugin
+  `9.4.1`、Ktor `3.6.0`、已生成的 Baseline Profiles 与共享 build-logic 约定。
+- Baseline Profile 采集覆盖六段有回放上限的旅程，采集结果与发布新鲜度分别核对；当前源码需要在 v1.17.0 发布前重新采集。
+  详见 [构建指南](BUILD_CN.md) 和 [采集计划](../docs/planning/baseline-profile-coverage.md)。

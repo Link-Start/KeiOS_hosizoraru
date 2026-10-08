@@ -140,6 +140,11 @@ The student guide expands the BA workflow into catalog and media browsing:
   label grouping, gallery media, localized voice-language labels, audio/video content, and source
   sharing.
 - Gift preference parsing with image and attitude markers.
+- MP4 Memorial Lobbies remain available. Interactive Spine lobbies add actions, zoom, pan, view reset,
+  linked BGM, mute, and controls that can be hidden without interrupting the animation.
+- Student 3D models where resource mappings are available, with model/animation selection,
+  camera controls, seeking, speed, looping, outlines, and a saved background palette.
+  Spine assets and model files use bounded caches to reuse downloads.
 - BGM favorites library with playback queue, liquid bottom dock, mini player, batch cache, retry,
   removal Undo, import/export, native media notifications, and jump back into the student guide.
 - Media cache controls and export flows, including archive-style saves for expression/media packs.
@@ -166,7 +171,8 @@ Settings collect the runtime controls in one place:
 - Custom secondary-page background image and opacity controls, including cards, chrome, and modal
   presentation scenes.
 - Notification permission, battery optimization, OEM autostart, app-list access, and Shizuku status.
-- Super Island notification style, HyperOS compatibility bypass, and restore-delay tuning.
+- Super Island notification style, automatic closing time, HyperOS compatibility bypass,
+  and restore-delay tuning. GitHub refresh progress keeps its task-specific closing behavior.
 - Copy/text-selection mode, cache diagnostics, debug logs, exportable log ZIPs, and clear-cache actions.
 - Local GitHub issue feedback and structured log-level controls.
 - Debug component lab and liquid catalog for checking shared chrome, buttons, dropdowns, sliders,
@@ -178,10 +184,10 @@ Settings collect the runtime controls in one place:
 - Package: `os.kei`.
 - ABI: `arm64-v8a`.
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
-- UI stack: Jetpack Compose `1.12.0`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
+- UI stack: Jetpack Compose `1.12.1`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
   chrome, MMKV-backed preferences.
-- Build baseline: Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.20-RC2`, Android Gradle Plugin
-  `9.4.0-rc02`, Ktor `3.5.2`, generated Baseline Profiles, and Gradle project tooling.
-- The release Baseline Profile contains 61,226 baseline rules and 24,123 startup rules. Its six
-  journeys cap replay at 16 total runs and complete in about 9–17 minutes on the current A17 Phone
-  AVD.
+- Build baseline: Java 21, Gradle Wrapper `9.8.0`, Kotlin `2.4.21-RC`, Android Gradle Plugin
+  `9.4.1`, Ktor `3.6.0`, generated Baseline Profiles, and shared build-logic conventions.
+- Baseline Profile collection covers six bounded journeys. Capture results and release freshness
+  are checked separately; current source requires a new capture before v1.17.0 publication.
+  See the [build guide](BUILD.md) and [collection plan](../docs/planning/baseline-profile-coverage.md).
